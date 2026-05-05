@@ -334,6 +334,7 @@ func (m *LinuxFilesystem) Statistics(volumePath string) (VolumeStatistics, error
 	if err != nil {
 		return VolumeStatistics{}, err
 	}
+	//nolint:gosec // unix.Statfs_t integer types varies between GOARCHs//nolint:gosec
 	volStats := VolumeStatistics{
 		AvailableBytes: int64(statfs.Bavail) * int64(statfs.Bsize),                         //nolint:unconvert,gosec // unix.Statfs_t integer types varies between GOARCHs
 		TotalBytes:     int64(statfs.Blocks) * int64(statfs.Bsize),                         //nolint:unconvert,gosec // unix.Statfs_t integer types varies between GOARCHs
