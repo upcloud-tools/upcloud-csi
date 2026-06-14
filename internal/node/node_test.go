@@ -6,6 +6,7 @@ import (
 
 	"github.com/UpCloudLtd/upcloud-csi/internal/filesystem/mock"
 	"github.com/UpCloudLtd/upcloud-csi/internal/node"
+	"github.com/container-storage-interface/spec/lib/go/csi"
 	"github.com/sirupsen/logrus"
 )
 
@@ -13,7 +14,44 @@ func TestNode_ExpandVolume(t *testing.T) {
 	t.Parallel()
 	logger := logrus.New()
 	d, _ := node.NewNode("test-node", "fi-hel1", 10, mock.NewFilesystem(logger), logger.WithField("package", "node_test"))
-	if _, err := d.NodeExpandVolume(context.TODO(), nil); err == nil {
-		t.Error("NodeExpandVolume should return error. Only offline volume expansion is supported and it's handled by controller.")
-	}
+
+	t.Run("missing volume id", func(t *testing.T) {
+		if _, err := d.NodeExpandVolume(context.TODO(), &csi.NodeExpandVolumeRequest{}); err == nil {
+			t.Error("expected error for missing volume ID")
+		}
+	})
+
+	t.Run("missing volume path", func(t *testing.T) {
+		if _, err := d.NodeExpandVolume(context.TODO(), &csi.NodeExpandVolumeRequest{VolumeId: "test-vol"}); err == nil {
+			t.Error("expected error for missing volume path")
+		}
+	})
+
+	t.Run("expand filesystem volume", func(t *testing.T) {
+		_, err := d.NodeExpandVolume(context.TODO(), &csi.NodeExpandVolumeRequest{
+			VolumeId:   "f67db1ca-825b-40aa-a6f4-390ac6ff1b91",
+			VolumePath: "/mnt/test",
+			VolumeCapability: &csi.VolumeCapability{
+				AccessType: &csi.VolumeCapability_Mount{
+					Mount: &csi.VolumeCapability_MountVolume{},
+				},
+			},
+		})
+		if err != nil {
+			t.Errorf("unexpected error: %s", err)
+		}
+	})
+
+	t.Run("expand raw block device", func(t *testing.T) {
+		_, err := d.NodeExpandVolume(context.TODO(), &csi.NodeExpandVolumeRequest{
+			VolumeId:   "f67db1ca-825b-40aa-a6f4-390ac6ff1b91",
+			VolumePath: "/mnt/test",
+			VolumeCapability: &csi.VolumeCapability{
+				AccessType: &csi.VolumeCapability_Block{},
+			},
+		})
+		if err != nil {
+			t.Errorf("unexpected error: %s", err)
+		}
+	})
 }

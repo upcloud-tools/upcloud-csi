@@ -599,7 +599,15 @@ func (c *Controller) ControllerExpandVolume(ctx context.Context, req *csi.Contro
 	}
 
 	if len(volume.ServerUUIDs) > 0 {
-		return nil, status.Error(codes.FailedPrecondition, "volume is currently published on a node")
+		log.Info("expanding volume while published on a node")
+		_, err = c.svc.ResizeBlockDevice(ctx, volume.UUID, int(resizeGigaBytes))
+		if err != nil {
+			return nil, status.Errorf(codes.Internal, "cannot resize volume %s: %s", volumeID, err.Error())
+		}
+		return &csi.ControllerExpandVolumeResponse{
+			CapacityBytes:         resizeGigaBytes * giB,
+			NodeExpansionRequired: true,
+		}, nil
 	}
 
 	isBlockDevice := false

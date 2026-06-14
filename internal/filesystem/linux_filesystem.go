@@ -348,3 +348,124 @@ func (m *LinuxFilesystem) GetDeviceLastPartition(ctx context.Context, device str
 
 	return sfdiskOutputGetLastPartition(device, string(output))
 }
+
+func (m *LinuxFilesystem) ResizeVolume(ctx context.Context, source, volumePath string) error {
+	log := logger.WithServerContext(ctx, m.log)
+
+	partition, err := m.GetDeviceLastPartition(ctx, source)
+	if err != nil {
+		return fmt.Errorf("failed to get partition for %s: %w", source, err)
+	}
+
+	partNum := extractPartitionNumber(partition)
+	if partNum == "" {
+		return fmt.Errorf("failed to extract partition number from %s", partition)
+	}
+
+	log.WithFields(logrus.Fields{
+		"source":    source,
+		"partition": partition,
+	}).Info("resizing partition")
+
+	if err := m.resizePartition(ctx, source, partNum); err != nil {
+		return fmt.Errorf("failed to resize partition on %s: %w", source, err)
+	}
+
+	fsType, err := detectFilesystemType(ctx, partition)
+	if err != nil {
+		return fmt.Errorf("failed to detect filesystem type on %s: %w", partition, err)
+	}
+
+	log.WithFields(logrus.Fields{
+		"partition": partition,
+		"fs_type":   fsType,
+	}).Info("resizing filesystem")
+
+	switch fsType {
+	case "ext2", "ext3", "ext4":
+		if err := resizeExtFilesystem(ctx, partition); err != nil {
+			return fmt.Errorf("failed to resize ext filesystem on %s: %w", partition, err)
+		}
+	case "xfs":
+		if err := resizeXfsFilesystem(ctx, volumePath); err != nil {
+			return fmt.Errorf("failed to resize xfs filesystem at %s: %w", volumePath, err)
+		}
+	case "btrfs":
+		if err := resizeBtrfsFilesystem(ctx, volumePath); err != nil {
+			return fmt.Errorf("failed to resize btrfs filesystem at %s: %w", volumePath, err)
+		}
+	default:
+		return fmt.Errorf("unsupported filesystem type for resize: %s", fsType)
+	}
+
+	return nil
+}
+
+func (m *LinuxFilesystem) resizePartition(ctx context.Context, device, partNum string) error {
+	args := []string{"-s", device, "resizepart", partNum, "100%"}
+	logger.WithServerContext(ctx, m.log).WithFields(logrus.Fields{
+		logger.CommandKey:     partedCmd,
+		logger.CommandArgsKey: args,
+	}).Debug("executing command")
+	output, err := exec.CommandContext(ctx, partedCmd, args...).CombinedOutput()
+	if err != nil {
+		return fmt.Errorf("failed to resize partition: '%s'; %w", formatCmdError(output), err)
+	}
+	return nil
+}
+
+func extractPartitionNumber(partition string) string {
+	for i := len(partition) - 1; i >= 0; i-- {
+		if partition[i] < '0' || partition[i] > '9' {
+			if i+1 < len(partition) {
+				return partition[i+1:]
+			}
+			return ""
+		}
+	}
+	return partition
+}
+
+func detectFilesystemType(ctx context.Context, partition string) (string, error) {
+	args := []string{
+		"--probe",
+		"--output", "value",
+		"--match-tag", "TYPE",
+		partition,
+	}
+	output, err := exec.CommandContext(ctx, blkidCmd, args...).CombinedOutput()
+	if err != nil {
+		return "", fmt.Errorf("failed to detect filesystem type: '%s'; %w", formatCmdError(output), err)
+	}
+	fsType := strings.TrimSpace(string(output))
+	if fsType == "" {
+		return "", fmt.Errorf("no filesystem detected on %s", partition)
+	}
+	return strings.ToLower(fsType), nil
+}
+
+func resizeExtFilesystem(ctx context.Context, partition string) error {
+	output, err := exec.CommandContext(ctx, "resize2fs", partition).CombinedOutput()
+	if err != nil {
+		return fmt.Errorf("resize2fs failed: '%s'; %w", formatCmdError(output), err)
+	}
+	return nil
+}
+
+func resizeXfsFilesystem(ctx context.Context, mountPoint string) error {
+	args := []string{mountPoint}
+	output, err := exec.CommandContext(ctx, "xfs_growfs", args...).CombinedOutput()
+	if err != nil {
+		return fmt.Errorf("xfs_growfs failed: '%s'; %w", formatCmdError(output), err)
+	}
+	return nil
+}
+
+func resizeBtrfsFilesystem(ctx context.Context, mountPoint string) error {
+	args := []string{"filesystem", "resize", "max", mountPoint}
+	output, err := exec.CommandContext(ctx, "btrfs", args...).CombinedOutput()
+	if err != nil {
+		return fmt.Errorf("btrfs filesystem resize failed: '%s'; %w", formatCmdError(output), err)
+	}
+	return nil
+}

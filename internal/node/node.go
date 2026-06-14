@@ -266,6 +266,13 @@ func (n *Node) NodeGetCapabilities(ctx context.Context, req *csi.NodeGetCapabili
 				},
 			},
 		},
+		{
+			Type: &csi.NodeServiceCapability_Rpc{
+				Rpc: &csi.NodeServiceCapability_RPC{
+					Type: csi.NodeServiceCapability_RPC_EXPAND_VOLUME,
+				},
+			},
+		},
 	}
 
 	log.WithField("capabilities", caps).Info("supported capabilities")
@@ -341,7 +348,44 @@ func (n *Node) NodeGetVolumeStats(ctx context.Context, req *csi.NodeGetVolumeSta
 }
 
 func (n *Node) NodeExpandVolume(ctx context.Context, req *csi.NodeExpandVolumeRequest) (*csi.NodeExpandVolumeResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method NodeExpandVolume not implemented")
+	if req.VolumeId == "" {
+		return nil, status.Error(codes.InvalidArgument, "volume ID must be provided")
+	}
+	if req.VolumePath == "" {
+		return nil, status.Error(codes.InvalidArgument, "volume path must be provided")
+	}
+
+	log := logger.WithServerContext(ctx, n.log).WithFields(logrus.Fields{
+		logger.VolumeIDKey:     req.GetVolumeId(),
+		logger.MountTargetKey:  req.GetVolumePath(),
+	})
+
+	log.Info("expanding volume on node")
+
+	source, err := n.fs.GetDeviceByID(ctx, req.VolumeId)
+	if err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+
+	isBlockDevice := false
+	if req.GetVolumeCapability() != nil {
+		if _, ok := req.VolumeCapability.AccessType.(*csi.VolumeCapability_Block); ok {
+			isBlockDevice = true
+		}
+	}
+
+	if isBlockDevice {
+		log.Info("raw block device, no node-side expansion needed")
+		return &csi.NodeExpandVolumeResponse{}, nil
+	}
+
+	log.WithField(logger.MountSourceKey, source).Info("resizing filesystem volume")
+
+	if err := n.fs.ResizeVolume(ctx, source, req.VolumePath); err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to resize volume: %s", err.Error())
+	}
+
+	return &csi.NodeExpandVolumeResponse{}, nil
 }
 
 func validateNodePublishVolumeRequest(r *csi.NodePublishVolumeRequest) error {
