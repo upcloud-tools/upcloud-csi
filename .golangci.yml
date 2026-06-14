@@ -1,3 +1,4 @@
+version: "2"
 #
 # UpCloud golangci-lint configuration
 #
@@ -570,11 +571,6 @@ linters:
     # over this.
     ## - wsl # DISABLE
 
-output:
-  # Get all issues from all linters, instead of just first per line, so we
-  # get to see everything on first pass.
-  uniq-by-line: false
-
 issues:
   exclude:
     # We used to have a mixture of initialisms and non-initialisms between and
@@ -603,6 +599,9 @@ issues:
         # Closing response bodies in tests clutters up the code and isn't
         # really necessary
         - bodyclose
+  # Get all issues from all linters, instead of just first per line, so we
+  # get to see everything on first pass.
+  uniq-by-line: false
 
 linters-settings:
   errcheck:
