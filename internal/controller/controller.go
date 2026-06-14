@@ -403,7 +403,7 @@ func (c *Controller) ListVolumes(ctx context.Context, req *csi.ListVolumesReques
 
 	volumes, listNext := paginateStorage(volumes, listStart, int(req.GetMaxEntries()))
 
-	entries := make([]*csi.ListVolumesResponse_Entry, 0)
+	entries := make([]*csi.ListVolumesResponse_Entry, 0, len(volumes))
 	for _, vol := range volumes {
 		entries = append(entries, &csi.ListVolumesResponse_Entry{
 			Volume: &csi.Volume{
@@ -427,7 +427,7 @@ func (c *Controller) GetCapacity(ctx context.Context, req *csi.GetCapacityReques
 
 // ControllerGetCapabilities returns the capacity of the storage pool.
 func (c *Controller) ControllerGetCapabilities(ctx context.Context, req *csi.ControllerGetCapabilitiesRequest) (*csi.ControllerGetCapabilitiesResponse, error) {
-	caps := make([]*csi.ControllerServiceCapability, 0)
+	caps := make([]*csi.ControllerServiceCapability, 0, len(supportedCapabilities))
 	for _, capability := range supportedCapabilities {
 		caps = append(caps, &csi.ControllerServiceCapability{
 			Type: &csi.ControllerServiceCapability_Rpc{
@@ -548,7 +548,7 @@ func (c *Controller) ListSnapshots(ctx context.Context, req *csi.ListSnapshotsRe
 		}
 	}
 	backups, listNext := paginateStorage(backups, listStart, int(req.GetMaxEntries()))
-	entries := make([]*csi.ListSnapshotsResponse_Entry, 0)
+	entries := make([]*csi.ListSnapshotsResponse_Entry, 0, len(backups))
 	for _, s := range backups {
 		entries = append(entries, &csi.ListSnapshotsResponse_Entry{
 			Snapshot: &csi.Snapshot{
@@ -568,6 +568,8 @@ func (c *Controller) ListSnapshots(ctx context.Context, req *csi.ListSnapshotsRe
 }
 
 // ControllerExpandVolume is called from the resizer to increase the volume size.
+//
+//nolint:funlen
 func (c *Controller) ControllerExpandVolume(ctx context.Context, req *csi.ControllerExpandVolumeRequest) (*csi.ControllerExpandVolumeResponse, error) {
 	volumeID := req.GetVolumeId()
 

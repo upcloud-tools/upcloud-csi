@@ -25,7 +25,7 @@ func TestDriverSanity(t *testing.T) {
 		t.Skip("required environment variables are not set to test CSI sanity")
 	}
 	socket := path.Join(os.TempDir(), fmt.Sprintf("csi-socket-%d.sock", time.Now().Unix()))
-	defer os.Remove(socket)
+	defer os.Remove(socket) //nolint:errcheck
 
 	endpoint, _ := url.Parse(fmt.Sprintf("unix://%s", socket))
 
@@ -34,8 +34,8 @@ func TestDriverSanity(t *testing.T) {
 	cfg, err := newTestConfig(endpoint.String())
 	require.NoError(t, err)
 	defer func() {
-		os.RemoveAll(cfg.StagingPath)
-		os.RemoveAll(cfg.TargetPath)
+		_ = os.RemoveAll(cfg.StagingPath)
+		_ = os.RemoveAll(cfg.TargetPath)
 	}()
 
 	// wait server to start

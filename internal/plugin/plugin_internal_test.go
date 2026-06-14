@@ -9,6 +9,11 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+const (
+	logLevelInfo = "info"
+	zoneID       = "fi-hel2"
+)
+
 func TestNewPluginServer(t *testing.T) {
 	t.Parallel()
 
@@ -16,9 +21,9 @@ func TestNewPluginServer(t *testing.T) {
 	cfg := config.Config{
 		Username:            "test-user",
 		Password:            "test-password",
-		LogLevel:            "info",
+		LogLevel:            logLevelInfo,
 		Mode:                config.DriverModeController,
-		Zone:                "fi-hel2",
+		Zone:                zoneID,
 		PluginServerAddress: config.DefaultPluginServerAddress,
 		Filesystem:          &mock.MockFilesystem{},
 	}
@@ -28,11 +33,11 @@ func TestNewPluginServer(t *testing.T) {
 	require.Contains(t, srv.GetServiceInfo(), "csi.v1.Identity")
 
 	cfg = config.Config{
-		LogLevel:            "info",
+		LogLevel:            logLevelInfo,
 		Mode:                config.DriverModeNode,
 		NodeHost:            hostname(),
 		PluginServerAddress: config.DefaultPluginServerAddress,
-		Zone:                "fi-hel2",
+		Zone:                zoneID,
 		Filesystem:          &mock.MockFilesystem{},
 	}
 	srv, err = newPluginServer(cfg, l.WithField("package", "plugin"))
@@ -43,11 +48,11 @@ func TestNewPluginServer(t *testing.T) {
 	cfg = config.Config{
 		Username:            "test-user",
 		Password:            "test-password",
-		LogLevel:            "info",
+		LogLevel:            logLevelInfo,
 		Mode:                config.DriverModeMonolith,
 		NodeHost:            hostname(),
 		PluginServerAddress: config.DefaultPluginServerAddress,
-		Zone:                "fi-hel2",
+		Zone:                zoneID,
 		Filesystem:          &mock.MockFilesystem{},
 	}
 	srv, err = newPluginServer(cfg, l.WithField("package", "plugin"))

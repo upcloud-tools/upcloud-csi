@@ -25,7 +25,7 @@ func TestPluginServer(t *testing.T) {
 	tmpSocket := path.Join(os.TempDir(), fmt.Sprintf("test-plugin-server-%d.sock", time.Now().Unix()))
 	addr := fmt.Sprintf("unix://%s", tmpSocket)
 	defer func() {
-		os.Remove(tmpSocket)
+		_ = os.Remove(tmpSocket)
 	}()
 
 	srv, err := server.NewPluginServer(addr, nil, nil, identity.NewIdentity(config.DefaultDriverName, l), l)
@@ -43,7 +43,7 @@ func TestPluginServer(t *testing.T) {
 	t.Logf("connection GRPC server at %s", addr)
 	conn, err := grpc.Dial(addr, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	require.NoError(t, err)
-	defer conn.Close()
+	defer conn.Close() //nolint:errcheck
 	id := csi.NewIdentityClient(conn)
 
 	t.Log("get plugin info to make sure that server is responding")

@@ -62,7 +62,7 @@ func udevWaitDiskToSettle(ctx context.Context, path string) error {
 			"settle",
 			fmt.Sprintf("--timeout=%d", udevSettleTimeout),
 			fmt.Sprintf("--exit-if-exists=%s", path),
-		).Run()
+		).Run() //nolint:gosec
 	}
 	return nil
 }
@@ -97,7 +97,7 @@ func createBlockDevice(target string) error {
 	if err != nil {
 		return err
 	}
-	f, err := os.OpenFile(target, os.O_CREATE, 0o660)
+	f, err := os.OpenFile(target, os.O_CREATE, 0o600) //nolint:gosec
 	if err != nil {
 		return err
 	}

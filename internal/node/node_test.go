@@ -16,18 +16,21 @@ func TestNode_ExpandVolume(t *testing.T) {
 	d, _ := node.NewNode("test-node", "fi-hel1", 10, mock.NewFilesystem(logger), logger.WithField("package", "node_test"))
 
 	t.Run("missing volume id", func(t *testing.T) {
+		t.Parallel()
 		if _, err := d.NodeExpandVolume(context.TODO(), &csi.NodeExpandVolumeRequest{}); err == nil {
 			t.Error("expected error for missing volume ID")
 		}
 	})
 
 	t.Run("missing volume path", func(t *testing.T) {
+		t.Parallel()
 		if _, err := d.NodeExpandVolume(context.TODO(), &csi.NodeExpandVolumeRequest{VolumeId: "test-vol"}); err == nil {
 			t.Error("expected error for missing volume path")
 		}
 	})
 
 	t.Run("expand filesystem volume", func(t *testing.T) {
+		t.Parallel()
 		_, err := d.NodeExpandVolume(context.TODO(), &csi.NodeExpandVolumeRequest{
 			VolumeId:   "f67db1ca-825b-40aa-a6f4-390ac6ff1b91",
 			VolumePath: "/mnt/test",
@@ -43,6 +46,7 @@ func TestNode_ExpandVolume(t *testing.T) {
 	})
 
 	t.Run("expand raw block device", func(t *testing.T) {
+		t.Parallel()
 		_, err := d.NodeExpandVolume(context.TODO(), &csi.NodeExpandVolumeRequest{
 			VolumeId:   "f67db1ca-825b-40aa-a6f4-390ac6ff1b91",
 			VolumePath: "/mnt/test",

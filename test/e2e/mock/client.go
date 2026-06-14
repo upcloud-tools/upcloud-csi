@@ -11,8 +11,9 @@ import (
 	"github.com/onsi/gomega"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/clientcmd"
-	"k8s.io/client-go/util/homedir"
 )
+
+const shellPath = "/bin/sh"
 
 type ExecParams struct {
 	Command        string
@@ -60,9 +61,9 @@ func (c *Client) Exec(params ExecParams) error {
 	}
 
 	cmd := "kubectl"
-	args := []string{"exec", "-i", params.PodName, "--", "/bin/sh", "-c", "cat ./temp"}
+	args := []string{"exec", "-i", params.PodName, "--", shellPath, "-c", "cat ./temp"}
 
-	cmdSh := exec.Command(cmd, args...)
+	cmdSh := exec.Command(cmd, args...) //nolint:noctx
 	cmdSh.Dir = projectRoot
 	cmdSh.Stdout = os.Stdout
 	cmdSh.Stderr = os.Stderr

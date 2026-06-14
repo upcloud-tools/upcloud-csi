@@ -41,7 +41,7 @@ func (c *Client) CreateDeployment(ctx context.Context, pvc *v1.PersistentVolumeC
 						{
 							Name:    "main",
 							Image:   "busybox",
-							Command: []string{"/bin/sh"},
+							Command: []string{shellPath},
 							Args:    []string{"-c", command},
 							VolumeMounts: []v1.VolumeMount{
 								{

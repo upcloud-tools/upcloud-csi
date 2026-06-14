@@ -7,7 +7,7 @@ import (
 )
 
 func upcloudLabels(labels []string) []upcloud.Label {
-	r := make([]upcloud.Label, 0)
+	r := make([]upcloud.Label, 0, len(labels))
 	for _, l := range labels {
 		if l == "" {
 			continue

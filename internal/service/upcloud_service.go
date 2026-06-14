@@ -72,7 +72,7 @@ func (u *UpCloudService) GetStorageByName(ctx context.Context, storageName strin
 	if err != nil {
 		return nil, err
 	}
-	volumes := make([]*upcloud.StorageDetails, 0)
+	volumes := make([]*upcloud.StorageDetails, 0, len(storages.Storages))
 	for _, s := range storages.Storages {
 		if s.Title == storageName {
 			sd, _ := u.client.GetStorageDetails(ctx, &request.GetStorageDetailsRequest{UUID: s.UUID})
@@ -128,10 +128,11 @@ func (u *UpCloudService) DeleteStorage(ctx context.Context, storageUUID string) 
 
 func (u *UpCloudService) AttachStorage(ctx context.Context, storageUUID, serverUUID string) error {
 	// Lock attach operation per node because node can only attach single storage at the time.
-	mu, _ := u.nodeSync.LoadOrStore(serverUUID, &sync.Mutex{})
-	if mu != nil {
-		mu.(*sync.Mutex).Lock()
-		defer mu.(*sync.Mutex).Unlock()
+	m, _ := u.nodeSync.LoadOrStore(serverUUID, &sync.Mutex{})
+	if m != nil {
+		mutex := m.(*sync.Mutex)
+		mutex.Lock()
+		defer mutex.Unlock()
 	}
 
 	if err := u.waitForServerOnline(ctx, serverUUID); err != nil {
@@ -154,10 +155,11 @@ func (u *UpCloudService) AttachStorage(ctx context.Context, storageUUID, serverU
 
 func (u *UpCloudService) DetachStorage(ctx context.Context, storageUUID, serverUUID string) error {
 	// Lock detach operation per node because node can only detach single storage at the time.
-	mu, _ := u.nodeSync.LoadOrStore(serverUUID, &sync.Mutex{})
-	if mu != nil {
-		mu.(*sync.Mutex).Lock()
-		defer mu.(*sync.Mutex).Unlock()
+	m, _ := u.nodeSync.LoadOrStore(serverUUID, &sync.Mutex{})
+	if m != nil {
+		mutex := m.(*sync.Mutex)
+		mutex.Lock()
+		defer mutex.Unlock()
 	}
 
 	sd, err := u.client.GetServerDetails(ctx, &request.GetServerDetailsRequest{UUID: serverUUID})
@@ -192,7 +194,7 @@ func (u *UpCloudService) ListStorage(ctx context.Context, zone string) ([]upclou
 	if err != nil {
 		return nil, err
 	}
-	zoneStorage := make([]upcloud.Storage, 0)
+	zoneStorage := make([]upcloud.Storage, 0, len(storages.Storages))
 	for _, s := range storages.Storages {
 		if s.Zone == zone && s.Type == upcloud.StorageTypeNormal {
 			zoneStorage = append(zoneStorage, s)
@@ -279,7 +281,7 @@ func (u *UpCloudService) ListStorageBackups(ctx context.Context, originUUID stri
 	if err != nil {
 		return nil, err
 	}
-	backups := make([]upcloud.Storage, 0)
+	backups := make([]upcloud.Storage, 0, len(storages.Storages))
 	for _, b := range storages.Storages {
 		if originUUID == "" && b.Origin != "" || originUUID != "" && b.Origin == originUUID {
 			backups = append(backups, b)

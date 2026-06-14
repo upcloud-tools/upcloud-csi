@@ -22,7 +22,8 @@ import (
 func TestUpCloudService_ListStorage(t *testing.T) {
 	t.Parallel()
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		fmt.Fprint(w, `
+		//nolint:errcheck
+	fmt.Fprint(w, `
 		{
 			"storages" : {
 			   "storage" : [
@@ -97,7 +98,8 @@ func TestUpCloudService_ListStorage(t *testing.T) {
 func TestUpCloudService_ListStorageBackups(t *testing.T) {
 	t.Parallel()
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		fmt.Fprint(w, `
+		//nolint:errcheck
+	fmt.Fprint(w, `
 		{
 			"storages" : {
 			   "storage" : [

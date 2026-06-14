@@ -26,7 +26,7 @@ func (c *Client) CreatePod(ctx context.Context, podName, pvcName string) (*v1.Po
 				{
 					Name:    "main",
 					Image:   "busybox",
-					Command: []string{"/bin/sh"},
+					Command: []string{shellPath},
 					Args:    []string{"-c", "echo 'hello world' >> ./temp; sleep 1000"},
 					VolumeMounts: []v1.VolumeMount{
 						{

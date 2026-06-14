@@ -20,6 +20,10 @@ const (
 	partitionTableType      = "gpt"
 	blkidCmd                = "blkid"
 	blkidCmdErrCodeNotFound = 2
+	blkidProbeArg           = "--probe"
+	blkidOutputArg          = "--output"
+	blkidValueArg           = "value"
+	blkidMatchTagArg        = "--match-tag"
 	partedCmd               = "parted"
 	sfdiskCmd               = "sfdisk"
 	// udevDiskTimeout specifies a time limit for waiting disk appear under /dev/disk/by-id.
@@ -34,7 +38,8 @@ type LinuxFilesystem struct {
 }
 
 func NewLinuxFilesystem(filesystemTypes []string, log *logrus.Entry) (*LinuxFilesystem, error) {
-	tools := []string{blkidCmd, partedCmd, sfdiskCmd}
+	tools := make([]string, 0, 3+len(filesystemTypes))
+	tools = append(tools, blkidCmd, partedCmd, sfdiskCmd)
 	for i := range filesystemTypes {
 		tools = append(tools, fmt.Sprintf("mkfs.%s", filesystemTypes[i]))
 	}
@@ -88,7 +93,7 @@ func (m *LinuxFilesystem) createFilesystemIfNotExists(ctx context.Context, parti
 	mkfsCmd := fmt.Sprintf("mkfs.%s", fsType)
 
 	logger.WithServerContext(ctx, m.log).WithFields(logrus.Fields{logger.CommandKey: mkfsCmd, logger.CommandArgsKey: mkfsArgs}).Debug("executing command")
-	output, err := exec.CommandContext(ctx, mkfsCmd, mkfsArgs...).CombinedOutput()
+	output, err := exec.CommandContext(ctx, mkfsCmd, mkfsArgs...).CombinedOutput() //nolint:gosec
 	if err != nil {
 		return fmt.Errorf("failed to create filesystem %s %s (%s); %w", mkfsCmd, strings.Join(mkfsArgs, " "), formatCmdError(output), err)
 	}
@@ -103,18 +108,18 @@ func (m *LinuxFilesystem) filesystemExists(ctx context.Context, partition, fsTyp
 	}
 	blkidArgs := []string{
 		// low-level superblocks probing (bypass cache)
-		"--probe",
+		blkidProbeArg,
 		// output format
-		"--output", "value",
+		blkidOutputArg, blkidValueArg,
 		// show specified tag
-		"--match-tag", "TYPE",
+		blkidMatchTagArg, "TYPE",
 		// find device with a specific token (NAME=value pair)
 		"--match-token", fmt.Sprintf("TYPE=%s", fsType),
 		partition,
 	}
 
 	logger.WithServerContext(ctx, m.log).WithFields(logrus.Fields{logger.CommandKey: blkidCmd, logger.CommandArgsKey: blkidArgs}).Debug("executing command")
-	output, err := exec.CommandContext(ctx, blkidCmd, blkidArgs...).CombinedOutput()
+	output, err := exec.CommandContext(ctx, blkidCmd, blkidArgs...).CombinedOutput() //nolint:gosec
 	if err != nil {
 		if cmdExitCode(err) == blkidCmdErrCodeNotFound {
 			return false, nil
@@ -163,7 +168,7 @@ func (m *LinuxFilesystem) Mount(ctx context.Context, source, target, fsType stri
 
 	logger.WithServerContext(ctx, m.log).WithFields(logrus.Fields{logger.CommandKey: mountCmd, logger.CommandArgsKey: mountArgs}).Debug("executing command")
 
-	return exec.CommandContext(ctx, mountCmd, mountArgs...).Run()
+	return exec.CommandContext(ctx, mountCmd, mountArgs...).Run() //nolint:gosec
 }
 
 // Unmount unmounts the given target.
@@ -183,7 +188,7 @@ func (m *LinuxFilesystem) Unmount(ctx context.Context, target string) error {
 
 	logger.WithServerContext(ctx, m.log).WithFields(logrus.Fields{logger.CommandKey: umountCmd, logger.CommandArgsKey: umountArgs}).Debug("executing command")
 
-	return exec.CommandContext(ctx, umountCmd, umountArgs...).Run()
+	return exec.CommandContext(ctx, umountCmd, umountArgs...).Run() //nolint:gosec
 }
 
 // IsMounted checks whether the target path is a correct mount (i.e:
@@ -199,7 +204,7 @@ func (m *LinuxFilesystem) IsMounted(ctx context.Context, target string) (bool, e
 
 	logger.WithServerContext(ctx, m.log).WithFields(logrus.Fields{logger.CommandKey: findmntCmd, logger.CommandArgsKey: findmntArgs}).Debug("executing command")
 
-	out, err := exec.CommandContext(ctx, findmntCmd, findmntArgs...).CombinedOutput()
+	out, err := exec.CommandContext(ctx, findmntCmd, findmntArgs...).CombinedOutput() //nolint:gosec
 	if err != nil {
 		// findmnt exits with non zero exit status if it couldn't find anything
 		if strings.TrimSpace(string(out)) == "" {
@@ -254,7 +259,7 @@ func (m *LinuxFilesystem) createPartitionTableIfNotExists(ctx context.Context, d
 	args := []string{device, "mklabel", "gpt"}
 	log := logger.WithServerContext(ctx, m.log).WithFields(logrus.Fields{logger.CommandKey: partedCmd, logger.CommandArgsKey: args})
 	log.Debug("executing command")
-	output, err := exec.CommandContext(ctx, partedCmd, args...).CombinedOutput()
+	output, err := exec.CommandContext(ctx, partedCmd, args...).CombinedOutput() //nolint:gosec
 	if err != nil {
 		return fmt.Errorf("failed to create %s partition table '%s'; %w", device, formatCmdError(output), err)
 	}
@@ -267,11 +272,11 @@ func (m *LinuxFilesystem) hasPartitionTable(ctx context.Context, device string) 
 	}
 	blkidArgs := []string{
 		// low-level superblocks probing (bypass cache)
-		"--probe",
+		blkidProbeArg,
 		// output format
-		"--output", "value",
+		blkidOutputArg, blkidValueArg,
 		// show specified tag
-		"--match-tag", "PTTYPE",
+		blkidMatchTagArg, "PTTYPE",
 		// find device with a specific token (NAME=value pair)
 		"--match-token", fmt.Sprintf("PTTYPE=%s", partitionTableType),
 		device,
@@ -279,7 +284,7 @@ func (m *LinuxFilesystem) hasPartitionTable(ctx context.Context, device string) 
 
 	log := logger.WithServerContext(ctx, m.log)
 	log.WithFields(logrus.Fields{logger.CommandKey: blkidCmd, logger.CommandArgsKey: blkidArgs}).Debug("executing command")
-	output, err := exec.CommandContext(ctx, blkidCmd, blkidArgs...).CombinedOutput()
+	output, err := exec.CommandContext(ctx, blkidCmd, blkidArgs...).CombinedOutput() //nolint:gosec
 	if err != nil {
 		if cmdExitCode(err) == blkidCmdErrCodeNotFound {
 			return false, nil
@@ -303,7 +308,7 @@ func (m *LinuxFilesystem) createPartitionIfNotExists(ctx context.Context, device
 	}
 	args := []string{"-a", "opt", device, "mkpart", "primary", "2048s", "100%"}
 	log.WithFields(logrus.Fields{logger.CommandKey: partedCmd, logger.CommandArgsKey: args}).Debug("executing command")
-	output, err := exec.CommandContext(ctx, partedCmd, args...).CombinedOutput()
+	output, err := exec.CommandContext(ctx, partedCmd, args...).CombinedOutput() //nolint:gosec
 	if err != nil {
 		return "", fmt.Errorf("failed to create new partition: '%s'; %w", formatCmdError(output), err)
 	}
@@ -319,13 +324,13 @@ func (m *LinuxFilesystem) Statistics(volumePath string) (VolumeStatistics, error
 		return VolumeStatistics{}, err
 	}
 	volStats := VolumeStatistics{
-		AvailableBytes: int64(statfs.Bavail) * int64(statfs.Bsize),                         //nolint:unconvert // unix.Statfs_t integer types varies between GOARCHs
-		TotalBytes:     int64(statfs.Blocks) * int64(statfs.Bsize),                         //nolint:unconvert // unix.Statfs_t integer types varies between GOARCHs
-		UsedBytes:      (int64(statfs.Blocks) - int64(statfs.Bfree)) * int64(statfs.Bsize), //nolint:unconvert // unix.Statfs_t integer types varies between GOARCHs
+		AvailableBytes: int64(statfs.Bavail) * int64(statfs.Bsize),                           //nolint:unconvert,gosec // unix.Statfs_t integer types varies between GOARCHs
+		TotalBytes:     int64(statfs.Blocks) * int64(statfs.Bsize),                           //nolint:unconvert,gosec // unix.Statfs_t integer types varies between GOARCHs
+		UsedBytes:      (int64(statfs.Blocks) - int64(statfs.Bfree)) * int64(statfs.Bsize),   //nolint:unconvert,gosec // unix.Statfs_t integer types varies between GOARCHs
 
-		AvailableInodes: int64(statfs.Ffree),
-		TotalInodes:     int64(statfs.Files),
-		UsedInodes:      int64(statfs.Files) - int64(statfs.Ffree),
+		AvailableInodes: int64(statfs.Ffree),  //nolint:gosec
+		TotalInodes:     int64(statfs.Files),  //nolint:gosec
+		UsedInodes:      int64(statfs.Files) - int64(statfs.Ffree), //nolint:gosec
 	}
 
 	return volStats, nil
@@ -341,7 +346,7 @@ func (m *LinuxFilesystem) GetDeviceByID(ctx context.Context, id string) (string,
 }
 
 func (m *LinuxFilesystem) GetDeviceLastPartition(ctx context.Context, device string) (string, error) {
-	output, err := exec.CommandContext(ctx, sfdiskCmd, "-q", "--list", "-o", "device", device).CombinedOutput()
+	output, err := exec.CommandContext(ctx, sfdiskCmd, "-q", "--list", "-o", "device", device).CombinedOutput() //nolint:gosec
 	if err != nil {
 		return "", fmt.Errorf("failed to get %s last partition: '%s'; %w", device, formatCmdError(output), err)
 	}
@@ -407,7 +412,7 @@ func (m *LinuxFilesystem) resizePartition(ctx context.Context, device, partNum s
 		logger.CommandKey:     partedCmd,
 		logger.CommandArgsKey: args,
 	}).Debug("executing command")
-	output, err := exec.CommandContext(ctx, partedCmd, args...).CombinedOutput()
+	output, err := exec.CommandContext(ctx, partedCmd, args...).CombinedOutput() //nolint:gosec
 	if err != nil {
 		return fmt.Errorf("failed to resize partition: '%s'; %w", formatCmdError(output), err)
 	}
@@ -428,12 +433,12 @@ func extractPartitionNumber(partition string) string {
 
 func detectFilesystemType(ctx context.Context, partition string) (string, error) {
 	args := []string{
-		"--probe",
-		"--output", "value",
-		"--match-tag", "TYPE",
+		blkidProbeArg,
+		blkidOutputArg, blkidValueArg,
+		blkidMatchTagArg, "TYPE",
 		partition,
 	}
-	output, err := exec.CommandContext(ctx, blkidCmd, args...).CombinedOutput()
+	output, err := exec.CommandContext(ctx, blkidCmd, args...).CombinedOutput() //nolint:gosec
 	if err != nil {
 		return "", fmt.Errorf("failed to detect filesystem type: '%s'; %w", formatCmdError(output), err)
 	}
@@ -445,7 +450,7 @@ func detectFilesystemType(ctx context.Context, partition string) (string, error)
 }
 
 func resizeExtFilesystem(ctx context.Context, partition string) error {
-	output, err := exec.CommandContext(ctx, "resize2fs", partition).CombinedOutput()
+	output, err := exec.CommandContext(ctx, "resize2fs", partition).CombinedOutput() //nolint:gosec
 	if err != nil {
 		return fmt.Errorf("resize2fs failed: '%s'; %w", formatCmdError(output), err)
 	}
@@ -454,7 +459,7 @@ func resizeExtFilesystem(ctx context.Context, partition string) error {
 
 func resizeXfsFilesystem(ctx context.Context, mountPoint string) error {
 	args := []string{mountPoint}
-	output, err := exec.CommandContext(ctx, "xfs_growfs", args...).CombinedOutput()
+	output, err := exec.CommandContext(ctx, "xfs_growfs", args...).CombinedOutput() //nolint:gosec
 	if err != nil {
 		return fmt.Errorf("xfs_growfs failed: '%s'; %w", formatCmdError(output), err)
 	}
@@ -463,7 +468,7 @@ func resizeXfsFilesystem(ctx context.Context, mountPoint string) error {
 
 func resizeBtrfsFilesystem(ctx context.Context, mountPoint string) error {
 	args := []string{"filesystem", "resize", "max", mountPoint}
-	output, err := exec.CommandContext(ctx, "btrfs", args...).CombinedOutput()
+	output, err := exec.CommandContext(ctx, "btrfs", args...).CombinedOutput() //nolint:gosec
 	if err != nil {
 		return fmt.Errorf("btrfs filesystem resize failed: '%s'; %w", formatCmdError(output), err)
 	}
