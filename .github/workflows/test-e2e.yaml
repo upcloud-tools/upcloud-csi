@@ -11,8 +11,8 @@ jobs:
   build-image:
     uses: ./.github/workflows/reusable-build.yaml
     with:
-      image_name: ${{ env.REGISTRY }}/${{ env.TEST_IMAGE }}
-      tags: e2e-${{ github.sha }}
+      image_suffix: '-test'
+      tags: ${{ github.sha }}
     secrets: inherit
 
   e2e:
