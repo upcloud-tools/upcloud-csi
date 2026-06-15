@@ -11,7 +11,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/UpCloudLtd/upcloud-csi/test/e2e/mock"
+	"github.com/upcloud-tools/upcloud-csi/test/e2e/mock"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"

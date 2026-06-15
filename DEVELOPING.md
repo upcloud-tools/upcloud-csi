@@ -9,7 +9,7 @@ Depending on [CO](https://www.vmware.com/topics/glossary/content/container-orche
 Get the source code:
 
 ```shell
-$ git clone git@github.com:UpCloudLtd/upcloud-csi.git
+$ git clone git@github.com:upcloud-tools/upcloud-csi.git
 $ cd upcloud-csi
 ```
 
@@ -54,7 +54,7 @@ $ docker run --privileged -it --rm \
     --mount type=bind,source=/mnt,target=/mnt,bind-propagation=shared \
     -v `pwd`/tmp:/tmp \
     -v /dev:/dev \
-     ghcr.io/upcloudltd/upcloud-csi:latest \
+     ghcr.io/upcloud-tools/upcloud-csi:latest \
     --username=$UPCLOUD_USERNAME \
     --password=$UPCLOUD_PASSWORD \
     --nodehost=$HOSTNAME \

@@ -3,9 +3,9 @@ package plugin
 import (
 	"testing"
 
-	"github.com/UpCloudLtd/upcloud-csi/internal/filesystem/mock"
-	"github.com/UpCloudLtd/upcloud-csi/internal/logger"
-	"github.com/UpCloudLtd/upcloud-csi/internal/plugin/config"
+	"github.com/upcloud-tools/upcloud-csi/internal/filesystem/mock"
+	"github.com/upcloud-tools/upcloud-csi/internal/logger"
+	"github.com/upcloud-tools/upcloud-csi/internal/plugin/config"
 	"github.com/stretchr/testify/require"
 )
 

@@ -5,8 +5,8 @@ import (
 	"errors"
 	"os"
 
-	"github.com/UpCloudLtd/upcloud-csi/internal/filesystem"
-	"github.com/UpCloudLtd/upcloud-csi/internal/logger"
+	"github.com/upcloud-tools/upcloud-csi/internal/filesystem"
+	"github.com/upcloud-tools/upcloud-csi/internal/logger"
 	"github.com/container-storage-interface/spec/lib/go/csi"
 	"github.com/sirupsen/logrus"
 	"google.golang.org/grpc/codes"

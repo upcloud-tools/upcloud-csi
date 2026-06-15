@@ -7,14 +7,14 @@ import (
 	"os"
 	"time"
 
-	"github.com/UpCloudLtd/upcloud-csi/internal/controller"
-	"github.com/UpCloudLtd/upcloud-csi/internal/filesystem"
-	"github.com/UpCloudLtd/upcloud-csi/internal/identity"
-	"github.com/UpCloudLtd/upcloud-csi/internal/logger"
-	"github.com/UpCloudLtd/upcloud-csi/internal/node"
-	"github.com/UpCloudLtd/upcloud-csi/internal/plugin/config"
-	"github.com/UpCloudLtd/upcloud-csi/internal/server"
-	"github.com/UpCloudLtd/upcloud-csi/internal/service"
+	"github.com/upcloud-tools/upcloud-csi/internal/controller"
+	"github.com/upcloud-tools/upcloud-csi/internal/filesystem"
+	"github.com/upcloud-tools/upcloud-csi/internal/identity"
+	"github.com/upcloud-tools/upcloud-csi/internal/logger"
+	"github.com/upcloud-tools/upcloud-csi/internal/node"
+	"github.com/upcloud-tools/upcloud-csi/internal/plugin/config"
+	"github.com/upcloud-tools/upcloud-csi/internal/server"
+	"github.com/upcloud-tools/upcloud-csi/internal/service"
 	"github.com/sirupsen/logrus"
 )
 

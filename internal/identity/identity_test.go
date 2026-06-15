@@ -4,8 +4,8 @@ import (
 	"context"
 	"testing"
 
-	"github.com/UpCloudLtd/upcloud-csi/internal/identity"
-	"github.com/UpCloudLtd/upcloud-csi/internal/logger"
+	"github.com/upcloud-tools/upcloud-csi/internal/identity"
+	"github.com/upcloud-tools/upcloud-csi/internal/logger"
 	"github.com/container-storage-interface/spec/lib/go/csi"
 	"github.com/stretchr/testify/require"
 )

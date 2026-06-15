@@ -10,9 +10,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/UpCloudLtd/upcloud-csi/internal/filesystem/mock"
-	"github.com/UpCloudLtd/upcloud-csi/internal/plugin"
-	"github.com/UpCloudLtd/upcloud-csi/internal/plugin/config"
+	"github.com/upcloud-tools/upcloud-csi/internal/filesystem/mock"
+	"github.com/upcloud-tools/upcloud-csi/internal/plugin"
+	"github.com/upcloud-tools/upcloud-csi/internal/plugin/config"
 	"github.com/kubernetes-csi/csi-test/v5/pkg/sanity"
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/require"

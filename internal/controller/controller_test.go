@@ -5,9 +5,9 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/UpCloudLtd/upcloud-csi/internal/controller"
-	"github.com/UpCloudLtd/upcloud-csi/internal/service"
-	"github.com/UpCloudLtd/upcloud-csi/internal/service/mock"
+	"github.com/upcloud-tools/upcloud-csi/internal/controller"
+	"github.com/upcloud-tools/upcloud-csi/internal/service"
+	"github.com/upcloud-tools/upcloud-csi/internal/service/mock"
 	"github.com/container-storage-interface/spec/lib/go/csi"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"

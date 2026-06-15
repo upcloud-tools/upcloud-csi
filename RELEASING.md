@@ -11,5 +11,5 @@
    - GitHub action automatically
       - sets the version based on the tag
       - creates a draft release to GitHub
-8. Verify that [release notes](https://github.com/UpCloudLtd/upcloud-csi/releases) are in line with `CHANGELOG.md`
+8. Verify that [release notes](https://github.com/upcloud-tools/upcloud-csi/releases) are in line with `CHANGELOG.md`
 9. Publish the drafted release

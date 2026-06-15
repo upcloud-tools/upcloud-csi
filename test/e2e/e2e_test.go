@@ -3,7 +3,7 @@ package e2e_test
 import (
 	"log"
 
-	"github.com/UpCloudLtd/upcloud-csi/test/e2e/testruns"
+	"github.com/upcloud-tools/upcloud-csi/test/e2e/testruns"
 	. "github.com/onsi/ginkgo/v2"
 )
 

@@ -1,7 +1,7 @@
 # Kubernetes
 
 UpCloud CSI driver deployment is bundled with [sidecar containers](#sidecars) and optional [snapshot validation webhook](#deploy-snapshot-validation-webhook) service.  
-Version specific deployment manifests `upcloud-csi-crd.yaml` and `upcloud-csi-setup.yaml` can be found under [release assets](https://github.com/UpCloudLtd/upcloud-csi/releases/latest/).
+Version specific deployment manifests `upcloud-csi-crd.yaml` and `upcloud-csi-setup.yaml` can be found under [release assets](https://github.com/upcloud-tools/upcloud-csi/releases/latest/).
 
 UpCloud's Managed Kubernetes service (UKS) includes a pre-installed CSI driver, and it does not need to be installed separately.
 
@@ -33,13 +33,13 @@ upcloud          Opaque                                2         18h
 
 Deploy custom resources definitions and roles required by CSI driver:
 ```shell
-$ kubectl apply -f https://github.com/UpCloudLtd/upcloud-csi/releases/latest/download/crd-upcloud-csi.yaml
-$ kubectl apply -f https://github.com/UpCloudLtd/upcloud-csi/releases/latest/download/rbac-upcloud-csi.yaml
+$ kubectl apply -f https://github.com/upcloud-tools/upcloud-csi/releases/latest/download/crd-upcloud-csi.yaml
+$ kubectl apply -f https://github.com/upcloud-tools/upcloud-csi/releases/latest/download/rbac-upcloud-csi.yaml
 ```
 
 Deploy the CSI driver with the related Kubernetes volume attachment, driver registration, and provisioning sidecars:
 ```shell
-$ kubectl apply -f https://github.com/UpCloudLtd/upcloud-csi/releases/latest/download/setup-upcloud-csi.yaml
+$ kubectl apply -f https://github.com/upcloud-tools/upcloud-csi/releases/latest/download/setup-upcloud-csi.yaml
 ```
 
 #### Deploy snapshot validation webhook
@@ -53,7 +53,7 @@ Manifest assumes that secret named `snapshot-validation-secret` exists and is po
 If custom CA is used (e.g. when using self-signed certificate) `caBundle` field needs to be set with CA data as value.
 
 ```shell
-$ kubectl apply -f https://raw.githubusercontent.com/UpCloudLtd/upcloud-csi/main/deploy/kubernetes/snapshot-webhook-upcloud-csi.yaml
+$ kubectl apply -f https://raw.githubusercontent.com/upcloud-tools/upcloud-csi/main/deploy/kubernetes/snapshot-webhook-upcloud-csi.yaml
 ```
 
 
@@ -89,8 +89,8 @@ In `example` directory you may find 2 manifests for deploying a pod and persiste
 operations
 
 ```shell
-$ kubectl apply -f https://raw.githubusercontent.com/UpCloudLtd/upcloud-csi/main/example/test-pvc.yaml
-$ kubectl apply -f https://raw.githubusercontent.com/UpCloudLtd/upcloud-csi/main/example/test-pod.yaml
+$ kubectl apply -f https://raw.githubusercontent.com/upcloud-tools/upcloud-csi/main/example/test-pvc.yaml
+$ kubectl apply -f https://raw.githubusercontent.com/upcloud-tools/upcloud-csi/main/example/test-pod.yaml
 ```
 
 Check if pod is deployed with Running status and already using the PVC:
@@ -125,7 +125,7 @@ $ kubectl get pods -l app=csi-app -w
 
 Recreate pod, wait until it's running and check contents of `/data` folder
 ```shell
-$ kubectl apply -f https://raw.githubusercontent.com/UpCloudLtd/upcloud-csi/main/example/test-pod.yaml
+$ kubectl apply -f https://raw.githubusercontent.com/upcloud-tools/upcloud-csi/main/example/test-pod.yaml
 pod/csi-app created
 $ kubectl get pods -l app=csi-app -w
 $ kubectl exec -it deployments/csi-app -- /bin/sh -c "ls -1 /data/"

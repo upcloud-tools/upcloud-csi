@@ -5,7 +5,7 @@ import (
 	"os"
 	"testing"
 
-	"github.com/UpCloudLtd/upcloud-csi/internal/plugin"
+	"github.com/upcloud-tools/upcloud-csi/internal/plugin"
 	"github.com/spf13/pflag"
 )
 

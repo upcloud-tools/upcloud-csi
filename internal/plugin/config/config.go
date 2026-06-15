@@ -4,7 +4,7 @@ import (
 	"os"
 	"strings"
 
-	"github.com/UpCloudLtd/upcloud-csi/internal/filesystem"
+	"github.com/upcloud-tools/upcloud-csi/internal/filesystem"
 	"github.com/spf13/pflag"
 )
 

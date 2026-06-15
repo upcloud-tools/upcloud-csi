@@ -9,8 +9,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/UpCloudLtd/upcloud-csi/internal/service"
-	"github.com/UpCloudLtd/upcloud-csi/internal/service/mock"
+	"github.com/upcloud-tools/upcloud-csi/internal/service"
+	"github.com/upcloud-tools/upcloud-csi/internal/service/mock"
 	"github.com/UpCloudLtd/upcloud-go-api/v8/upcloud"
 	"github.com/UpCloudLtd/upcloud-go-api/v8/upcloud/client"
 	"github.com/UpCloudLtd/upcloud-go-api/v8/upcloud/request"

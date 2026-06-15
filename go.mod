@@ -1,4 +1,4 @@
-module github.com/UpCloudLtd/upcloud-csi
+module github.com/upcloud-tools/upcloud-csi
 
 go 1.22
 

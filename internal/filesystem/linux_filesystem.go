@@ -9,7 +9,7 @@ import (
 	"os/exec"
 	"strings"
 
-	"github.com/UpCloudLtd/upcloud-csi/internal/logger"
+	"github.com/upcloud-tools/upcloud-csi/internal/logger"
 	"github.com/sirupsen/logrus"
 	"golang.org/x/sys/unix"
 )

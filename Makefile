@@ -1,5 +1,5 @@
 PLUGIN_NAME=upcloud-csi-plugin
-PLUGIN_PKG ?= github.com/UpCloudLtd/upcloud-csi
+PLUGIN_PKG ?= github.com/upcloud-tools/upcloud-csi
 PLUGIN_CMD ?= ${PLUGIN_PKG}/cmd/upcloud-csi-plugin
 OS ?= linux
 GO_VERSION := 1.22

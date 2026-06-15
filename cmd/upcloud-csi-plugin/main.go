@@ -6,9 +6,9 @@ import (
 	"net/http"
 	"os"
 
-	"github.com/UpCloudLtd/upcloud-csi/internal/logger"
-	"github.com/UpCloudLtd/upcloud-csi/internal/plugin"
-	"github.com/UpCloudLtd/upcloud-csi/internal/plugin/config"
+	"github.com/upcloud-tools/upcloud-csi/internal/logger"
+	"github.com/upcloud-tools/upcloud-csi/internal/plugin"
+	"github.com/upcloud-tools/upcloud-csi/internal/plugin/config"
 	"github.com/spf13/pflag"
 )
 
