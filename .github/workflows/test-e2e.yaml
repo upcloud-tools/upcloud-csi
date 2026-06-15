@@ -11,6 +11,7 @@ jobs:
   build-image:
     uses: ./.github/workflows/reusable-build.yaml
     with:
+      checkout_ref: ${{ github.sha }}
       image_suffix: '-test'
       tags: ${{ github.sha }}
     secrets: inherit
@@ -31,7 +32,7 @@ jobs:
           echo "${{ secrets.KUBE_CONFIG }}" | base64 -d > ~/.kube/config
 
       - name: Deploy CSI driver manifests
-        run: make deploy-manifests CONTAINER_REPO=${{ env.REGISTRY }}/${{ env.TEST_IMAGE }} IMAGE_TAG=e2e-${{ github.sha }}
+        run: make deploy-manifests CONTAINER_REPO=${{ env.REGISTRY }}/${{ env.TEST_IMAGE }} IMAGE_TAG=${{ github.sha }}
 
       - name: Run e2e tests
-        run: make test-e2e CONTAINER_REPO=${{ env.REGISTRY }}/${{ env.TEST_IMAGE }} IMAGE_TAG=e2e-${{ github.sha }}
+        run: make test-e2e CONTAINER_REPO=${{ env.REGISTRY }}/${{ env.TEST_IMAGE }} IMAGE_TAG=${{ github.sha }}
