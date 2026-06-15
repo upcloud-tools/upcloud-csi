@@ -367,6 +367,13 @@ func (n *Node) NodeExpandVolume(ctx context.Context, req *csi.NodeExpandVolumeRe
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
+	if _, err := os.Stat(req.VolumePath); err != nil {
+		if os.IsNotExist(err) {
+			return nil, status.Errorf(codes.NotFound, "volume %s not found on node", req.VolumeId)
+		}
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+
 	isBlockDevice := false
 	if req.GetVolumeCapability() != nil {
 		if _, ok := req.VolumeCapability.AccessType.(*csi.VolumeCapability_Block); ok {

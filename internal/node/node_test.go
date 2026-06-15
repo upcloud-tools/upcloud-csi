@@ -33,7 +33,7 @@ func TestNode_ExpandVolume(t *testing.T) {
 		t.Parallel()
 		_, err := d.NodeExpandVolume(context.TODO(), &csi.NodeExpandVolumeRequest{
 			VolumeId:   "f67db1ca-825b-40aa-a6f4-390ac6ff1b91",
-			VolumePath: "/mnt/test",
+			VolumePath: t.TempDir(),
 			VolumeCapability: &csi.VolumeCapability{
 				AccessType: &csi.VolumeCapability_Mount{
 					Mount: &csi.VolumeCapability_MountVolume{},
@@ -49,7 +49,7 @@ func TestNode_ExpandVolume(t *testing.T) {
 		t.Parallel()
 		_, err := d.NodeExpandVolume(context.TODO(), &csi.NodeExpandVolumeRequest{
 			VolumeId:   "f67db1ca-825b-40aa-a6f4-390ac6ff1b91",
-			VolumePath: "/mnt/test",
+			VolumePath: t.TempDir(),
 			VolumeCapability: &csi.VolumeCapability{
 				AccessType: &csi.VolumeCapability_Block{},
 			},
