@@ -8,12 +8,12 @@ import (
 	"testing"
 	"time"
 
+	"github.com/container-storage-interface/spec/lib/go/csi"
+	"github.com/stretchr/testify/require"
 	"github.com/upcloud-tools/upcloud-csi/internal/identity"
 	"github.com/upcloud-tools/upcloud-csi/internal/logger"
 	"github.com/upcloud-tools/upcloud-csi/internal/plugin/config"
 	"github.com/upcloud-tools/upcloud-csi/internal/server"
-	"github.com/container-storage-interface/spec/lib/go/csi"
-	"github.com/stretchr/testify/require"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 )
@@ -43,7 +43,7 @@ func TestPluginServer(t *testing.T) {
 	t.Logf("connection GRPC server at %s", addr)
 	conn, err := grpc.Dial(addr, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	require.NoError(t, err)
-	defer conn.Close() //nolint:errcheck
+	defer conn.Close()
 	id := csi.NewIdentityClient(conn)
 
 	t.Log("get plugin info to make sure that server is responding")

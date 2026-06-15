@@ -3,10 +3,10 @@ package plugin
 import (
 	"testing"
 
+	"github.com/stretchr/testify/require"
 	"github.com/upcloud-tools/upcloud-csi/internal/filesystem/mock"
 	"github.com/upcloud-tools/upcloud-csi/internal/logger"
 	"github.com/upcloud-tools/upcloud-csi/internal/plugin/config"
-	"github.com/stretchr/testify/require"
 )
 
 const (

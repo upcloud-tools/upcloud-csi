@@ -10,12 +10,12 @@ import (
 	"testing"
 	"time"
 
-	"github.com/upcloud-tools/upcloud-csi/internal/filesystem/mock"
-	"github.com/upcloud-tools/upcloud-csi/internal/plugin"
-	"github.com/upcloud-tools/upcloud-csi/internal/plugin/config"
 	"github.com/kubernetes-csi/csi-test/v5/pkg/sanity"
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/require"
+	"github.com/upcloud-tools/upcloud-csi/internal/filesystem/mock"
+	"github.com/upcloud-tools/upcloud-csi/internal/plugin"
+	"github.com/upcloud-tools/upcloud-csi/internal/plugin/config"
 )
 
 func TestDriverSanity(t *testing.T) {
@@ -25,7 +25,7 @@ func TestDriverSanity(t *testing.T) {
 		t.Skip("required environment variables are not set to test CSI sanity")
 	}
 	socket := path.Join(os.TempDir(), fmt.Sprintf("csi-socket-%d.sock", time.Now().Unix()))
-	defer os.Remove(socket) //nolint:errcheck
+	defer os.Remove(socket)
 
 	endpoint, _ := url.Parse(fmt.Sprintf("unix://%s", socket))
 

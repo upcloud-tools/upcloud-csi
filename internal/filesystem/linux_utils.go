@@ -57,12 +57,13 @@ func getBlockDeviceByDiskID(ctx context.Context, diskID string) (dev string, err
 // udevWaitDiskToSettle uses udevadm to wait events in event queue to be handled.
 func udevWaitDiskToSettle(ctx context.Context, path string) error {
 	if udevadm, err := exec.LookPath("udevadm"); err == nil {
+		//nolint:gosec // udevadm settle with dynamic device path
 		return exec.CommandContext(ctx,
 			udevadm,
 			"settle",
 			fmt.Sprintf("--timeout=%d", udevSettleTimeout),
 			fmt.Sprintf("--exit-if-exists=%s", path),
-		).Run() //nolint:gosec
+		).Run()
 	}
 	return nil
 }
@@ -97,7 +98,7 @@ func createBlockDevice(target string) error {
 	if err != nil {
 		return err
 	}
-	f, err := os.OpenFile(target, os.O_CREATE, 0o600) //nolint:gosec
+	f, err := os.OpenFile(target, os.O_CREATE, 0o600) //nolint:gosec // block device file, permissions set by udev
 	if err != nil {
 		return err
 	}

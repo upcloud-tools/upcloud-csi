@@ -7,8 +7,8 @@ import (
 	"os"
 	"strings"
 
-	"github.com/upcloud-tools/upcloud-csi/internal/filesystem"
 	"github.com/sirupsen/logrus"
+	"github.com/upcloud-tools/upcloud-csi/internal/filesystem"
 )
 
 type MockFilesystem struct {

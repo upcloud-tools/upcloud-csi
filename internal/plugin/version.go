@@ -32,5 +32,5 @@ func GetTreeState() string {
 }
 
 func PrintVersion() {
-	fmt.Fprintf(os.Stdout, "%s - %s (%s)\n", GetVersion(), GetCommit(), GetTreeState()) //nolint:errcheck
+	fmt.Fprintf(os.Stdout, "%s - %s (%s)\n", GetVersion(), GetCommit(), GetTreeState()) //nolint:errcheck // print to stdout, not critical
 }

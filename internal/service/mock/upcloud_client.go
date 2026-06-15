@@ -25,7 +25,7 @@ func (u *UpCloudClient) StoreServer(s *upcloud.ServerDetails) {
 
 func (u *UpCloudClient) getServer(id string) *upcloud.ServerDetails {
 	if s, ok := u.servers.Load(id); ok {
-		return s.(*upcloud.ServerDetails) //nolint:errcheck
+		return s.(*upcloud.ServerDetails) //nolint:errcheck // sync.Map stores only this type
 	}
 	return nil
 }

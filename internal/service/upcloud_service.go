@@ -130,6 +130,7 @@ func (u *UpCloudService) AttachStorage(ctx context.Context, storageUUID, serverU
 	// Lock attach operation per node because node can only attach single storage at the time.
 	m, _ := u.nodeSync.LoadOrStore(serverUUID, &sync.Mutex{})
 	if m != nil {
+		//nolint:errcheck // guarded by LoadOrStore returning the same type
 		mutex := m.(*sync.Mutex)
 		mutex.Lock()
 		defer mutex.Unlock()
@@ -157,6 +158,7 @@ func (u *UpCloudService) DetachStorage(ctx context.Context, storageUUID, serverU
 	// Lock detach operation per node because node can only detach single storage at the time.
 	m, _ := u.nodeSync.LoadOrStore(serverUUID, &sync.Mutex{})
 	if m != nil {
+		//nolint:errcheck // guarded by LoadOrStore returning the same type
 		mutex := m.(*sync.Mutex)
 		mutex.Lock()
 		defer mutex.Unlock()

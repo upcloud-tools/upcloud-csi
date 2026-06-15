@@ -7,6 +7,7 @@ import (
 	"os"
 	"time"
 
+	"github.com/sirupsen/logrus"
 	"github.com/upcloud-tools/upcloud-csi/internal/controller"
 	"github.com/upcloud-tools/upcloud-csi/internal/filesystem"
 	"github.com/upcloud-tools/upcloud-csi/internal/identity"
@@ -15,7 +16,6 @@ import (
 	"github.com/upcloud-tools/upcloud-csi/internal/plugin/config"
 	"github.com/upcloud-tools/upcloud-csi/internal/server"
 	"github.com/upcloud-tools/upcloud-csi/internal/service"
-	"github.com/sirupsen/logrus"
 )
 
 func Run(c config.Config) error {

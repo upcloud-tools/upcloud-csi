@@ -4,10 +4,10 @@ import (
 	"context"
 	"testing"
 
-	"github.com/upcloud-tools/upcloud-csi/internal/identity"
-	"github.com/upcloud-tools/upcloud-csi/internal/logger"
 	"github.com/container-storage-interface/spec/lib/go/csi"
 	"github.com/stretchr/testify/require"
+	"github.com/upcloud-tools/upcloud-csi/internal/identity"
+	"github.com/upcloud-tools/upcloud-csi/internal/logger"
 )
 
 func TestIdentity_GetPluginInfo(t *testing.T) {

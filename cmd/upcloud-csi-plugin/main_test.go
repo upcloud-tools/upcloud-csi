@@ -5,8 +5,8 @@ import (
 	"os"
 	"testing"
 
-	"github.com/upcloud-tools/upcloud-csi/internal/plugin"
 	"github.com/spf13/pflag"
+	"github.com/upcloud-tools/upcloud-csi/internal/plugin"
 )
 
 func TestRun(t *testing.T) {

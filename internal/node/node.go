@@ -5,10 +5,10 @@ import (
 	"errors"
 	"os"
 
-	"github.com/upcloud-tools/upcloud-csi/internal/filesystem"
-	"github.com/upcloud-tools/upcloud-csi/internal/logger"
 	"github.com/container-storage-interface/spec/lib/go/csi"
 	"github.com/sirupsen/logrus"
+	"github.com/upcloud-tools/upcloud-csi/internal/filesystem"
+	"github.com/upcloud-tools/upcloud-csi/internal/logger"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
@@ -356,8 +356,8 @@ func (n *Node) NodeExpandVolume(ctx context.Context, req *csi.NodeExpandVolumeRe
 	}
 
 	log := logger.WithServerContext(ctx, n.log).WithFields(logrus.Fields{
-		logger.VolumeIDKey:     req.GetVolumeId(),
-		logger.MountTargetKey:  req.GetVolumePath(),
+		logger.VolumeIDKey:    req.GetVolumeId(),
+		logger.MountTargetKey: req.GetVolumePath(),
 	})
 
 	log.Info("expanding volume on node")

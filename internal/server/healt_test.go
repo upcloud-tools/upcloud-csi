@@ -7,10 +7,10 @@ import (
 	"testing"
 	"time"
 
+	"github.com/stretchr/testify/require"
 	"github.com/upcloud-tools/upcloud-csi/internal/logger"
 	"github.com/upcloud-tools/upcloud-csi/internal/plugin/config"
 	"github.com/upcloud-tools/upcloud-csi/internal/server"
-	"github.com/stretchr/testify/require"
 )
 
 func TestHealthServer(t *testing.T) {

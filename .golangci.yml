@@ -557,6 +557,12 @@ linters:
           # Closing response bodies in tests clutters up the code and isn't
           # really necessary
           - bodyclose
+          # Deferred cleanup and test helpers don't need error checking
+          - errcheck
+          # Repeated strings in test data are intentional
+          - goconst
+          # Slice literals in tests don't benefit from capacity hints
+          - prealloc
 
   settings:
     errcheck:

@@ -63,7 +63,7 @@ func (c *Client) Exec(params ExecParams) error {
 	cmd := "kubectl"
 	args := []string{"exec", "-i", params.PodName, "--", shellPath, "-c", "cat ./temp"}
 
-	cmdSh := exec.Command(cmd, args...) //nolint:noctx
+	cmdSh := exec.Command(cmd, args...) //nolint:gosec,noctx // kubectl with dynamic args for e2e test
 	cmdSh.Dir = projectRoot
 	cmdSh.Stdout = os.Stdout
 	cmdSh.Stderr = os.Stderr

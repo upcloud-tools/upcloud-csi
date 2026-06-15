@@ -9,9 +9,9 @@ import (
 	"net/url"
 	"os"
 
-	"github.com/upcloud-tools/upcloud-csi/internal/logger"
 	"github.com/container-storage-interface/spec/lib/go/csi"
 	"github.com/sirupsen/logrus"
+	"github.com/upcloud-tools/upcloud-csi/internal/logger"
 	"google.golang.org/grpc"
 )
 

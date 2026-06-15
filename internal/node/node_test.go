@@ -4,10 +4,10 @@ import (
 	"context"
 	"testing"
 
-	"github.com/upcloud-tools/upcloud-csi/internal/filesystem/mock"
-	"github.com/upcloud-tools/upcloud-csi/internal/node"
 	"github.com/container-storage-interface/spec/lib/go/csi"
 	"github.com/sirupsen/logrus"
+	"github.com/upcloud-tools/upcloud-csi/internal/filesystem/mock"
+	"github.com/upcloud-tools/upcloud-csi/internal/node"
 )
 
 func TestNode_ExpandVolume(t *testing.T) {

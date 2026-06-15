@@ -6,10 +6,10 @@ import (
 	"net/http"
 	"os"
 
+	"github.com/spf13/pflag"
 	"github.com/upcloud-tools/upcloud-csi/internal/logger"
 	"github.com/upcloud-tools/upcloud-csi/internal/plugin"
 	"github.com/upcloud-tools/upcloud-csi/internal/plugin/config"
-	"github.com/spf13/pflag"
 )
 
 func main() {

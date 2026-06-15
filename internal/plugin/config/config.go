@@ -4,8 +4,8 @@ import (
 	"os"
 	"strings"
 
-	"github.com/upcloud-tools/upcloud-csi/internal/filesystem"
 	"github.com/spf13/pflag"
+	"github.com/upcloud-tools/upcloud-csi/internal/filesystem"
 )
 
 const (

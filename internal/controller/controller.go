@@ -8,12 +8,12 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/upcloud-tools/upcloud-csi/internal/logger"
-	"github.com/upcloud-tools/upcloud-csi/internal/service"
 	"github.com/UpCloudLtd/upcloud-go-api/v8/upcloud"
 	"github.com/UpCloudLtd/upcloud-go-api/v8/upcloud/request"
 	"github.com/container-storage-interface/spec/lib/go/csi"
 	"github.com/sirupsen/logrus"
+	"github.com/upcloud-tools/upcloud-csi/internal/logger"
+	"github.com/upcloud-tools/upcloud-csi/internal/service"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/timestamppb"
@@ -569,7 +569,7 @@ func (c *Controller) ListSnapshots(ctx context.Context, req *csi.ListSnapshotsRe
 
 // ControllerExpandVolume is called from the resizer to increase the volume size.
 //
-//nolint:funlen
+//nolint:funlen // ControllerExpandVolume orchestrates multiple operations
 func (c *Controller) ControllerExpandVolume(ctx context.Context, req *csi.ControllerExpandVolumeRequest) (*csi.ControllerExpandVolumeResponse, error) {
 	volumeID := req.GetVolumeId()
 

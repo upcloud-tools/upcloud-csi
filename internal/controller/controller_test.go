@@ -5,12 +5,12 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/upcloud-tools/upcloud-csi/internal/controller"
-	"github.com/upcloud-tools/upcloud-csi/internal/service"
-	"github.com/upcloud-tools/upcloud-csi/internal/service/mock"
 	"github.com/container-storage-interface/spec/lib/go/csi"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
+	"github.com/upcloud-tools/upcloud-csi/internal/controller"
+	"github.com/upcloud-tools/upcloud-csi/internal/service"
+	"github.com/upcloud-tools/upcloud-csi/internal/service/mock"
 )
 
 const (

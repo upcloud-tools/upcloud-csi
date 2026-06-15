@@ -64,7 +64,7 @@ func TestLinuxFilesystem_Mount(t *testing.T) {
 		t.Error(err)
 		return
 	}
-	defer os.Remove(part) //nolint:errcheck
+	defer os.Remove(part)
 	t.Logf("create fake partition %s", part)
 
 	m := newTestLinuxFilesystem()
@@ -110,7 +110,7 @@ func TestLinuxFilesystem_CreateAndReadPartition(t *testing.T) {
 		t.Error(err)
 		return
 	}
-	defer os.Remove(disk) //nolint:errcheck
+	defer os.Remove(disk)
 	t.Logf("create fake disk device %s", disk)
 	m := newTestLinuxFilesystem()
 
@@ -164,7 +164,7 @@ func TestGetBlockDeviceByDiskID(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer os.RemoveAll(tempDir) //nolint:errcheck
+	defer os.RemoveAll(tempDir)
 	t.Logf("using temp dir %s", tempDir)
 
 	tempDevPath := filepath.Join(tempDir, "dev")
@@ -188,7 +188,7 @@ func TestGetBlockDeviceByDiskID(t *testing.T) {
 	vdaSymLink := filepath.Join(idPath, diskID)
 
 	// using ln command instead of Go's built-in so that link has relative path
-	if err := exec.Command("ln", "-s", fmt.Sprintf("../../%s", filepath.Base(vda)), vdaSymLink).Run(); err != nil { //nolint: gosec // test
+	if err := exec.Command("ln", "-s", fmt.Sprintf("../../%s", filepath.Base(vda)), vdaSymLink).Run(); err != nil { //nolint:gosec // test, creates relative symlink
 		t.Fatal(err)
 	}
 
@@ -232,7 +232,7 @@ func createDeviceFile(size int64) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	defer f.Close() //nolint:errcheck
+	defer f.Close()
 	if err := f.Truncate(size); err != nil {
 		return f.Name(), err
 	}
@@ -276,7 +276,7 @@ func createTempFile(dir, pattern string) (string, error) {
 func mountFilesystem(t *testing.T, m *LinuxFilesystem, partition string) error {
 	t.Helper()
 	mountPath := filepath.Join(os.TempDir(), fmt.Sprintf("%s-mount-path-%d", driverName, time.Now().Unix()))
-	defer os.RemoveAll(mountPath) //nolint:errcheck
+	defer os.RemoveAll(mountPath)
 
 	return mount(t, m, partition, mountPath, "ext4")
 }
@@ -284,7 +284,7 @@ func mountFilesystem(t *testing.T, m *LinuxFilesystem, partition string) error {
 func mountBlockDevice(t *testing.T, m *LinuxFilesystem, partition string) error {
 	t.Helper()
 	mountPath := filepath.Join(os.TempDir(), fmt.Sprintf("%s-mount-path-%d", driverName, time.Now().Unix()))
-	defer os.RemoveAll(mountPath) //nolint:errcheck
+	defer os.RemoveAll(mountPath)
 
 	return mount(t, m, partition, mountPath, "", "bind")
 }
