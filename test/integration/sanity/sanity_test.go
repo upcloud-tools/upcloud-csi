@@ -61,6 +61,11 @@ func runTestDriver(endpoint *url.URL) error {
 		}
 	}
 
+	zone := os.Getenv("UPCLOUD_TEST_ZONE")
+	if zone == "" {
+		zone = "de-fra1"
+	}
+
 	logger := logrus.New()
 	logger.SetLevel(logrus.InfoLevel)
 	logger.SetOutput(io.Discard)
@@ -73,7 +78,7 @@ func runTestDriver(endpoint *url.URL) error {
 			PluginServerAddress: endpoint.String(),
 			HealtServerAddress:  "http://127.0.0.1:8080",
 			NodeHost:            hostname,
-			Zone:                "",
+			Zone:                zone,
 			Filesystem:          mock.NewFilesystem(logger),
 			LogLevel:            logger.Level.String(),
 			Mode:                config.DriverModeMonolith,
