@@ -30,28 +30,27 @@ type cmd struct {
 }
 
 var _ = BeforeSuite(func() {
-	deployCSIDriver := cmd{
+	deployManifests := cmd{
 		command:  "make",
-		args:     []string{"deploy-csi"},
-		startLog: "Installing CSI driver...",
-		endLog:   "CSI Driver installed...",
+		args:     []string{"deploy-manifests"},
+		startLog: "Deploying CSI driver manifests...",
+		endLog:   "CSI driver manifests deployed",
 	}
-	execCmd([]cmd{deployCSIDriver})
+	execCmd([]cmd{deployManifests})
 })
 
-var _ = Describe("", func() {
+var _ = AfterSuite(func() {
 	kubeconfig := mock.GetKubeconfig()
 	configPath := fmt.Sprintf("KUBECONFIG=%s", kubeconfig)
 
-	It("should run e2e tests", func() {
-		e2e := cmd{
-			command:  "make",
-			args:     []string{"deploy-csi", configPath},
-			startLog: "Running e2e tests...",
-			endLog:   "e2e tests successfully completed",
-		}
-		execCmd([]cmd{e2e})
-	})
+	cleanTests := cmd{
+		command:  "make",
+		args:     []string{"clean-tests", configPath},
+		startLog: "Cleaning test environment...",
+		endLog:   "Test environment cleaned",
+	}
+
+	execCmd([]cmd{cleanTests})
 })
 
 func execCmd(cmds []cmd) {
@@ -80,18 +79,3 @@ func execCmd(cmds []cmd) {
 		log.Println(cmd.endLog)
 	}
 }
-
-var _ = AfterSuite(func() {
-	kubeconfig := mock.GetKubeconfig()
-	configPath := fmt.Sprintf("KUBECONFIG=%s", kubeconfig)
-
-	// TearDown
-	cleanTests := cmd{
-		command:  "make",
-		args:     []string{"clean-tests", configPath},
-		startLog: "cleaning test environment...",
-		endLog:   "test environment cleaned...",
-	}
-
-	execCmd([]cmd{cleanTests})
-})
