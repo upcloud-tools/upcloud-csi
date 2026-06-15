@@ -79,7 +79,11 @@ func (c *Client) Exec(params ExecParams) error {
 
 func GetKubeconfig() string {
 	if os.Getenv("KUBECONFIG") == "" {
-		return filepath.Join(homedir.HomeDir(), ".kube", "config")
+		home, err := os.UserHomeDir()
+		if err != nil {
+			return ""
+		}
+		return filepath.Join(home, ".kube", "config")
 	}
 	return os.Getenv("KUBECONFIG")
 }
