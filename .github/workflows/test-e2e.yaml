@@ -2,6 +2,10 @@ name: UpCloud CSI driver e2e test
 on:
   workflow_dispatch:
 
+permissions:
+  contents: read
+  packages: write
+
 env:
   REGISTRY: ghcr.io
   TEST_IMAGE: ${{ github.repository }}-test
