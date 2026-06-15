@@ -13,7 +13,6 @@ jobs:
     with:
       image_name: ${{ env.REGISTRY }}/${{ env.TEST_IMAGE }}
       tags: e2e-${{ github.sha }}
-      go_version: ${{ env.GO_VERSION }}
     secrets: inherit
 
   e2e:
