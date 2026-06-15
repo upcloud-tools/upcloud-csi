@@ -569,6 +569,10 @@ linters:
       # See discussion in `forcetypeassert`.
       check-type-assertions: true
 
+    staticcheck:
+      checks:
+        - "-QF1008"
+
     gocritic:
       disabled-checks:
         # commentFormatting is redundant with/inferior to gofumpt which can also

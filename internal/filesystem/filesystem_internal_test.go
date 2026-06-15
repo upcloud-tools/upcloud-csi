@@ -8,6 +8,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strings"
 	"testing"
 	"time"
 
@@ -227,6 +228,153 @@ func TestLinuxFilesystem_isSupportedFilesystem(t *testing.T) {
 	require.Error(t, fs.isSupportedFilesystem("extX"))
 }
 
+func TestLinuxFilesystem_ResizeVolume(t *testing.T) {
+	t.Parallel()
+	if err := checkSystemRequirements(); err != nil {
+		t.Skipf("skipping test: %s", err.Error())
+	}
+	if os.Getuid() != 0 {
+		t.Skip("skipping test: requires root for loop device and mount")
+	}
+
+	tests := []struct {
+		name       string
+		fsType     string
+		needsFsck  bool
+		mkfsTool   string
+		resizeTool string
+		minSize    int64
+	}{
+		{
+			name:       "ext4",
+			fsType:     "ext4",
+			needsFsck:  true,
+			mkfsTool:   "mkfs.ext4",
+			resizeTool: "resize2fs",
+			minSize:    16 * 1024 * 1024,
+		},
+		{
+			name:       "xfs",
+			fsType:     "xfs",
+			needsFsck:  false,
+			mkfsTool:   "mkfs.xfs",
+			resizeTool: "xfs_growfs",
+			minSize:    512 * 1024 * 1024,
+		},
+		{
+			name:       "btrfs",
+			fsType:     "btrfs",
+			needsFsck:  false,
+			mkfsTool:   "mkfs.btrfs",
+			resizeTool: "btrfs",
+			minSize:    114294784, // btrfs minimum is ~109 MB
+		},
+	}
+
+	for _, tt := range tests {
+		tt := tt
+		t.Run(tt.fsType, func(t *testing.T) {
+			t.Parallel()
+			for _, tool := range []string{tt.mkfsTool, tt.resizeTool} {
+				if _, err := exec.LookPath(tool); err != nil {
+					t.Skipf("skipping %s: %s not found in $PATH", tt.fsType, tool)
+				}
+			}
+
+			initialSize := 2 * tt.minSize
+			resizedSize := 4 * tt.minSize
+
+			disk, err := createDeviceFile(initialSize)
+			require.NoError(t, err)
+			defer os.Remove(disk)
+			t.Logf("created backing file %s (%d bytes)", disk, initialSize)
+
+			loopDev, err := attachLoopDevice(disk)
+			require.NoError(t, err)
+			defer detachLoopDevice(loopDev)
+			t.Logf("attached to loop device %s", loopDev)
+
+			logger := logrus.New()
+			logger.SetOutput(io.Discard)
+			fs, _ := NewLinuxFilesystem([]string{tt.fsType}, logger.WithFields(nil))
+
+			ctx := context.Background()
+
+			require.NoError(t, fs.Format(ctx, loopDev, tt.fsType, nil))
+			t.Logf("formatted %s as %s", loopDev, tt.fsType)
+
+			partition, err := fs.GetDeviceLastPartition(ctx, loopDev)
+			require.NoError(t, err)
+			t.Logf("got partition %s", partition)
+
+			mountPath, err := os.MkdirTemp(os.TempDir(), fmt.Sprintf("%s-mount-*", driverName))
+			require.NoError(t, err)
+			defer os.RemoveAll(mountPath)
+
+			require.NoError(t, fs.Mount(ctx, partition, mountPath, tt.fsType))
+			t.Logf("mounted %s to %s", partition, mountPath)
+
+			origStats, err := fs.Statistics(mountPath)
+			require.NoError(t, err)
+			t.Logf("original volume stats: total=%d available=%d", origStats.TotalBytes, origStats.AvailableBytes)
+
+			require.NoError(t, fs.Unmount(ctx, mountPath))
+			t.Logf("unmounted %s", mountPath)
+
+			require.NoError(t, os.Truncate(disk, resizedSize))
+			require.NoError(t, rescanLoopDevice(loopDev))
+			t.Logf("grew backing file to %d bytes and rescanned loop device", resizedSize)
+
+			require.NoError(t, sfdiskResizePartitionFill(loopDev, 1))
+			require.NoError(t, reloadPartitionTable(loopDev))
+			t.Logf("partition table reloaded for %s", loopDev)
+
+			if tt.needsFsck {
+				require.NoError(t, e2fsckForcePartition(partition))
+			}
+
+			switch tt.fsType {
+			case "ext4":
+				// resize2fs works on the block device offline, and parted -s resizepart also needs the partition unused.
+				require.NoError(t, fs.ResizeVolume(ctx, loopDev, mountPath))
+				t.Log("resized volume (partition + filesystem)")
+
+				require.NoError(t, fs.Mount(ctx, partition, mountPath, tt.fsType))
+				defer fs.Unmount(ctx, mountPath)
+				t.Logf("mounted %s to %s", partition, mountPath)
+
+			case "xfs", "btrfs":
+				// parted's resizepart -s refuses to work on in-use loop-device partitions, but sfdisk already resized
+				// the partition. Call the fs-specific resize directly while the filesystem is mounted (xfs_growfs and btrfs need a live mount point).
+				require.NoError(t, fs.Mount(ctx, partition, mountPath, tt.fsType))
+				defer fs.Unmount(ctx, mountPath)
+				t.Logf("mounted %s to %s", partition, mountPath)
+
+				fsType, err := detectFilesystemType(ctx, logger.WithField("test", ""), partition)
+				require.NoError(t, err)
+				require.Equal(t, tt.fsType, fsType)
+
+				switch tt.fsType {
+				case "xfs":
+					require.NoError(t, resizeXfsFilesystem(ctx, logger.WithField("test", ""), mountPath))
+				case "btrfs":
+					require.NoError(t, resizeBtrfsFilesystem(ctx, logger.WithField("test", ""), mountPath))
+				}
+				t.Log("resized filesystem")
+			}
+
+			newStats, err := fs.Statistics(mountPath)
+			require.NoError(t, err)
+			t.Logf("new volume stats: total=%d available=%d", newStats.TotalBytes, newStats.AvailableBytes)
+
+			assert.Greater(t, newStats.TotalBytes, origStats.TotalBytes,
+				"filesystem total bytes should have increased after resize")
+			assert.Greater(t, newStats.AvailableBytes, origStats.AvailableBytes,
+				"filesystem available bytes should have increased after resize")
+		})
+	}
+}
+
 func createDeviceFile(size int64) (string, error) {
 	f, err := os.CreateTemp(os.TempDir(), fmt.Sprintf("%s-disk-*", driverName))
 	if err != nil {
@@ -241,7 +389,7 @@ func createDeviceFile(size int64) (string, error) {
 
 func checkSystemRequirements() error {
 	tools := []string{
-		"mkfs.ext4", "mount", "umount", "blkid", "wipefs", "findmnt", "parted", "sfdisk", "tune2fs", "udevadm",
+		"mkfs.ext4", "mount", "umount", "blkid", "wipefs", "findmnt", "parted", "sfdisk", "tune2fs", "udevadm", "losetup", "resize2fs", "e2fsck",
 	}
 	for _, t := range tools {
 		if _, err := exec.LookPath(t); err != nil {
@@ -271,6 +419,57 @@ func createTempFile(dir, pattern string) (string, error) {
 		return "", err
 	}
 	return f.Name(), f.Close()
+}
+
+func attachLoopDevice(file string) (string, error) {
+	cmd := exec.Command("losetup", "--find", "--show", file) //nolint:gosec // test helper, fixed args
+	out, err := cmd.CombinedOutput()
+	if err != nil {
+		return "", fmt.Errorf("losetup --find --show %s failed: %w (%s)", file, err, string(out))
+	}
+	return strings.TrimSpace(string(out)), nil
+}
+
+func detachLoopDevice(device string) error {
+	return exec.Command("losetup", "-d", device).Run() //nolint:gosec // test helper, fixed args
+}
+
+func rescanLoopDevice(device string) error {
+	out, err := exec.Command("losetup", "-c", device).CombinedOutput() //nolint:gosec // test helper, fixed args
+	if err != nil {
+		return fmt.Errorf("losetup -c %s failed: %w (%s)", device, err, string(out))
+	}
+	return nil
+}
+
+func sfdiskResizePartitionFill(device string, partNum int) error {
+	// sfdisk resizes the partition to fill the available space and also corrects the GPT backup header location.  This is the equivalent
+	// of "parted -s DEV resizepart N 100%" but sfdisk handles the GPT relocation automatically without prompting.
+	//
+	// The ", +" input tells sfdisk to set the start sector to the current value (unchanged) and the size to "+" (fill all remaining space).
+	cmd := exec.Command("sfdisk", "-q", "-N", fmt.Sprintf("%d", partNum), device) //nolint:gosec // test helper, fixed args
+	cmd.Stdin = strings.NewReader(", +\n")
+	out, err := cmd.CombinedOutput()
+	if err != nil {
+		return fmt.Errorf("sfdisk resize partition %s #%d failed: %w (%s)", device, partNum, err, string(out))
+	}
+	return nil
+}
+
+func reloadPartitionTable(device string) error {
+	out, err := exec.Command("partx", "-u", device).CombinedOutput() //nolint:gosec // test helper, fixed args
+	if err != nil {
+		return fmt.Errorf("partx -u %s failed: %w (%s)", device, err, string(out))
+	}
+	return nil
+}
+
+func e2fsckForcePartition(partition string) error {
+	out, err := exec.Command("e2fsck", "-fy", partition).CombinedOutput() //nolint:gosec // test helper, fixed args
+	if err != nil {
+		return fmt.Errorf("e2fsck -f %s failed: %w (%s)", partition, err, string(out))
+	}
+	return nil
 }
 
 func mountFilesystem(t *testing.T, m *LinuxFilesystem, partition string) error {

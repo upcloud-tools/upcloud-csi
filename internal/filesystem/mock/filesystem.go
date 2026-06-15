@@ -47,7 +47,7 @@ func (m *MockFilesystem) Unmount(ctx context.Context, path string) error {
 	return nil
 }
 
-//nolint:gosec // Use of weak random number generator (math/rand instead of crypto/rand) (gosec)
+//nolint:gosec // Use of weak random number generator (math/rand instead of crypto/rand)
 func (m *MockFilesystem) Statistics(volumePath string) (filesystem.VolumeStatistics, error) {
 	stats := filesystem.VolumeStatistics{
 		AvailableBytes:  int64(rand.Intn(1000)),
