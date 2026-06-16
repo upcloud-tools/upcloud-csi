@@ -5,6 +5,16 @@ See updating [Changelog example here](https://keepachangelog.com/en/1.0.0/)
 
 ## [Unreleased]
 
+## [2.0.0] - 2026-06-16
+
+### Added
+- online volume expansion: resize PVC while a pod is actively using it without restarting the pod
+- e2e test: validate actual filesystem size inside running pod after resize via `df` polling
+
+### Changed
+- identity: set volume expansion capability to ONLINE instead of OFFLINE
+- node: replace `parted` with `growpart` for non-interactive online partition resize
+
 ## [1.3.0]
 
 ### Added
@@ -35,7 +45,8 @@ See updating [Changelog example here](https://keepachangelog.com/en/1.0.0/)
 
 First stable release
 
-[Unreleased]: https://github.com/UpCloudLtd/upcloud-csi/compare/v1.3.0...HEAD
+[Unreleased]: https://github.com/UpCloudLtd/upcloud-csi/compare/v2.0.0...HEAD
+[2.0.0]: https://github.com/UpCloudLtd/upcloud-csi/compare/v1.3.0...v2.0.0
 [1.3.0]: https://github.com/UpCloudLtd/upcloud-csi/compare/v1.2.0...v1.3.0
 [1.2.0]: https://github.com/UpCloudLtd/upcloud-csi/compare/v1.1.0...v1.2.0
 [1.1.0]: https://github.com/UpCloudLtd/upcloud-csi/compare/v1.0.1...v1.1.0
