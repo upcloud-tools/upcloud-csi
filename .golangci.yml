@@ -673,13 +673,10 @@ formatters:
       extra-rules: true
 
 issues:
-  # Disable per linter/same-issue limits, again to get the whole picture on
-  # first pass.
+  # Disable per linter/same-issue limits, again to get the whole picture on first pass.
   max-issues-per-linter: 0
   max-same-issues: 0
-  # Fix found issues where supported, because life is too short. Be sure to
-  # sanity check the diffs.
+  # Fix found issues where supported, because life is too short. Be sure to sanity check the diffs.
   fix: true
-  # Get all issues from all linters, instead of just first per line, so we
-  # get to see everything on first pass.
+  # Get all issues from all linters, instead of just first per line, so we get to see everything on first pass.
   uniq-by-line: false
