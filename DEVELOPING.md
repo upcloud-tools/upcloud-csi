@@ -4,7 +4,8 @@ CSI driver's primary goal is to conform to [Container Storage Interface (CSI)](h
 Depending on [CO](https://www.vmware.com/topics/glossary/content/container-orchestration.html), endpoints are called directly or by [sidecar containers](deploy/kubernetes/README.md#sidecars).
 
 ## Requirements
-- [Go](https://golang.org/doc/install) >= 1.22
+- [Go](https://golang.org/doc/install) >= 1.26
+- [Buildah](https://buildah.io/) — required for `make container-build`
 
 Get the source code:
 
@@ -13,10 +14,17 @@ $ git clone git@github.com:upcloud-tools/upcloud-csi.git
 $ cd upcloud-csi
 ```
 
-To compile the plugin, run `make build-plugin`. This will build the driver plugin binary `cmd/upcloud-csi-plugin/upcloud-csi-plugin` .
+### Building the plugin
 
+**Container image** (recommended for testing):
 ```shell
-$ make build-plugin
+$ make container-build
+```
+This builds the plugin inside a multistage Containerfile: Go compilation in a `golang:1.26` image, then the binary is copied into an `alpine:3.23` runtime image with all required filesystem tools.
+
+**Local binary** (for quick iteration):
+```shell
+$ go build -o cmd/upcloud-csi-plugin/upcloud-csi-plugin ./cmd/upcloud-csi-plugin
 ```
 
 ## Project layout
@@ -37,35 +45,12 @@ Run tests using `make`
 ```shell
 $ make test
 ```
-### Docker image sanity test
-#### Requirements
-- [Sanity Test](https://github.com/kubernetes-csi/csi-test/tree/master/cmd/csi-sanity) binary
-- Docker
-- UpCloud Linux server and root privileges
+### Integration test (CSI sanity suite)
+Runs the CSI [sanity test suite](https://github.com/kubernetes-csi/csi-test) against a running driver instance. Requires UpCloud API credentials.
 
-#### Running test
-Login to server and create temporary directory for CSI socket
 ```shell
-$ mkdir tmp
+$ make test-integration
 ```
-Start plugin container
-```shell
-$ docker run --privileged -it --rm \
-    --mount type=bind,source=/mnt,target=/mnt,bind-propagation=shared \
-    -v `pwd`/tmp:/tmp \
-    -v /dev:/dev \
-     ghcr.io/upcloud-tools/upcloud-csi:latest \
-    --username=$UPCLOUD_USERNAME \
-    --password=$UPCLOUD_PASSWORD \
-    --nodehost=$HOSTNAME \
-    --endpoint=unix:///tmp/csi.sock \
-    --log-level=debug
-```
-Open second terminal to server and run test suite
-```shell
-$ csi-sanity --csi.endpoint=`pwd`/tmp/csi.sock --csi.stagingdir=/mnt/csi-staging --csi.mountdir=/mnt/csi-mount --ginkgo.v --ginkgo.fail-fast -csi.testnodevolumeattachlimit=true
-```
-Use `-csi.testvolumeaccesstype=block` csi-sanity test option to test block devices instead of volumes.
 
 ## Logging
 Driver uses structured logging which level can be set using `--log-level` flag. Only errors are logged by default. OS level commands are logged using `DEBUG` level which also logs gRPC request and response objects. Debug level is only suitable for debugging purposes.  

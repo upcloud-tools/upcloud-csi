@@ -1,15 +1,21 @@
 # Releasing
 
-1. Merge all your changes to the stable branch
-3. Update CHANGELOG.md
-   1. Add new heading with the correct version e.g. `## [1.0.1]`
-   2. Update links at the bottom of the page
-   3. Leave `## Unreleased` section at the top empty
-5. Test GoReleaser config with `goreleaser check`
-6. Tag a commit with the version you want to release e.g. `v1.2.0`
-7. Push the tag & commit to GitHub
-   - GitHub action automatically
-      - sets the version based on the tag
-      - creates a draft release to GitHub
-8. Verify that [release notes](https://github.com/upcloud-tools/upcloud-csi/releases) are in line with `CHANGELOG.md`
-9. Publish the drafted release
+1. Merge all changes to `main`
+2. Update CHANGELOG.md
+   - Rename `## [Unreleased]` to the new version, e.g. `## [2.1.0] - 2026-06-16`
+   - Add a new empty `## [Unreleased]` section above it
+   - Update the version compare links at the bottom of the page
+3. Commit the changelog update
+4. Tag the commit with the version, e.g. `v2.1.0`
+   ```bash
+   git tag v2.1.0
+   ```
+5. Push the tag to GitHub
+   ```bash
+   git push origin v2.1.0
+   ```
+   This triggers two GitHub Actions workflows:
+   - **Release** — creates a draft GitHub Release with changelog as release notes
+   - **Build and push container image** — builds the multistage container image and pushes to GHCR
+6. Verify the [release notes](https://github.com/upcloud-tools/upcloud-csi/releases)
+7. Publish the drafted release

@@ -1,7 +1,22 @@
+ARG GO_VERSION=1.26
+
+FROM --platform=$BUILDPLATFORM golang:${GO_VERSION} AS build
+ARG VERSION
+ARG COMMIT
+ARG TREE_STATE
+ARG TARGETOS TARGETARCH
+WORKDIR /workspace
+COPY go.mod go.sum ./
+RUN go mod download
+COPY . .
+RUN CGO_ENABLED=0 GOOS=$TARGETOS GOARCH=$TARGETARCH \
+    go build -ldflags="-s -w -X github.com/upcloud-tools/upcloud-csi/internal/plugin.version=${VERSION} -X github.com/upcloud-tools/upcloud-csi/internal/plugin.commit=${COMMIT} -X github.com/upcloud-tools/upcloud-csi/internal/plugin.gitTreeState=${TREE_STATE}" \
+    -o upcloud-csi-plugin ./cmd/upcloud-csi-plugin
+
 FROM alpine:3.23
 
-LABEL org.opencontainers.image.source=https://github.com/upcloud-tools/upcloud-csi
-LABEL org.opencontainers.image.description="UpCloud CSI Driver"
+LABEL org.opencontainers.image.source=https://github.com/upcloud-tools/upcloud-csi \
+      org.opencontainers.image.description="UpCloud CSI Driver"
 
 RUN apk add ca-certificates \
     cloud-utils-growpart \
@@ -9,11 +24,12 @@ RUN apk add ca-certificates \
     eudev \
     findmnt \
     xfsprogs \
+    xfsprogs-extra \
     blkid \
     e2fsprogs-extra \
     util-linux \
     parted
 
-ADD upcloud-csi-plugin /bin/
+COPY --from=build /workspace/upcloud-csi-plugin /bin/
 
 ENTRYPOINT ["/bin/upcloud-csi-plugin"]
