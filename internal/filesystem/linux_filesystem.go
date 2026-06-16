@@ -421,6 +421,9 @@ func (m *LinuxFilesystem) resizePartition(ctx context.Context, device, partNum s
 	args := []string{device, partNum}
 	output, err := runCommand(ctx, logger.WithServerContext(ctx, m.log), "growpart", args...)
 	if err != nil {
+		if strings.Contains(string(output), "NOCHANGE") {
+			return nil
+		}
 		return fmt.Errorf("failed to resize partition: '%s'; %w", formatCmdError(output), err)
 	}
 	return nil
