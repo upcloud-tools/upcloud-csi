@@ -12,7 +12,7 @@ LDFLAGS ?= "-s -w -X ${PLUGIN_PKG}/internal/plugin.version=${TAG} \
 -X ${PLUGIN_PKG}/internal/plugin.commit=${COMMIT} \
 -X ${PLUGIN_PKG}/internal/plugin.gitTreeState=${TREE_STATE}"
 
-CONTAINER_REPO ?= ghcr.io/upcloud-tools/upcloud-csi
+CONTAINER_REPO ?= ghcr.io/upcloud-tools/upcloud-csi-test
 IMAGE_TAG  ?= $(shell git rev-parse --short HEAD)
 
 .PHONY: compile
@@ -24,13 +24,12 @@ compile:
 
 
 .PHONY: container-build
-container-build:
-	buildah build --platform linux/amd64 -t $(CONTAINER_REPO):$(IMAGE_TAG) cmd/upcloud-csi-plugin -f cmd/upcloud-csi-plugin/Containerfile
+container-build: build-plugin
+	buildah build --platform linux/amd64 -t $(CONTAINER_REPO):$(IMAGE_TAG) -f cmd/upcloud-csi-plugin/Containerfile cmd/upcloud-csi-plugin
 
 .PHONY: push-image
-push-image: build-plugin
-	@echo "==> Building and pushing image $(CONTAINER_REPO):$(IMAGE_TAG)"
-	buildah build --platform linux/amd64 -t $(CONTAINER_REPO):$(IMAGE_TAG) -f cmd/upcloud-csi-plugin/Containerfile cmd/upcloud-csi-plugin
+push-image: container-build
+	@echo "==> Pushing image $(CONTAINER_REPO):$(IMAGE_TAG)"
 	buildah push $(CONTAINER_REPO):$(IMAGE_TAG)
 
 .PHONY: deploy-manifests
@@ -40,13 +39,15 @@ deploy-manifests:
 	KUBECONFIG=$(KUBECONFIG) kubectl apply -f deploy/kubernetes/rbac-upcloud-csi.yaml
 	sed 's|ghcr.io/upcloudltd/upcloud-csi:latest|$(CONTAINER_REPO):$(IMAGE_TAG)|g' \
 		deploy/kubernetes/setup-upcloud-csi.yaml | KUBECONFIG=$(KUBECONFIG) kubectl apply -f -
+	KUBECONFIG=$(KUBECONFIG) kubectl apply -f deploy/kubernetes/sc-upcloud-csi-test.yaml
 	KUBECONFIG=$(KUBECONFIG) kubectl -n kube-system rollout status statefulset/csi-upcloud-controller --timeout=180s
 	KUBECONFIG=$(KUBECONFIG) kubectl -n kube-system rollout status daemonset/csi-upcloud-node --timeout=180s
 
 .PHONY: clean-tests
 clean-tests:
-	KUBECONFIG=$(KUBECONFIG) kubectl delete all --all
-	KUBECONFIG=$(KUBECONFIG) kubectl delete persistentvolumeclaims --all
+	KUBECONFIG=$(KUBECONFIG) kubectl -n default delete all --all
+	KUBECONFIG=$(KUBECONFIG) kubectl -n default delete persistentvolumeclaims --all
+	KUBECONFIG=$(KUBECONFIG) kubectl delete storageclass upcloud-block-storage-maxiops-test --ignore-not-found
 
 .PHONY: test
 test:
