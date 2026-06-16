@@ -27,7 +27,7 @@ deploy-manifests:
 	kubectl apply -f deploy/kubernetes/rbac-upcloud-csi.yaml
 	sed 's|ghcr.io/upcloudltd/upcloud-csi:latest|$(CONTAINER_REPO):$(IMAGE_TAG)|g' \
 		deploy/kubernetes/setup-upcloud-csi.yaml | kubectl apply -f -
-	kubectl apply -f deploy/kubernetes/sc-upcloud-csi-test.yaml
+	kubectl apply -f deploy/kubernetes/test/sc-upcloud-csi-test.yaml
 	kubectl -n kube-system rollout status statefulset/csi-upcloud-controller --timeout=180s
 	kubectl -n kube-system rollout status daemonset/csi-upcloud-node --timeout=180s
 
