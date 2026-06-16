@@ -51,7 +51,7 @@ jobs:
         with:
           image: ghcr.io/${{ github.repository }}${{ inputs.image_suffix }}
           tags: ${{ inputs.tags }}
-          containerfiles: ./Containerfile
+          containerfiles: Containerfile
           context: cmd/upcloud-csi-plugin/
           platforms: linux/amd64
 
