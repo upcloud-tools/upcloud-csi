@@ -74,6 +74,22 @@ func (c *Client) WaitForPVC(ctx context.Context, pvcName, namespace string) erro
 	return wait.PollImmediate(time.Second, time.Minute, c.isPVCRunning(ctx, pvcName, namespace))
 }
 
+func (c *Client) WaitForPVCCapacity(ctx context.Context, pvcName, namespace string, expectedSize resource.Quantity) error {
+	return wait.PollImmediate(2*time.Second, 2*time.Minute, func() (bool, error) {
+		pvc, err := c.k8s.CoreV1().PersistentVolumeClaims(namespace).Get(ctx, pvcName, metav1.GetOptions{})
+		if err != nil {
+			return false, err
+		}
+
+		capacity, ok := pvc.Status.Capacity[v1.ResourceStorage]
+		if !ok {
+			return false, nil
+		}
+
+		return capacity.Cmp(expectedSize) >= 0, nil
+	})
+}
+
 func getMaxIOPSStorageClass() *string {
 	maxIOPS := "upcloud-block-storage-maxiops"
 	return &maxIOPS

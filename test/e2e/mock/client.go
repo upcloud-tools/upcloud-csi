@@ -61,7 +61,7 @@ func (c *Client) Exec(params ExecParams) error {
 	}
 
 	cmd := "kubectl"
-	args := []string{"exec", "-i", params.PodName, "--", shellPath, "-c", "cat ./temp"}
+	args := []string{"exec", "-i", params.PodName, "--", shellPath, "-c", params.Command}
 
 	cmdSh := exec.Command(cmd, args...) //nolint:gosec,noctx // kubectl with dynamic args for e2e test
 	cmdSh.Dir = projectRoot
@@ -71,10 +71,23 @@ func (c *Client) Exec(params ExecParams) error {
 	kubeconfig := GetKubeconfig()
 	cmdSh.Env = append(os.Environ(), kubeconfig)
 
-	log.Println("executing command")
+	log.Printf("executing command: %s", params.Command)
 	err = cmdSh.Run()
+	if err != nil {
+		return err
+	}
 
-	return err
+	if params.ExpectedString != "" {
+		// nolint:gosec // kubectl with dynamic args for e2e test
+		checkCmd := exec.Command(cmd, "exec", "-i", params.PodName, "--", shellPath, "-c", fmt.Sprintf("%s | grep -q '%s'", params.Command, params.ExpectedString))
+		checkCmd.Dir = projectRoot
+		checkCmd.Stdout = os.Stdout
+		checkCmd.Stderr = os.Stderr
+		checkCmd.Env = append(os.Environ(), kubeconfig)
+		return checkCmd.Run()
+	}
+
+	return nil
 }
 
 func GetKubeconfig() string {
