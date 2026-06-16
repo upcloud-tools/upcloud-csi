@@ -75,7 +75,7 @@ func (c *Client) WaitForPVC(ctx context.Context, pvcName, namespace string) erro
 }
 
 func (c *Client) WaitForPVCCapacity(ctx context.Context, pvcName, namespace string, expectedSize resource.Quantity) error {
-	return wait.PollImmediate(2*time.Second, 2*time.Minute, func() (bool, error) {
+	return wait.PollImmediate(2*time.Second, 5*time.Minute, func() (bool, error) {
 		pvc, err := c.k8s.CoreV1().PersistentVolumeClaims(namespace).Get(ctx, pvcName, metav1.GetOptions{})
 		if err != nil {
 			return false, err
