@@ -47,7 +47,7 @@ jobs:
         id: build-image
         uses: redhat-actions/buildah-build@7a95fa7ee0f02d552a32753e7414641a04307056 # v2.13
         with:
-          image: ghcr.io/${{ github.repository }}${{ inputs.image_suffix }}
+          image: ${{ github.repository }}${{ inputs.image_suffix }}
           tags: ${{ inputs.tags }}
           containerfiles: cmd/upcloud-csi-plugin/Containerfile
           context: cmd/upcloud-csi-plugin/
