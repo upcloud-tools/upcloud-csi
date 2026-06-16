@@ -418,10 +418,8 @@ func (m *LinuxFilesystem) ResizeVolume(ctx context.Context, source, volumePath s
 }
 
 func (m *LinuxFilesystem) resizePartition(ctx context.Context, device, partNum string) error {
-	args := []string{"-s", device, "resizepart", partNum, "100%"}
-	cmd := exec.CommandContext(ctx, partedCmd, args...)
-	cmd.Stdin = strings.NewReader("yes\n")
-	output, err := cmd.CombinedOutput()
+	args := []string{"-s", "-f", device, "resizepart", partNum, "100%"}
+	output, err := runCommand(ctx, logger.WithServerContext(ctx, m.log), partedCmd, args...)
 	if err != nil {
 		return fmt.Errorf("failed to resize partition: '%s'; %w", formatCmdError(output), err)
 	}
