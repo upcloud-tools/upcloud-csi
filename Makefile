@@ -35,19 +35,19 @@ push-image: container-build
 .PHONY: deploy-manifests
 deploy-manifests:
 	@echo "==> Deploying CSI driver manifests (image: $(CONTAINER_REPO):$(IMAGE_TAG))"
-	KUBECONFIG=$(KUBECONFIG) kubectl apply -f deploy/kubernetes/crd-upcloud-csi.yaml
-	KUBECONFIG=$(KUBECONFIG) kubectl apply -f deploy/kubernetes/rbac-upcloud-csi.yaml
+	kubectl apply -f deploy/kubernetes/crd-upcloud-csi.yaml
+	kubectl apply -f deploy/kubernetes/rbac-upcloud-csi.yaml
 	sed 's|ghcr.io/upcloudltd/upcloud-csi:latest|$(CONTAINER_REPO):$(IMAGE_TAG)|g' \
-		deploy/kubernetes/setup-upcloud-csi.yaml | KUBECONFIG=$(KUBECONFIG) kubectl apply -f -
-	KUBECONFIG=$(KUBECONFIG) kubectl apply -f deploy/kubernetes/sc-upcloud-csi-test.yaml
-	KUBECONFIG=$(KUBECONFIG) kubectl -n kube-system rollout status statefulset/csi-upcloud-controller --timeout=180s
-	KUBECONFIG=$(KUBECONFIG) kubectl -n kube-system rollout status daemonset/csi-upcloud-node --timeout=180s
+		deploy/kubernetes/setup-upcloud-csi.yaml | kubectl apply -f -
+	kubectl apply -f deploy/kubernetes/sc-upcloud-csi-test.yaml
+	kubectl -n kube-system rollout status statefulset/csi-upcloud-controller --timeout=180s
+	kubectl -n kube-system rollout status daemonset/csi-upcloud-node --timeout=180s
 
 .PHONY: clean-tests
 clean-tests:
-	KUBECONFIG=$(KUBECONFIG) kubectl -n default delete all --all
-	KUBECONFIG=$(KUBECONFIG) kubectl -n default delete persistentvolumeclaims --all
-	KUBECONFIG=$(KUBECONFIG) kubectl delete storageclass upcloud-block-storage-maxiops-test --ignore-not-found
+	kubectl -n default delete all --all
+	kubectl -n default delete persistentvolumeclaims --all
+	kubectl delete storageclass upcloud-block-storage-maxiops-test --ignore-not-found
 
 .PHONY: test
 test:
