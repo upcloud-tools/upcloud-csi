@@ -45,14 +45,14 @@ test:
 test-integration:
 	make -C test/integration test
 
-# CI-friendly e2e test — Ginkgo output interceptor captures subprocess output and emits it per test case.
+# CI-friendly e2e test — runs 4 test cases in parallel to minimize running time.
+# Each test case creates uniquely-named PVCs/Pods, no resource conflicts.
 .PHONY: test-e2e
 test-e2e:
 	@echo "==> Running e2e tests"
-	cd test/e2e && go test -tags e2e -v -timeout 30m ./...
+	cd test/e2e && go test -tags e2e -v -timeout 30m --ginkgo.procs=4 ./...
 
-# Local-development variant — disables Ginkgo's output interceptor logs appear in real time.
-# Do not use in CI: output from different test cases can interleave.
+# Local-development variant — sequential execution with real-time output.
 .PHONY: test-e2e-verbose
 test-e2e-verbose:
 	@echo "==> Running e2e tests (verbose mode)"
