@@ -3,8 +3,8 @@ package e2e_test
 import (
 	"log"
 
-	"github.com/UpCloudLtd/upcloud-csi/test/e2e/testruns"
 	. "github.com/onsi/ginkgo/v2"
+	"github.com/upcloud-tools/upcloud-csi/test/e2e/testruns"
 )
 
 var _ = Describe("", func() {

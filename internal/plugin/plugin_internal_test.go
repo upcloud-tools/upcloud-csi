@@ -3,10 +3,15 @@ package plugin
 import (
 	"testing"
 
-	"github.com/UpCloudLtd/upcloud-csi/internal/filesystem/mock"
-	"github.com/UpCloudLtd/upcloud-csi/internal/logger"
-	"github.com/UpCloudLtd/upcloud-csi/internal/plugin/config"
 	"github.com/stretchr/testify/require"
+	"github.com/upcloud-tools/upcloud-csi/internal/filesystem/mock"
+	"github.com/upcloud-tools/upcloud-csi/internal/logger"
+	"github.com/upcloud-tools/upcloud-csi/internal/plugin/config"
+)
+
+const (
+	logLevelInfo = "info"
+	zoneID       = "fi-hel2"
 )
 
 func TestNewPluginServer(t *testing.T) {
@@ -16,9 +21,9 @@ func TestNewPluginServer(t *testing.T) {
 	cfg := config.Config{
 		Username:            "test-user",
 		Password:            "test-password",
-		LogLevel:            "info",
+		LogLevel:            logLevelInfo,
 		Mode:                config.DriverModeController,
-		Zone:                "fi-hel2",
+		Zone:                zoneID,
 		PluginServerAddress: config.DefaultPluginServerAddress,
 		Filesystem:          &mock.MockFilesystem{},
 	}
@@ -28,11 +33,11 @@ func TestNewPluginServer(t *testing.T) {
 	require.Contains(t, srv.GetServiceInfo(), "csi.v1.Identity")
 
 	cfg = config.Config{
-		LogLevel:            "info",
+		LogLevel:            logLevelInfo,
 		Mode:                config.DriverModeNode,
 		NodeHost:            hostname(),
 		PluginServerAddress: config.DefaultPluginServerAddress,
-		Zone:                "fi-hel2",
+		Zone:                zoneID,
 		Filesystem:          &mock.MockFilesystem{},
 	}
 	srv, err = newPluginServer(cfg, l.WithField("package", "plugin"))
@@ -43,11 +48,11 @@ func TestNewPluginServer(t *testing.T) {
 	cfg = config.Config{
 		Username:            "test-user",
 		Password:            "test-password",
-		LogLevel:            "info",
+		LogLevel:            logLevelInfo,
 		Mode:                config.DriverModeMonolith,
 		NodeHost:            hostname(),
 		PluginServerAddress: config.DefaultPluginServerAddress,
-		Zone:                "fi-hel2",
+		Zone:                zoneID,
 		Filesystem:          &mock.MockFilesystem{},
 	}
 	srv, err = newPluginServer(cfg, l.WithField("package", "plugin"))

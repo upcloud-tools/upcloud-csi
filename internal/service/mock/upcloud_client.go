@@ -25,7 +25,7 @@ func (u *UpCloudClient) StoreServer(s *upcloud.ServerDetails) {
 
 func (u *UpCloudClient) getServer(id string) *upcloud.ServerDetails {
 	if s, ok := u.servers.Load(id); ok {
-		return s.(*upcloud.ServerDetails)
+		return s.(*upcloud.ServerDetails) //nolint:errcheck // sync.Map stores only this type
 	}
 	return nil
 }
@@ -94,7 +94,7 @@ func (u *UpCloudClient) DetachStorage(ctx context.Context, r *request.DetachStor
 	server = u.getServer(r.ServerUUID)
 	server.State = upcloud.ServerStateStarted
 	if len(server.StorageDevices) > 0 {
-		storage := make([]upcloud.ServerStorageDevice, 0)
+		storage := make([]upcloud.ServerStorageDevice, 0, len(server.StorageDevices))
 		for i := range server.StorageDevices {
 			if server.StorageDevices[i].Address != r.Address {
 				storage = append(storage, server.StorageDevices[i])

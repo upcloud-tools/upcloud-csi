@@ -2,11 +2,14 @@ package testruns
 
 import (
 	"context"
+	"fmt"
 	"log"
+	"time"
 
-	"github.com/UpCloudLtd/upcloud-csi/test/e2e/mock"
 	"github.com/google/uuid"
 	"github.com/onsi/gomega"
+	"github.com/upcloud-tools/upcloud-csi/test/e2e/mock"
+	"k8s.io/apimachinery/pkg/api/resource"
 )
 
 func TestProvisionResizeVolume() {
@@ -26,6 +29,22 @@ func TestProvisionResizeVolume() {
 	err = client.WaitForPod(ctx, pod.Name, pod.Namespace)
 	gomega.Expect(err).NotTo(gomega.HaveOccurred())
 
+	log.Println("resizing PVC from 10Gi to 20Gi")
 	_, err = client.ResizePVC(ctx, pvc.Name)
 	gomega.Expect(err).NotTo(gomega.HaveOccurred())
+
+	log.Println("waiting for PVC status capacity to reflect 20Gi")
+	err = client.WaitForPVCCapacity(ctx, pvc.Name, pvc.Namespace, resource.MustParse("20Gi"))
+	gomega.Expect(err).NotTo(gomega.HaveOccurred())
+
+	log.Println("waiting for NodeExpandVolume to resize filesystem on running pod")
+	gomega.Eventually(func() error {
+		return client.Exec(mock.ExecParams{
+			Command: fmt.Sprintf(
+				"df -k /data | awk 'NR==2{print \"current filesystem size: \"$2\", need >= %d\"; exit ($2+0 < %d)}'",
+				19000000, 19000000,
+			),
+			PodName: pod.Name,
+		})
+	}, 5*time.Minute, 5*time.Second).Should(gomega.Succeed())
 }

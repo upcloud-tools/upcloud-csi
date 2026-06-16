@@ -8,12 +8,12 @@ import (
 	"testing"
 	"time"
 
-	"github.com/UpCloudLtd/upcloud-csi/internal/identity"
-	"github.com/UpCloudLtd/upcloud-csi/internal/logger"
-	"github.com/UpCloudLtd/upcloud-csi/internal/plugin/config"
-	"github.com/UpCloudLtd/upcloud-csi/internal/server"
 	"github.com/container-storage-interface/spec/lib/go/csi"
 	"github.com/stretchr/testify/require"
+	"github.com/upcloud-tools/upcloud-csi/internal/identity"
+	"github.com/upcloud-tools/upcloud-csi/internal/logger"
+	"github.com/upcloud-tools/upcloud-csi/internal/plugin/config"
+	"github.com/upcloud-tools/upcloud-csi/internal/server"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 )
@@ -25,7 +25,7 @@ func TestPluginServer(t *testing.T) {
 	tmpSocket := path.Join(os.TempDir(), fmt.Sprintf("test-plugin-server-%d.sock", time.Now().Unix()))
 	addr := fmt.Sprintf("unix://%s", tmpSocket)
 	defer func() {
-		os.Remove(tmpSocket)
+		_ = os.Remove(tmpSocket)
 	}()
 
 	srv, err := server.NewPluginServer(addr, nil, nil, identity.NewIdentity(config.DefaultDriverName, l), l)

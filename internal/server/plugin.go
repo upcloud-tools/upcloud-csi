@@ -1,6 +1,7 @@
 package server
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"log"
@@ -8,9 +9,9 @@ import (
 	"net/url"
 	"os"
 
-	"github.com/UpCloudLtd/upcloud-csi/internal/logger"
 	"github.com/container-storage-interface/spec/lib/go/csi"
 	"github.com/sirupsen/logrus"
+	"github.com/upcloud-tools/upcloud-csi/internal/logger"
 	"google.golang.org/grpc"
 )
 
@@ -81,7 +82,7 @@ func (s *PluginServer) Run() error {
 	if err := s.cleanUpSocket(s.listen.Path); err != nil {
 		return err
 	}
-	grpcListener, err := net.Listen(s.listen.Scheme, s.listen.Path)
+	grpcListener, err := (&net.ListenConfig{}).Listen(context.Background(), s.listen.Scheme, s.listen.Path)
 	if err != nil {
 		return fmt.Errorf("failed to listen: %w", err)
 	}

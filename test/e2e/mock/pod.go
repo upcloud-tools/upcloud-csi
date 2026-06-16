@@ -26,7 +26,7 @@ func (c *Client) CreatePod(ctx context.Context, podName, pvcName string) (*v1.Po
 				{
 					Name:    "main",
 					Image:   "busybox",
-					Command: []string{"/bin/sh"},
+					Command: []string{shellPath},
 					Args:    []string{"-c", "echo 'hello world' >> ./temp; sleep 1000"},
 					VolumeMounts: []v1.VolumeMount{
 						{
@@ -70,5 +70,5 @@ func (c *Client) isPodRunning(ctx context.Context, podName, namespace string) wa
 }
 
 func (c *Client) WaitForPod(ctx context.Context, podName, namespace string) error {
-	return wait.PollImmediate(time.Second, time.Minute, c.isPodRunning(ctx, podName, namespace))
+	return wait.PollImmediate(time.Second, 5*time.Minute, c.isPodRunning(ctx, podName, namespace))
 }

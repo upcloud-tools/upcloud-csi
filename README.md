@@ -1,5 +1,5 @@
 # UpCloud CSI Driver  
-![GitHub Actions status](https://github.com/UpCloudLtd/upcloud-csi/actions/workflows/deploy.yaml/badge.svg)
+![GitHub Actions status](https://github.com/upcloud-tools/upcloud-csi/actions/workflows/deploy.yaml/badge.svg)
 
 ## Overview
 

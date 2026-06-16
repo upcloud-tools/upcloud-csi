@@ -5,12 +5,17 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/UpCloudLtd/upcloud-csi/internal/controller"
-	"github.com/UpCloudLtd/upcloud-csi/internal/service"
-	"github.com/UpCloudLtd/upcloud-csi/internal/service/mock"
 	"github.com/container-storage-interface/spec/lib/go/csi"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
+	"github.com/upcloud-tools/upcloud-csi/internal/controller"
+	"github.com/upcloud-tools/upcloud-csi/internal/service"
+	"github.com/upcloud-tools/upcloud-csi/internal/service/mock"
+)
+
+const (
+	testVolumeName = "testVolume"
+	snapshotName   = "snappy"
 )
 
 const (
@@ -135,7 +140,7 @@ func TestController_CreateVolume(t *testing.T) {
 			name: "Test Volume Already Exists",
 			args: args{
 				&csi.CreateVolumeRequest{
-					Name:               "testVolume",
+					Name:               testVolumeName,
 					VolumeCapabilities: caps,
 					CapacityRange: &csi.CapacityRange{
 						RequiredBytes: 10 * giB,
@@ -256,7 +261,7 @@ func TestController_DeleteVolume(t *testing.T) {
 			name: "Test Delete Volume",
 			args: args{
 				&csi.DeleteVolumeRequest{
-					VolumeId: "testVolume",
+					VolumeId: testVolumeName,
 				},
 			},
 			wantErr:  false,
@@ -332,7 +337,7 @@ func TestController_ControllerUnpublishVolume(t *testing.T) {
 			name: "Test Unpublish Volume",
 			args: args{
 				&csi.ControllerUnpublishVolumeRequest{
-					VolumeId: "testVolume",
+					VolumeId: testVolumeName,
 				},
 			},
 			wantErr: false,
@@ -367,7 +372,7 @@ func TestController_ValidateVolumeCapabilities(t *testing.T) {
 			name: "Test ValidateVolumeCapabilities",
 			args: args{
 				&csi.ValidateVolumeCapabilitiesRequest{
-					VolumeId: "testVolume",
+					VolumeId: testVolumeName,
 					VolumeCapabilities: []*csi.VolumeCapability{
 						{
 							AccessType: &csi.VolumeCapability_Mount{
@@ -438,7 +443,7 @@ func TestDriver_CreateSnapshot(t *testing.T) {
 			args: args{
 				req: &csi.CreateSnapshotRequest{
 					SourceVolumeId: uuid.NewString(),
-					Name:           "snappy",
+					Name:           snapshotName,
 				},
 				volExists:    false,
 				volBackingUp: false,
@@ -450,7 +455,7 @@ func TestDriver_CreateSnapshot(t *testing.T) {
 			args: args{
 				req: &csi.CreateSnapshotRequest{
 					SourceVolumeId: uuid.NewString(),
-					Name:           "snappy",
+					Name:           snapshotName,
 				},
 				volExists:    true,
 				volBackingUp: false,
@@ -462,7 +467,7 @@ func TestDriver_CreateSnapshot(t *testing.T) {
 			args: args{
 				req: &csi.CreateSnapshotRequest{
 					SourceVolumeId: uuid.NewString(),
-					Name:           "snappy",
+					Name:           snapshotName,
 				},
 				volExists:    true,
 				volBackingUp: true,

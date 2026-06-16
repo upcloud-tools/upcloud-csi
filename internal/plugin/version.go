@@ -7,7 +7,7 @@ import (
 
 // When building any packages that import version, pass the build/install cmd
 // ldflags like so:
-//   go build -ldflags "-X github.com/UpCloudLtd/upcloud-csi/internal/plugin.version=0.0.1"
+//   go build -ldflags "-X github.com/upcloud-tools/upcloud-csi/internal/plugin.version=0.0.1"
 
 // TODO look at cleaner way to set these :(.
 var (
@@ -32,5 +32,5 @@ func GetTreeState() string {
 }
 
 func PrintVersion() {
-	fmt.Fprintf(os.Stdout, "%s - %s (%s)\n", GetVersion(), GetCommit(), GetTreeState())
+	fmt.Fprintf(os.Stdout, "%s - %s (%s)\n", GetVersion(), GetCommit(), GetTreeState()) //nolint:errcheck // print to stdout, not critical
 }

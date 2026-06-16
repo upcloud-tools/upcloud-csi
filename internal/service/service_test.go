@@ -9,14 +9,14 @@ import (
 	"testing"
 	"time"
 
-	"github.com/UpCloudLtd/upcloud-csi/internal/service"
-	"github.com/UpCloudLtd/upcloud-csi/internal/service/mock"
 	"github.com/UpCloudLtd/upcloud-go-api/v8/upcloud"
 	"github.com/UpCloudLtd/upcloud-go-api/v8/upcloud/client"
 	"github.com/UpCloudLtd/upcloud-go-api/v8/upcloud/request"
 	upsvc "github.com/UpCloudLtd/upcloud-go-api/v8/upcloud/service"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"github.com/upcloud-tools/upcloud-csi/internal/service"
+	"github.com/upcloud-tools/upcloud-csi/internal/service/mock"
 )
 
 func TestUpCloudService_ListStorage(t *testing.T) {

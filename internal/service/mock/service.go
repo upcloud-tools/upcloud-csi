@@ -3,10 +3,10 @@ package mock
 import (
 	"context"
 
-	"github.com/UpCloudLtd/upcloud-csi/internal/service"
 	"github.com/UpCloudLtd/upcloud-go-api/v8/upcloud"
 	"github.com/UpCloudLtd/upcloud-go-api/v8/upcloud/request"
 	"github.com/google/uuid"
+	"github.com/upcloud-tools/upcloud-csi/internal/service"
 )
 
 type UpCloudServiceMock struct {

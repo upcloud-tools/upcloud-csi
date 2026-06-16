@@ -1,5 +1,5 @@
 PLUGIN_NAME=upcloud-csi-plugin
-PLUGIN_PKG ?= github.com/UpCloudLtd/upcloud-csi
+PLUGIN_PKG ?= github.com/upcloud-tools/upcloud-csi
 PLUGIN_CMD ?= ${PLUGIN_PKG}/cmd/upcloud-csi-plugin
 OS ?= linux
 GO_VERSION := 1.22
@@ -12,6 +12,9 @@ LDFLAGS ?= "-s -w -X ${PLUGIN_PKG}/internal/plugin.version=${TAG} \
 -X ${PLUGIN_PKG}/internal/plugin.commit=${COMMIT} \
 -X ${PLUGIN_PKG}/internal/plugin.gitTreeState=${TREE_STATE}"
 
+CONTAINER_REPO ?= ghcr.io/upcloud-tools/upcloud-csi-test
+IMAGE_TAG  ?= $(shell git rev-parse --short HEAD)
+
 .PHONY: compile
 compile:
 	@echo "==> Building the project"
@@ -20,15 +23,31 @@ compile:
 		go build -buildvcs=false -ldflags ${LDFLAGS} -o cmd/upcloud-csi-plugin/${PLUGIN_NAME} ${PLUGIN_CMD}'
 
 
-.PHONY: docker-build
-docker-build:
-	# TODO add versions and tags -t $(DOCKER_REPO):$(VERSION)
-	docker build --platform linux/x86_64 -t ghcr.io/upcloudltd/upcloud-csi:main cmd/upcloud-csi-plugin -f cmd/upcloud-csi-plugin/Dockerfile
+.PHONY: container-build
+container-build: build-plugin
+	buildah build --platform linux/amd64 -t $(CONTAINER_REPO):$(IMAGE_TAG) -f cmd/upcloud-csi-plugin/Containerfile cmd/upcloud-csi-plugin
+
+.PHONY: push-image
+push-image: container-build
+	@echo "==> Pushing image $(CONTAINER_REPO):$(IMAGE_TAG)"
+	buildah push $(CONTAINER_REPO):$(IMAGE_TAG)
+
+.PHONY: deploy-manifests
+deploy-manifests:
+	@echo "==> Deploying CSI driver manifests (image: $(CONTAINER_REPO):$(IMAGE_TAG))"
+	kubectl apply -f deploy/kubernetes/crd-upcloud-csi.yaml
+	kubectl apply -f deploy/kubernetes/rbac-upcloud-csi.yaml
+	sed 's|ghcr.io/upcloudltd/upcloud-csi:latest|$(CONTAINER_REPO):$(IMAGE_TAG)|g' \
+		deploy/kubernetes/setup-upcloud-csi.yaml | kubectl apply -f -
+	kubectl apply -f deploy/kubernetes/sc-upcloud-csi-test.yaml
+	kubectl -n kube-system rollout status statefulset/csi-upcloud-controller --timeout=180s
+	kubectl -n kube-system rollout status daemonset/csi-upcloud-node --timeout=180s
 
 .PHONY: clean-tests
 clean-tests:
-	KUBECONFIG=$(KUBECONFIG) kubectl delete all --all
-	KUBECONFIG=$(KUBECONFIG) kubectl delete persistentvolumeclaims --all
+	kubectl -n default delete all --all
+	kubectl -n default delete persistentvolumeclaims --all
+	kubectl delete storageclass upcloud-block-storage-maxiops-test --ignore-not-found
 
 .PHONY: test
 test:
@@ -38,6 +57,18 @@ test:
 test-integration:
 	make -C test/integration test
 
+# CI-friendly e2e test — Ginkgo output interceptor captures subprocess output and emits it per test case.
+.PHONY: test-e2e
+test-e2e:
+	@echo "==> Running e2e tests"
+	cd test/e2e && go test -tags e2e -v -timeout 30m ./...
+
+# Local-development variant — disables Ginkgo's output interceptor logs appear in real time.
+# Do not use in CI: output from different test cases can interleave.
+.PHONY: test-e2e-verbose
+test-e2e-verbose:
+	@echo "==> Running e2e tests (verbose mode)"
+	cd test/e2e && go test -tags e2e -v --ginkgo.output-interceptor-mode=none -timeout 30m ./...
 
 build-plugin:
 	CGO_ENABLED=0 go build -ldflags ${LDFLAGS} -o cmd/upcloud-csi-plugin/${PLUGIN_NAME} ${PLUGIN_CMD}

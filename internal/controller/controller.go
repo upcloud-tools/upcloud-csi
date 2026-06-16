@@ -8,12 +8,12 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/UpCloudLtd/upcloud-csi/internal/logger"
-	"github.com/UpCloudLtd/upcloud-csi/internal/service"
 	"github.com/UpCloudLtd/upcloud-go-api/v8/upcloud"
 	"github.com/UpCloudLtd/upcloud-go-api/v8/upcloud/request"
 	"github.com/container-storage-interface/spec/lib/go/csi"
 	"github.com/sirupsen/logrus"
+	"github.com/upcloud-tools/upcloud-csi/internal/logger"
+	"github.com/upcloud-tools/upcloud-csi/internal/service"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/timestamppb"
@@ -403,7 +403,7 @@ func (c *Controller) ListVolumes(ctx context.Context, req *csi.ListVolumesReques
 
 	volumes, listNext := paginateStorage(volumes, listStart, int(req.GetMaxEntries()))
 
-	entries := make([]*csi.ListVolumesResponse_Entry, 0)
+	entries := make([]*csi.ListVolumesResponse_Entry, 0, len(volumes))
 	for _, vol := range volumes {
 		entries = append(entries, &csi.ListVolumesResponse_Entry{
 			Volume: &csi.Volume{
@@ -427,7 +427,7 @@ func (c *Controller) GetCapacity(ctx context.Context, req *csi.GetCapacityReques
 
 // ControllerGetCapabilities returns the capacity of the storage pool.
 func (c *Controller) ControllerGetCapabilities(ctx context.Context, req *csi.ControllerGetCapabilitiesRequest) (*csi.ControllerGetCapabilitiesResponse, error) {
-	caps := make([]*csi.ControllerServiceCapability, 0)
+	caps := make([]*csi.ControllerServiceCapability, 0, len(supportedCapabilities))
 	for _, capability := range supportedCapabilities {
 		caps = append(caps, &csi.ControllerServiceCapability{
 			Type: &csi.ControllerServiceCapability_Rpc{
@@ -548,7 +548,7 @@ func (c *Controller) ListSnapshots(ctx context.Context, req *csi.ListSnapshotsRe
 		}
 	}
 	backups, listNext := paginateStorage(backups, listStart, int(req.GetMaxEntries()))
-	entries := make([]*csi.ListSnapshotsResponse_Entry, 0)
+	entries := make([]*csi.ListSnapshotsResponse_Entry, 0, len(backups))
 	for _, s := range backups {
 		entries = append(entries, &csi.ListSnapshotsResponse_Entry{
 			Snapshot: &csi.Snapshot{
@@ -568,6 +568,8 @@ func (c *Controller) ListSnapshots(ctx context.Context, req *csi.ListSnapshotsRe
 }
 
 // ControllerExpandVolume is called from the resizer to increase the volume size.
+//
+//nolint:funlen // ControllerExpandVolume orchestrates multiple operations
 func (c *Controller) ControllerExpandVolume(ctx context.Context, req *csi.ControllerExpandVolumeRequest) (*csi.ControllerExpandVolumeResponse, error) {
 	volumeID := req.GetVolumeId()
 
@@ -599,7 +601,15 @@ func (c *Controller) ControllerExpandVolume(ctx context.Context, req *csi.Contro
 	}
 
 	if len(volume.ServerUUIDs) > 0 {
-		return nil, status.Error(codes.FailedPrecondition, "volume is currently published on a node")
+		log.Info("expanding volume while published on a node")
+		_, err = c.svc.ResizeBlockDevice(ctx, volume.UUID, int(resizeGigaBytes))
+		if err != nil {
+			return nil, status.Errorf(codes.Internal, "cannot resize volume %s: %s", volumeID, err.Error())
+		}
+		return &csi.ControllerExpandVolumeResponse{
+			CapacityBytes:         resizeGigaBytes * giB,
+			NodeExpansionRequired: true,
+		}, nil
 	}
 
 	isBlockDevice := false

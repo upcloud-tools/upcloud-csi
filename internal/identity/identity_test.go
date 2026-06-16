@@ -4,10 +4,10 @@ import (
 	"context"
 	"testing"
 
-	"github.com/UpCloudLtd/upcloud-csi/internal/identity"
-	"github.com/UpCloudLtd/upcloud-csi/internal/logger"
 	"github.com/container-storage-interface/spec/lib/go/csi"
 	"github.com/stretchr/testify/require"
+	"github.com/upcloud-tools/upcloud-csi/internal/identity"
+	"github.com/upcloud-tools/upcloud-csi/internal/logger"
 )
 
 func TestIdentity_GetPluginInfo(t *testing.T) {
@@ -47,7 +47,7 @@ func TestIdentity_GetPluginCapabilities(t *testing.T) {
 			{
 				Type: &csi.PluginCapability_VolumeExpansion_{
 					VolumeExpansion: &csi.PluginCapability_VolumeExpansion{
-						Type: csi.PluginCapability_VolumeExpansion_OFFLINE,
+						Type: csi.PluginCapability_VolumeExpansion_ONLINE,
 					},
 				},
 			},

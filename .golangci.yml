@@ -1,3 +1,4 @@
+version: "2"
 #
 # UpCloud golangci-lint configuration
 #
@@ -6,7 +7,7 @@ linters:
   #
   # We use a custom set of linters, so disable all and enable one-by-one.
   #
-  disable-all: true
+  default: none
   #
   # Run golangci-lint linters or see https://golangci-lint.run/usage/linters/
   # for a list of all linters. This config was last updated for v1.50.1.
@@ -144,10 +145,6 @@ linters:
     # using `pkg/errors`, but those are generally moving towards stdlib.
     - errorlint
 
-    # Checks that SQL statements are executed with the appropriate `.Exec` or
-    # `.Query` function.
-    - execinquery
-
     # Checks that switches of enum(-like) types cover every possible case.
     # Very helpful when we need to add new cases to enums, making sure that all
     # the relevant bits are checked. Can become annoying if there's a _lot_ of
@@ -255,13 +252,6 @@ linters:
     # Similar: `gofumpt`, `goimports`.
     ## - gofmt # DISABLE
 
-    # A more opinionated superset of `gofmt`, enforcing a standard formatting
-    # of code, autofixable. See the list of added rules over `go fmt` at
-    # https://github.com/mvdan/gofumpt#added-rules. IDE configured to format
-    # with gofumpt recommended.
-    # Similar: `gofmt` + `gci`, `goimports`.
-    - gofumpt
-
     # Check file header matches a configured pattern. We don't have a standard
     # one applicable to all projects.
     ## - goheader # DISABLE
@@ -296,10 +286,6 @@ linters:
     # config, for example related to intentionally relaxed file permissions and
     # `math/rand` vs `crypto/rand`.
     - gosec
-
-    # Suggests various simplifications in code, hopefully resulting in better
-    # readability. Perhaps slightly on the aggressive side.
-    - gosimple
 
     # `go vet` is the 'official' linter, found in stdlib. Seems to do a lot of
     # the same stuff as `staticcheck`, but as both are enabled in golangci-lint
@@ -343,7 +329,7 @@ linters:
 
     # Check that common logger library function calls have appropriate number
     # of key/value arguments.
-    - logrlint
+    - loggercheck
 
     # See discussion in `cyclop`.
     ## - maintidx # DISABLE
@@ -480,11 +466,6 @@ linters:
     # style concerns.
     ## - tagliatelle # DISABLE
 
-    # Advises to use `t.SetEnv` instead of `os.SetEnv` so that one does not
-    # need to bother with restoring the pre-test env var value. Note that
-    # this is not applicable to parallel tests.
-    - tenv
-
     # Checks that examples run by the `testing` package have an applicable
     # "output" comment, so that the example output can be verified to be as
     # expected.
@@ -509,13 +490,6 @@ linters:
 
     # See discussion for `paralleltest`.
     - tparallel
-
-    # Basically does what the frontend of the Go compiler does, parses and type
-    # checks code. More of a sanity check before committing than an actual
-    # linter. Several other linters require compiled/typechecked code before
-    # they can do their work, so this cannot really be disabled in the usual
-    # sense. See https://github.com/golangci/golangci-lint/issues/2912
-    - typecheck
 
     # Warns on unnecessary type conversions. Unnecessary conversions make code
     # harder to read and can also relay false information to the developer,
@@ -570,19 +544,135 @@ linters:
     # over this.
     ## - wsl # DISABLE
 
-output:
-  # Get all issues from all linters, instead of just first per line, so we
-  # get to see everything on first pass.
-  uniq-by-line: false
+  exclusions:
+    rules:
+      - path: _test\.go
+        linters:
+          # Test functions can easily grow quite large and don't/can't really
+          # be shortened
+          - funlen
+          # Enforcing context in tests clutters up the code and isn't really
+          # necessary
+          - noctx
+          # Closing response bodies in tests clutters up the code and isn't
+          # really necessary
+          - bodyclose
+          # Deferred cleanup and test helpers don't need error checking
+          - errcheck
+          # Repeated strings in test data are intentional
+          - goconst
+          # Slice literals in tests don't benefit from capacity hints
+          - prealloc
+
+  settings:
+    errcheck:
+      # See discussion in `forcetypeassert`.
+      check-type-assertions: true
+
+    staticcheck:
+      checks:
+        - "-QF1008"
+
+    gocritic:
+      disabled-checks:
+        # commentFormatting is redundant with/inferior to gofumpt which can also
+        # autofix this.
+        - commentFormatting
+        # hugeParam, range*Copy (from performance tag) to be discussed, arguably
+        # promote unconventional code.
+        - hugeParam
+        - rangeValCopy
+        - rangeExprCopy
+      enabled-tags:
+        # Most performance checks also encourage clean/idiomatic code.
+        - performance
+      settings:
+        captLocal:
+          paramsOnly: false
+
+    importas:
+      no-unaliased: true
+      alias:
+        # Prominently differentiate pkg/errors and stdlib errors.
+        - pkg: github.com/pkg/errors
+          alias: pkgerrors
+
+    nolintlint:
+      require-explanation: true
+      require-specific: true
+
+    reassign:
+      patterns:
+        - ".*"
+
+    revive:
+      rules:
+        - name: var-naming
+          arguments:
+            - []
+            - [
+                "ACME",
+                "AMQP",
+                "BGP",
+                "CA",
+                "CIDR",
+                "CSV",
+                "DB",
+                "DCMI",
+                "DHCP",
+                "DSA",
+                "ECDSA",
+                "EMA",
+                "EVI",
+                "EVPN",
+                "FIFO",
+                "FRU",
+                "GID",
+                "GPU",
+                "IB",
+                "IPMI",
+                "JWT",
+                "KV",
+                "LAN",
+                "LFU",
+                "LIFO",
+                "LRU",
+                "MAC",
+                "NIC",
+                "PDF",
+                "PKI",
+                "PSU",
+                "PTR",
+                "RSA",
+                "RTP",
+                "RX",
+                "SCSI",
+                "SDN",
+                "SHA",
+                "SIP",
+                "SPOE",
+                "SSD",
+                "TS",
+                "TSV",
+                "TTL",
+                "TX",
+                "TXN",
+                "ULID",
+                "VAT",
+                "VCPU",
+                "VIP",
+                "VLAN",
+                "VRF",
+              ]
+
+formatters:
+  enable:
+    - gofumpt
+  settings:
+    gofumpt:
+      extra-rules: true
 
 issues:
-  exclude:
-    # We used to have a mixture of initialisms and non-initialisms between and
-    # even within projects, but are converging towards the initialisms practice
-    # that is the most common one with Go code in general. Note that changing
-    # the naming is a breaking change, and whether/when/how to do it depends on
-    # the case at hand.
-    # - "^var-naming: .+ should be " # OPTIONAL, if needed
   # Disable per linter/same-issue limits, again to get the whole picture on
   # first pass.
   max-issues-per-linter: 0
@@ -590,116 +680,6 @@ issues:
   # Fix found issues where supported, because life is too short. Be sure to
   # sanity check the diffs.
   fix: true
-  # Exclude some linters from testing
-  exclude-rules:
-    - path: _test\.go
-      linters:
-        # Test functions can easily grow quite large and don't/can't really
-        # be shortened
-        - funlen
-        # Enforcing context in tests clutters up the code and isn't really
-        # necessary
-        - noctx
-        # Closing response bodies in tests clutters up the code and isn't
-        # really necessary
-        - bodyclose
-
-linters-settings:
-  errcheck:
-    # See discussion in `forcetypeassert`.
-    check-type-assertions: true
-
-  gocritic:
-    disabled-checks:
-      # commentFormatting is redundant with/inferior to gofumpt which can also
-      # autofix this.
-      - commentFormatting
-      # hugeParam, range*Copy (from performance tag) to be discussed, arguably
-      # promote unconventional code.
-      - hugeParam
-      - rangeValCopy
-      - rangeExprCopy
-    enabled-tags:
-      # Most performance checks also encourage clean/idiomatic code.
-      - performance
-    settings:
-      captLocal:
-        paramsOnly: false
-
-  gofumpt:
-    extra-rules: true
-
-  importas:
-    no-unaliased: true
-    alias:
-      # Prominently differentiate pkg/errors and stdlib errors.
-      - pkg: github.com/pkg/errors
-        alias: pkgerrors
-
-  nolintlint:
-    require-explanation: true
-    require-specific: true
-
-  reassign:
-    patterns:
-      - ".*"
-
-  revive:
-    rules:
-      - name: var-naming
-        arguments:
-          - []
-          - [
-              "ACME",
-              "AMQP",
-              "BGP",
-              "CA",
-              "CIDR",
-              "CSV",
-              "DB",
-              "DCMI",
-              "DHCP",
-              "DSA",
-              "ECDSA",
-              "EMA",
-              "EVI",
-              "EVPN",
-              "FIFO",
-              "FRU",
-              "GID",
-              "GPU",
-              "IB",
-              "IPMI",
-              "JWT",
-              "KV",
-              "LAN",
-              "LFU",
-              "LIFO",
-              "LRU",
-              "MAC",
-              "NIC",
-              "PDF",
-              "PKI",
-              "PSU",
-              "PTR",
-              "RSA",
-              "RTP",
-              "RX",
-              "SCSI",
-              "SDN",
-              "SHA",
-              "SIP",
-              "SPOE",
-              "SSD",
-              "TS",
-              "TSV",
-              "TTL",
-              "TX",
-              "TXN",
-              "ULID",
-              "VAT",
-              "VCPU",
-              "VIP",
-              "VLAN",
-              "VRF",
-            ]
+  # Get all issues from all linters, instead of just first per line, so we
+  # get to see everything on first pass.
+  uniq-by-line: false

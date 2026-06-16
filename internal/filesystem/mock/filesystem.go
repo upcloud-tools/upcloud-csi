@@ -7,8 +7,8 @@ import (
 	"os"
 	"strings"
 
-	"github.com/UpCloudLtd/upcloud-csi/internal/filesystem"
 	"github.com/sirupsen/logrus"
+	"github.com/upcloud-tools/upcloud-csi/internal/filesystem"
 )
 
 type MockFilesystem struct {
@@ -47,7 +47,7 @@ func (m *MockFilesystem) Unmount(ctx context.Context, path string) error {
 	return nil
 }
 
-//nolint:gosec // Use of weak random number generator (math/rand instead of crypto/rand) (gosec)
+//nolint:gosec // Use of weak random number generator (math/rand instead of crypto/rand)
 func (m *MockFilesystem) Statistics(volumePath string) (filesystem.VolumeStatistics, error) {
 	stats := filesystem.VolumeStatistics{
 		AvailableBytes:  int64(rand.Intn(1000)),
@@ -74,4 +74,9 @@ func (m *MockFilesystem) GetDeviceLastPartition(ctx context.Context, source stri
 	}
 	m.log.Debugf("Mock GetDeviceLastPartition(%s) -> %s1", source, source)
 	return fmt.Sprintf("%s1", source), nil
+}
+
+func (m *MockFilesystem) ResizeVolume(ctx context.Context, source, volumePath string) error {
+	m.log.Debugf("Mock ResizeVolume(%s, %s) -> nil", source, volumePath)
+	return nil
 }

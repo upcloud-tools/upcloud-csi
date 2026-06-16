@@ -4,9 +4,9 @@ import (
 	"context"
 	"log"
 
-	"github.com/UpCloudLtd/upcloud-csi/test/e2e/mock"
 	"github.com/google/uuid"
 	"github.com/onsi/gomega"
+	"github.com/upcloud-tools/upcloud-csi/test/e2e/mock"
 )
 
 func TestListVolumes() {

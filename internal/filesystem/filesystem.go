@@ -21,4 +21,5 @@ type Filesystem interface {
 	Statistics(volumePath string) (VolumeStatistics, error)
 	GetDeviceByID(ctx context.Context, ID string) (string, error)
 	GetDeviceLastPartition(ctx context.Context, source string) (string, error)
+	ResizeVolume(ctx context.Context, source, volumePath string) error
 }

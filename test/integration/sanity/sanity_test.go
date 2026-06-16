@@ -10,12 +10,12 @@ import (
 	"testing"
 	"time"
 
-	"github.com/UpCloudLtd/upcloud-csi/internal/filesystem/mock"
-	"github.com/UpCloudLtd/upcloud-csi/internal/plugin"
-	"github.com/UpCloudLtd/upcloud-csi/internal/plugin/config"
 	"github.com/kubernetes-csi/csi-test/v5/pkg/sanity"
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/require"
+	"github.com/upcloud-tools/upcloud-csi/internal/filesystem/mock"
+	"github.com/upcloud-tools/upcloud-csi/internal/plugin"
+	"github.com/upcloud-tools/upcloud-csi/internal/plugin/config"
 )
 
 func TestDriverSanity(t *testing.T) {
@@ -34,8 +34,8 @@ func TestDriverSanity(t *testing.T) {
 	cfg, err := newTestConfig(endpoint.String())
 	require.NoError(t, err)
 	defer func() {
-		os.RemoveAll(cfg.StagingPath)
-		os.RemoveAll(cfg.TargetPath)
+		_ = os.RemoveAll(cfg.StagingPath)
+		_ = os.RemoveAll(cfg.TargetPath)
 	}()
 
 	// wait server to start
@@ -61,6 +61,11 @@ func runTestDriver(endpoint *url.URL) error {
 		}
 	}
 
+	zone := os.Getenv("UPCLOUD_TEST_ZONE")
+	if zone == "" {
+		zone = "de-fra1"
+	}
+
 	logger := logrus.New()
 	logger.SetLevel(logrus.InfoLevel)
 	logger.SetOutput(io.Discard)
@@ -73,7 +78,7 @@ func runTestDriver(endpoint *url.URL) error {
 			PluginServerAddress: endpoint.String(),
 			HealtServerAddress:  "http://127.0.0.1:8080",
 			NodeHost:            hostname,
-			Zone:                "",
+			Zone:                zone,
 			Filesystem:          mock.NewFilesystem(logger),
 			LogLevel:            logger.Level.String(),
 			Mode:                config.DriverModeMonolith,
