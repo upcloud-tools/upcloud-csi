@@ -81,7 +81,17 @@ func (c *Client) WaitForPVCCapacity(ctx context.Context, pvcName, namespace stri
 			return false, err
 		}
 
-		capacity, ok := pvc.Status.Capacity[v1.ResourceStorage]
+		pvName := pvc.Spec.VolumeName
+		if pvName == "" {
+			return false, nil
+		}
+
+		pv, err := c.k8s.CoreV1().PersistentVolumes().Get(ctx, pvName, metav1.GetOptions{})
+		if err != nil {
+			return false, err
+		}
+
+		capacity, ok := pv.Spec.Capacity[v1.ResourceStorage]
 		if !ok {
 			return false, nil
 		}
@@ -91,7 +101,7 @@ func (c *Client) WaitForPVCCapacity(ctx context.Context, pvcName, namespace stri
 }
 
 func getMaxIOPSStorageClass() *string {
-	maxIOPS := "upcloud-block-storage-maxiops"
+	maxIOPS := "upcloud-block-storage-maxiops-test"
 	return &maxIOPS
 }
 

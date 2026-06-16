@@ -2,7 +2,9 @@ package testruns
 
 import (
 	"context"
+	"fmt"
 	"log"
+	"time"
 
 	"github.com/google/uuid"
 	"github.com/onsi/gomega"
@@ -35,10 +37,14 @@ func TestProvisionResizeVolume() {
 	err = client.WaitForPVCCapacity(ctx, pvc.Name, pvc.Namespace, resource.MustParse("20Gi"))
 	gomega.Expect(err).NotTo(gomega.HaveOccurred())
 
-	log.Println("verifying filesystem is accessible after resize")
-	err = client.Exec(mock.ExecParams{
-		Command: "df -h /data",
-		PodName: pod.Name,
-	})
-	gomega.Expect(err).NotTo(gomega.HaveOccurred())
+	log.Println("waiting for NodeExpandVolume to resize filesystem on running pod")
+	gomega.Eventually(func() error {
+		return client.Exec(mock.ExecParams{
+			Command: fmt.Sprintf(
+				"df -k /data | awk 'NR==2{print \"current filesystem size: \"$2\", need >= %d\"; exit ($2+0 < %d)}'",
+				19000000, 19000000,
+			),
+			PodName: pod.Name,
+		})
+	}, 5*time.Minute, 5*time.Second).Should(gomega.Succeed())
 }

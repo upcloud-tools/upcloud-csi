@@ -19,6 +19,7 @@ type ExecParams struct {
 	Command        string
 	ExpectedString string
 	PodName        string
+	PodNamespace   string
 }
 
 func NewClient(namespace string) (*Client, error) {
@@ -38,6 +39,14 @@ func NewClient(namespace string) (*Client, error) {
 	}
 
 	return &Client{k8s: k8s, ns: namespace}, nil
+}
+
+func execArgs(params ExecParams, cmdStr string) []string {
+	ns := params.PodNamespace
+	if ns == "" {
+		ns = "default"
+	}
+	return []string{"exec", "-i", "-n", ns, params.PodName, "--", shellPath, "-c", cmdStr}
 }
 
 func (c *Client) Exec(params ExecParams) error {
@@ -61,7 +70,7 @@ func (c *Client) Exec(params ExecParams) error {
 	}
 
 	cmd := "kubectl"
-	args := []string{"exec", "-i", params.PodName, "--", shellPath, "-c", params.Command}
+	args := execArgs(params, params.Command)
 
 	cmdSh := exec.Command(cmd, args...) //nolint:gosec,noctx // kubectl with dynamic args for e2e test
 	cmdSh.Dir = projectRoot
@@ -78,8 +87,8 @@ func (c *Client) Exec(params ExecParams) error {
 	}
 
 	if params.ExpectedString != "" {
-		// nolint:gosec // kubectl with dynamic args for e2e test
-		checkCmd := exec.Command(cmd, "exec", "-i", params.PodName, "--", shellPath, "-c", fmt.Sprintf("%s | grep -q '%s'", params.Command, params.ExpectedString))
+		checkArgs := execArgs(params, fmt.Sprintf("%s | grep -q '%s'", params.Command, params.ExpectedString))
+		checkCmd := exec.Command(cmd, checkArgs...) //nolint:gosec,noctx // kubectl with dynamic args for e2e test
 		checkCmd.Dir = projectRoot
 		checkCmd.Stdout = os.Stdout
 		checkCmd.Stderr = os.Stderr
