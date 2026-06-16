@@ -57,10 +57,18 @@ test:
 test-integration:
 	make -C test/integration test
 
+# CI-friendly e2e test — Ginkgo output interceptor captures subprocess output and emits it per test case.
 .PHONY: test-e2e
 test-e2e:
 	@echo "==> Running e2e tests"
 	cd test/e2e && go test -tags e2e -v -timeout 30m ./...
+
+# Local-development variant — disables Ginkgo's output interceptor logs appear in real time.
+# Do not use in CI: output from different test cases can interleave.
+.PHONY: test-e2e-verbose
+test-e2e-verbose:
+	@echo "==> Running e2e tests (verbose mode)"
+	cd test/e2e && go test -tags e2e -v --ginkgo.output-interceptor-mode=none -timeout 30m ./...
 
 build-plugin:
 	CGO_ENABLED=0 go build -ldflags ${LDFLAGS} -o cmd/upcloud-csi-plugin/${PLUGIN_NAME} ${PLUGIN_CMD}
