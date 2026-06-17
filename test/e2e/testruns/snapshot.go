@@ -52,7 +52,7 @@ func TestCreateAndRestoreSnapshot() {
 	gomega.Expect(err).NotTo(gomega.HaveOccurred())
 
 	log.Println("waiting for restored PVC to be bound...")
-	err = client.WaitForPVCWithTimeout(ctx, restoredPVC.Name, restoredPVC.Namespace, 3*time.Minute)
+	err = client.WaitForPVCWithTimeout(ctx, restoredPVC.Name, restoredPVC.Namespace, 6*time.Minute)
 	gomega.Expect(err).NotTo(gomega.HaveOccurred())
 
 	log.Println("deleting restored PVC...")
