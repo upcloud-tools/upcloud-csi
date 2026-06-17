@@ -50,7 +50,7 @@ test-integration:
 .PHONY: test-e2e
 test-e2e:
 	@echo "==> Running e2e tests"
-	cd test/e2e && go test -tags e2e -v -timeout 30m --ginkgo.procs=4 ./...
+	cd test/e2e && go test -tags e2e -v -timeout 30m ./...
 
 # Local-development variant — sequential execution with real-time output.
 .PHONY: test-e2e-verbose
