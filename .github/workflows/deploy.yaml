@@ -11,7 +11,7 @@ permissions:
 
 jobs:
   build-image:
-    uses: ./.github/workflows/reusable-build.yaml
+    uses: ./.github/workflows/_reusable-build.yaml
     with:
       tags: |
         ${{ github.ref_name }}

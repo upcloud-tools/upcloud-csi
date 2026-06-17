@@ -97,3 +97,13 @@ release-notes:
 		/${CHANGELOG_HEADER}/ { if ( flag ) { exit; } } \
 		flag { if ( n ) { print prev; } n++; prev = $$0 }' \
 		CHANGELOG.md
+
+HELM_CHART_DIR = deploy/helm
+
+.PHONY: helm-lint
+helm-lint:
+	helm lint $(HELM_CHART_DIR)
+
+.PHONY: helm-package
+helm-package:
+	helm package $(HELM_CHART_DIR) --destination ./dist
