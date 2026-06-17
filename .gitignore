@@ -10,3 +10,4 @@ vendor/
 dist/
 # Generated release notes
 .release_notes
+*.kubeconfig.yaml

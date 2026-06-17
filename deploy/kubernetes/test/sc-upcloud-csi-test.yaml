@@ -8,3 +8,15 @@ parameters:
 provisioner: storage.csi.upcloud.com
 allowVolumeExpansion: true
 reclaimPolicy: Delete
+
+---
+kind: StorageClass
+apiVersion: storage.k8s.io/v1
+metadata:
+  name: upcloud-block-storage-maxiops-xfs-test
+parameters:
+  tier: maxiops
+  fsType: xfs
+provisioner: storage.csi.upcloud.com
+allowVolumeExpansion: true
+reclaimPolicy: Delete
