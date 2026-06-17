@@ -30,6 +30,7 @@ func (c *Client) CreateVolumeSnapshotClass(ctx context.Context, name, driver, de
 	obj.SetAPIVersion("snapshot.storage.k8s.io/v1")
 	obj.SetKind("VolumeSnapshotClass")
 	obj.SetName(name)
+	obj.SetLabels(map[string]string{"csi-test": c.testRunID})
 	obj.SetDeletionTimestamp(nil)
 
 	if err := unstructured.SetNestedField(obj.Object, driver, "driver"); err != nil {
@@ -48,6 +49,7 @@ func (c *Client) CreateVolumeSnapshot(ctx context.Context, name, namespace, snap
 	obj.SetKind("VolumeSnapshot")
 	obj.SetName(name)
 	obj.SetNamespace(namespace)
+	obj.SetLabels(map[string]string{"csi-test": c.testRunID})
 
 	source := map[string]interface{}{
 		"persistentVolumeClaimName": pvcName,

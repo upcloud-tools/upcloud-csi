@@ -12,9 +12,10 @@ import (
 )
 
 type Client struct {
-	k8s     kubernetes.Interface
-	dynamic dynamic.Interface
-	ns      string
+	k8s       kubernetes.Interface
+	dynamic   dynamic.Interface
+	ns        string
+	testRunID string
 }
 
 func (c *Client) CreatePod(ctx context.Context, podName, pvcName string) (*v1.Pod, error) {

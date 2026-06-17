@@ -3,6 +3,7 @@ package testruns
 import (
 	"context"
 	"log"
+	"time"
 
 	"github.com/google/uuid"
 	"github.com/onsi/gomega"
@@ -11,7 +12,7 @@ import (
 
 func TestCreateAndRestoreSnapshot() {
 	ctx := context.Background()
-	client, err := mock.NewClient("default")
+	client, err := mock.NewClient(Namespace)
 	gomega.Expect(err).NotTo(gomega.HaveOccurred())
 
 	vsClassName := "test-vsc-" + uuid.New().String()
@@ -46,11 +47,11 @@ func TestCreateAndRestoreSnapshot() {
 	log.Printf("VolumeSnapshot status: readyToUse=%v", status["readyToUse"])
 
 	log.Println("creating PVC from snapshot (restore)...")
-	restoredPVC, err := client.CreatePVCFromSnapshot(ctx, restoredPVCName, snapshotName, pvc.Namespace)
+	restoredPVC, err := client.CreatePVCFromSnapshot(ctx, restoredPVCName, snapshotName)
 	gomega.Expect(err).NotTo(gomega.HaveOccurred())
 
 	log.Println("waiting for restored PVC to be bound...")
-	err = client.WaitForPVC(ctx, restoredPVC.Name, restoredPVC.Namespace)
+	err = client.WaitForPVCWithTimeout(ctx, restoredPVC.Name, restoredPVC.Namespace, 3*time.Minute)
 	gomega.Expect(err).NotTo(gomega.HaveOccurred())
 
 	log.Println("deleting restored PVC...")

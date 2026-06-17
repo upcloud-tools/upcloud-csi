@@ -33,14 +33,16 @@ deploy-manifests:
 
 .PHONY: clean-tests
 clean-tests:
-	kubectl -n default delete all --all --timeout=30s
-	kubectl -n default delete persistentvolumeclaims --all --timeout=30s
-	kubectl delete storageclass upcloud-block-storage-maxiops-test --ignore-not-found --timeout=30s
-	kubectl delete storageclass upcloud-block-storage-maxiops-xfs-test --ignore-not-found --timeout=30s
-	kubectl -n default delete volumesnapshots.snapshot.storage.k8s.io --all --ignore-not-found --timeout=30s
-	kubectl patch volumesnapshotcontents.snapshot.storage.k8s.io --all -p '{"metadata":{"finalizers":[]}}' --type=merge 2>/dev/null || true
-	kubectl delete volumesnapshotcontents.snapshot.storage.k8s.io --all --ignore-not-found --timeout=30s
-	kubectl delete volumesnapshotclasses.snapshot.storage.k8s.io --all --ignore-not-found --timeout=30s
+	kubectl -n "$(NAMESPACE)" patch volumesnapshots.snapshot.storage.k8s.io --all \
+		-p '{"metadata":{"finalizers":[]}}' --type=merge 2>/dev/null || true
+	kubectl delete namespace "$(NAMESPACE)" --timeout=30s 2>/dev/null || true
+	kubectl patch volumesnapshotcontents.snapshot.storage.k8s.io \
+		-l "csi-test=$(TEST_RUN_ID)" \
+		-p '{"metadata":{"finalizers":[]}}' --type=merge 2>/dev/null || true
+	kubectl delete volumesnapshotcontents.snapshot.storage.k8s.io \
+		-l "csi-test=$(TEST_RUN_ID)" --ignore-not-found --timeout=30s
+	kubectl delete volumesnapshotclasses.snapshot.storage.k8s.io \
+		-l "csi-test=$(TEST_RUN_ID)" --ignore-not-found --timeout=30s
 
 .PHONY: test
 test:

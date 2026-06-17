@@ -14,7 +14,7 @@ import (
 
 func TestProvisionResizeVolume() {
 	ctx := context.Background()
-	client, err := mock.NewClient("default")
+	client, err := mock.NewClient(Namespace)
 	gomega.Expect(err).NotTo(gomega.HaveOccurred())
 
 	pvcName := uuid.New().String()
@@ -44,7 +44,8 @@ func TestProvisionResizeVolume() {
 				"df -k /data | awk 'NR==2{print \"current filesystem size: \"$2\", need >= %d\"; exit ($2+0 < %d)}'",
 				19000000, 19000000,
 			),
-			PodName: pod.Name,
+			PodName:      pod.Name,
+			PodNamespace: pod.Namespace,
 		})
 	}, 5*time.Minute, 5*time.Second).Should(gomega.Succeed())
 }

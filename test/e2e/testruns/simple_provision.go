@@ -13,7 +13,7 @@ import (
 
 func TestPublishUnPublishVolume() {
 	ctx := context.Background()
-	client, err := mock.NewClient("default")
+	client, err := mock.NewClient(Namespace)
 	gomega.Expect(err).NotTo(gomega.HaveOccurred())
 
 	pvcName := uuid.New().String()
