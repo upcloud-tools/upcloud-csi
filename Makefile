@@ -3,7 +3,7 @@ COMMIT = $(shell git log --format="%h" -n 1)
 TREE_STATE = $(shell git diff --quiet && echo 'clean' || echo 'dirty')
 
 CONTAINER_REPO ?= ghcr.io/upcloud-tools/upcloud-csi-test
-IMAGE_TAG  ?= $(shell git rev-parse --short HEAD)
+IMAGE_TAG ?= $(shell git rev-parse HEAD)
 
 
 .PHONY: container-build
@@ -33,9 +33,16 @@ deploy-manifests:
 
 .PHONY: clean-tests
 clean-tests:
-	kubectl -n default delete all --all
-	kubectl -n default delete persistentvolumeclaims --all
-	kubectl delete storageclass upcloud-block-storage-maxiops-test --ignore-not-found
+	kubectl -n "$(NAMESPACE)" patch volumesnapshots.snapshot.storage.k8s.io --all \
+		-p '{"metadata":{"finalizers":[]}}' --type=merge 2>/dev/null || true
+	kubectl delete namespace "$(NAMESPACE)" --timeout=30s 2>/dev/null || true
+	kubectl patch volumesnapshotcontents.snapshot.storage.k8s.io \
+		-l "csi-test=$(TEST_RUN_ID)" \
+		-p '{"metadata":{"finalizers":[]}}' --type=merge 2>/dev/null || true
+	kubectl delete volumesnapshotcontents.snapshot.storage.k8s.io \
+		-l "csi-test=$(TEST_RUN_ID)" --ignore-not-found --timeout=30s
+	kubectl delete volumesnapshotclasses.snapshot.storage.k8s.io \
+		-l "csi-test=$(TEST_RUN_ID)" --ignore-not-found --timeout=30s
 
 .PHONY: test
 test:
@@ -45,18 +52,41 @@ test:
 test-integration:
 	make -C test/integration test
 
-# CI-friendly e2e test — runs 4 test cases in parallel to minimize running time.
-# Each test case creates uniquely-named PVCs/Pods, no resource conflicts.
+# CI-friendly e2e test — used in matrix strategy where each job runs one test.
+# Use named shortcuts to run a single test case:
+#   make test-e2e SNAPSHOT=y     — Create Snapshot And Restore
+#   make test-e2e RESIZE=y       — Resize Volume
+#   make test-e2e LIST=y         — List Volumes
+#   make test-e2e PERSISTENCE=y  — Attach Detach Volume
+#   make test-e2e CREATEDELETE=y — Create Delete Volume
 .PHONY: test-e2e
 test-e2e:
 	@echo "==> Running e2e tests"
-	cd test/e2e && go test -tags e2e -v -timeout 30m ./...
+	cd test/e2e && go test -tags e2e -v -timeout 30m \
+		$(if $(CREATEDELETE),--ginkgo.focus="Create Delete Volume",) \
+		$(if $(LIST),--ginkgo.focus="List Volumes",) \
+		$(if $(RESIZE),--ginkgo.focus="Resize Volume",) \
+		$(if $(PERSISTENCE),--ginkgo.focus="Attach Detach Volume",) \
+		$(if $(SNAPSHOT),--ginkgo.focus="Create Snapshot And Restore",) \
+		./...
 
 # Local-development variant — sequential execution with real-time output.
+# Use named shortcuts to run a single test case:
+#   make test-e2e-verbose SNAPSHOT=y   — Create Snapshot And Restore
+#   make test-e2e-verbose RESIZE=y     — Resize Volume
+#   make test-e2e-verbose LIST=y       — List Volumes
+#   make test-e2e-verbose PERSISTENCE=y — Attach Detach Volume
+#   make test-e2e-verbose CREATEDELETE=y — Create Delete Volume
 .PHONY: test-e2e-verbose
 test-e2e-verbose:
 	@echo "==> Running e2e tests (verbose mode)"
-	cd test/e2e && go test -tags e2e -v --ginkgo.output-interceptor-mode=none -timeout 30m ./...
+	cd test/e2e && go test -tags e2e -v --ginkgo.output-interceptor-mode=none -timeout 30m \
+		$(if $(CREATEDELETE),--ginkgo.focus="Create Delete Volume",) \
+		$(if $(LIST),--ginkgo.focus="List Volumes",) \
+		$(if $(RESIZE),--ginkgo.focus="Resize Volume",) \
+		$(if $(PERSISTENCE),--ginkgo.focus="Attach Detach Volume",) \
+		$(if $(SNAPSHOT),--ginkgo.focus="Create Snapshot And Restore",) \
+		./...
 
 .PHONY: release-notes
 release-notes: CHANGELOG_HEADER = ^\#\# \[

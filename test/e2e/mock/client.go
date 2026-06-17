@@ -8,7 +8,9 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/google/uuid"
 	"github.com/onsi/gomega"
+	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/clientcmd"
 )
@@ -38,7 +40,16 @@ func NewClient(namespace string) (*Client, error) {
 		return nil, err
 	}
 
-	return &Client{k8s: k8s, ns: namespace}, nil
+	dyn, err := dynamic.NewForConfig(config)
+	if err != nil {
+		return nil, err
+	}
+
+	rid := RunID
+	if rid == "" {
+		rid = uuid.New().String()
+	}
+	return &Client{k8s: k8s, dynamic: dyn, ns: namespace, testRunID: rid}, nil
 }
 
 func execArgs(params ExecParams, cmdStr string) []string {

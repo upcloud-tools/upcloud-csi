@@ -471,5 +471,3 @@ func resizeXfsFilesystem(ctx context.Context, log *logrus.Entry, mountPoint stri
 	}
 	return nil
 }
-
-

@@ -11,7 +11,9 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/google/uuid"
 	"github.com/upcloud-tools/upcloud-csi/test/e2e/mock"
+	"github.com/upcloud-tools/upcloud-csi/test/e2e/testruns"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -30,22 +32,36 @@ type cmd struct {
 }
 
 var _ = BeforeSuite(func() {
+	runID := uuid.New().String()[:8]
+	mock.RunID = runID
+
+	ns := "csi-e2e-" + runID
+	testruns.Namespace = ns
+
+	createNS := cmd{
+		command:  "kubectl",
+		args:     []string{"create", "namespace", ns},
+		startLog: "Creating test namespace...",
+		endLog:   "Test namespace created",
+	}
 	deployManifests := cmd{
 		command:  "make",
 		args:     []string{"deploy-manifests"},
 		startLog: "Deploying CSI driver manifests...",
 		endLog:   "CSI driver manifests deployed",
 	}
-	execCmd([]cmd{deployManifests})
+	execCmd([]cmd{createNS, deployManifests})
 })
 
 var _ = AfterSuite(func() {
 	kubeconfig := mock.GetKubeconfig()
 	configPath := fmt.Sprintf("KUBECONFIG=%s", kubeconfig)
+	nsArg := fmt.Sprintf("NAMESPACE=%s", testruns.Namespace)
+	runIDArg := fmt.Sprintf("TEST_RUN_ID=%s", mock.RunID)
 
 	cleanTests := cmd{
 		command:  "make",
-		args:     []string{"clean-tests", configPath},
+		args:     []string{"clean-tests", configPath, nsArg, runIDArg},
 		startLog: "Cleaning test environment...",
 		endLog:   "Test environment cleaned",
 	}

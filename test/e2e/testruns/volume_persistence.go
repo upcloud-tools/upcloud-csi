@@ -11,7 +11,7 @@ import (
 
 func TestDataPersistenceDeployment() {
 	ctx := context.Background()
-	client, err := mock.NewClient("default")
+	client, err := mock.NewClient(Namespace)
 	gomega.Expect(err).NotTo(gomega.HaveOccurred())
 
 	pvcName := uuid.New().String()
@@ -44,6 +44,7 @@ func TestDataPersistenceDeployment() {
 	err = client.Exec(mock.ExecParams{
 		Command:        "cat ./temp",
 		PodName:        pod.Name,
+		PodNamespace:   pod.Namespace,
 		ExpectedString: "hello world",
 	})
 	gomega.Expect(err).NotTo(gomega.HaveOccurred())

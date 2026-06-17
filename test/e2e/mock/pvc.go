@@ -44,6 +44,34 @@ func (c *Client) CreatePVCWithSC(ctx context.Context, name, storageClassName str
 	return pvc, nil
 }
 
+func (c *Client) CreatePVCFromSnapshot(ctx context.Context, name, snapshotName string) (*v1.PersistentVolumeClaim, error) {
+	apiGroup := snapshotAPIGroup
+	pvc := v1.PersistentVolumeClaim{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: name,
+		},
+		Spec: v1.PersistentVolumeClaimSpec{
+			AccessModes: []v1.PersistentVolumeAccessMode{
+				v1.PersistentVolumeAccessMode("ReadWriteOnce"),
+			},
+			Resources: v1.ResourceRequirements{
+				Requests: v1.ResourceList{
+					v1.ResourceStorage: resource.MustParse("10Gi"),
+				},
+			},
+			StorageClassName: stringPTR(getMaxIOPSStorageClass()),
+			DataSource: &v1.TypedLocalObjectReference{
+				APIGroup: &apiGroup,
+				Kind:     "VolumeSnapshot",
+				Name:     snapshotName,
+			},
+		},
+	}
+	return c.k8s.CoreV1().PersistentVolumeClaims(c.ns).Create(ctx, &pvc, metav1.CreateOptions{})
+}
+
+func stringPTR(s string) *string { return &s }
+
 func (c *Client) DeletePVC(ctx context.Context, pvcName, namespace string) error {
 	return c.k8s.CoreV1().PersistentVolumeClaims(namespace).Delete(ctx, pvcName, metav1.DeleteOptions{})
 }
@@ -76,6 +104,10 @@ func (c *Client) isPVCRunning(ctx context.Context, pvcName, namespace string) wa
 
 func (c *Client) WaitForPVC(ctx context.Context, pvcName, namespace string) error {
 	return wait.PollImmediate(time.Second, time.Minute, c.isPVCRunning(ctx, pvcName, namespace))
+}
+
+func (c *Client) WaitForPVCWithTimeout(ctx context.Context, pvcName, namespace string, timeout time.Duration) error {
+	return wait.PollImmediate(2*time.Second, timeout, c.isPVCRunning(ctx, pvcName, namespace))
 }
 
 func (c *Client) WaitForPVCCapacity(ctx context.Context, pvcName, namespace string, expectedSize resource.Quantity) error {
