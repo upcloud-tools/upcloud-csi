@@ -3,7 +3,7 @@ COMMIT = $(shell git log --format="%h" -n 1)
 TREE_STATE = $(shell git diff --quiet && echo 'clean' || echo 'dirty')
 
 CONTAINER_REPO ?= ghcr.io/upcloud-tools/upcloud-csi-test
-IMAGE_TAG  ?= $(shell git rev-parse --short HEAD)
+IMAGE_TAG ?= $(shell git rev-parse HEAD)
 
 
 .PHONY: container-build
