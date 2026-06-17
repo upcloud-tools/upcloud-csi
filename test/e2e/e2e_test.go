@@ -11,6 +11,9 @@ var _ = Describe("", func() {
 	It("Resize Volume", func() {
 		testruns.TestProvisionResizeVolume()
 	})
+	It("Resize Volume XFS", func() {
+		testruns.TestProvisionResizeVolumeXfs()
+	})
 	It("Create Delete Volume", func() {
 		testruns.TestCreateDeleteVolume()
 	})

@@ -30,7 +30,6 @@ const (
 	fsTypeExt3              = "ext3"
 	fsTypeExt4              = "ext4"
 	fsTypeXfs               = "xfs"
-	fsTypeBtrfs             = "btrfs"
 	// udevDiskTimeout specifies a time limit for waiting disk appear under /dev/disk/by-id.
 	udevDiskTimeout = 60
 	// udevSettleTimeout specifies a time limit for waiting udev event queue to become empty.
@@ -407,10 +406,6 @@ func (m *LinuxFilesystem) ResizeVolume(ctx context.Context, source, volumePath s
 		if err := resizeXfsFilesystem(ctx, log, volumePath); err != nil {
 			return fmt.Errorf("failed to resize xfs filesystem at %s: %w", volumePath, err)
 		}
-	case fsTypeBtrfs:
-		if err := resizeBtrfsFilesystem(ctx, log, volumePath); err != nil {
-			return fmt.Errorf("failed to resize btrfs filesystem at %s: %w", volumePath, err)
-		}
 	default:
 		return fmt.Errorf("unsupported filesystem type for resize: %s", fsType)
 	}
@@ -477,11 +472,4 @@ func resizeXfsFilesystem(ctx context.Context, log *logrus.Entry, mountPoint stri
 	return nil
 }
 
-func resizeBtrfsFilesystem(ctx context.Context, log *logrus.Entry, mountPoint string) error {
-	args := []string{"filesystem", "resize", "max", mountPoint}
-	output, err := runCommand(ctx, log, fsTypeBtrfs, args...)
-	if err != nil {
-		return fmt.Errorf("btrfs filesystem resize failed: '%s'; %w", formatCmdError(output), err)
-	}
-	return nil
-}
+

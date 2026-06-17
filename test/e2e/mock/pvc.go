@@ -11,13 +11,17 @@ import (
 )
 
 func (c *Client) CreatePVC(ctx context.Context, p string) (*v1.PersistentVolumeClaim, error) {
+	return c.CreatePVCWithSC(ctx, p, getMaxIOPSStorageClass())
+}
+
+func (c *Client) CreatePVCWithSC(ctx context.Context, name, storageClassName string) (*v1.PersistentVolumeClaim, error) {
 	persistentVolumeClaim := v1.PersistentVolumeClaim{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "PersistentVolumeClaim",
 			APIVersion: "v1",
 		},
 		ObjectMeta: metav1.ObjectMeta{
-			Name: p,
+			Name: name,
 		},
 		Spec: v1.PersistentVolumeClaimSpec{
 			AccessModes: []v1.PersistentVolumeAccessMode{
@@ -28,7 +32,7 @@ func (c *Client) CreatePVC(ctx context.Context, p string) (*v1.PersistentVolumeC
 					v1.ResourceStorage: resource.MustParse("10Gi"),
 				},
 			},
-			StorageClassName: getMaxIOPSStorageClass(),
+			StorageClassName: &storageClassName,
 		},
 	}
 
@@ -100,13 +104,11 @@ func (c *Client) WaitForPVCCapacity(ctx context.Context, pvcName, namespace stri
 	})
 }
 
-func getMaxIOPSStorageClass() *string {
-	maxIOPS := "upcloud-block-storage-maxiops-test"
-	return &maxIOPS
+func getMaxIOPSStorageClass() string {
+	return "upcloud-block-storage-maxiops-test"
 }
 
 //nolint:unused // Will be used in future additional tests for HDD disks
-func getHDDStorageClass() *string {
-	hdd := "upcloud-block-storage-hdd"
-	return &hdd
+func getHDDStorageClass() string {
+	return "upcloud-block-storage-hdd"
 }

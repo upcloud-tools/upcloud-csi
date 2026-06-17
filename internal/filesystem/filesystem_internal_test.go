@@ -261,14 +261,6 @@ func TestLinuxFilesystem_ResizeVolume(t *testing.T) {
 			resizeTool: "xfs_growfs",
 			minSize:    512 * 1024 * 1024,
 		},
-		{
-			name:       "btrfs",
-			fsType:     "btrfs",
-			needsFsck:  false,
-			mkfsTool:   "mkfs.btrfs",
-			resizeTool: "btrfs",
-			minSize:    114294784, // btrfs minimum is ~109 MB
-		},
 	}
 
 	for _, tt := range tests {
@@ -343,9 +335,9 @@ func TestLinuxFilesystem_ResizeVolume(t *testing.T) {
 				defer fs.Unmount(ctx, mountPath)
 				t.Logf("mounted %s to %s", partition, mountPath)
 
-			case "xfs", "btrfs":
+			case "xfs":
 				// parted's resizepart -s refuses to work on in-use loop-device partitions, but sfdisk already resized
-				// the partition. Call the fs-specific resize directly while the filesystem is mounted (xfs_growfs and btrfs need a live mount point).
+				// the partition. Call the fs-specific resize directly while the filesystem is mounted (xfs_growfs needs a live mount point).
 				require.NoError(t, fs.Mount(ctx, partition, mountPath, tt.fsType))
 				defer fs.Unmount(ctx, mountPath)
 				t.Logf("mounted %s to %s", partition, mountPath)
@@ -354,12 +346,7 @@ func TestLinuxFilesystem_ResizeVolume(t *testing.T) {
 				require.NoError(t, err)
 				require.Equal(t, tt.fsType, fsType)
 
-				switch tt.fsType {
-				case "xfs":
-					require.NoError(t, resizeXfsFilesystem(ctx, logger.WithField("test", ""), mountPath))
-				case "btrfs":
-					require.NoError(t, resizeBtrfsFilesystem(ctx, logger.WithField("test", ""), mountPath))
-				}
+				require.NoError(t, resizeXfsFilesystem(ctx, logger.WithField("test", ""), mountPath))
 				t.Log("resized filesystem")
 			}
 
