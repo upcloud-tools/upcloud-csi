@@ -52,12 +52,23 @@ test:
 test-integration:
 	make -C test/integration test
 
-# CI-friendly e2e test — runs 4 test cases in parallel to minimize running time.
-# Each test case creates uniquely-named PVCs/Pods, no resource conflicts.
+# CI-friendly e2e test — used in matrix strategy where each job runs one test.
+# Use named shortcuts to run a single test case:
+#   make test-e2e SNAPSHOT=y     — Create Snapshot And Restore
+#   make test-e2e RESIZE=y       — Resize Volume
+#   make test-e2e LIST=y         — List Volumes
+#   make test-e2e PERSISTENCE=y  — Attach Detach Volume
+#   make test-e2e CREATEDELETE=y — Create Delete Volume
 .PHONY: test-e2e
 test-e2e:
 	@echo "==> Running e2e tests"
-	cd test/e2e && go test -tags e2e -v -timeout 30m ./...
+	cd test/e2e && go test -tags e2e -v -timeout 30m \
+		$(if $(CREATEDELETE),--ginkgo.focus="Create Delete Volume",) \
+		$(if $(LIST),--ginkgo.focus="List Volumes",) \
+		$(if $(RESIZE),--ginkgo.focus="Resize Volume",) \
+		$(if $(PERSISTENCE),--ginkgo.focus="Attach Detach Volume",) \
+		$(if $(SNAPSHOT),--ginkgo.focus="Create Snapshot And Restore",) \
+		./...
 
 # Local-development variant — sequential execution with real-time output.
 # Use named shortcuts to run a single test case:
