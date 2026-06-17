@@ -21,4 +21,8 @@ var _ = Describe("", func() {
 		testruns.TestDataPersistenceDeployment()
 		log.Println("Persistence Passed")
 	})
+	It("Create Snapshot And Restore", func() {
+		testruns.TestCreateAndRestoreSnapshot()
+		log.Println("Snapshot Passed")
+	})
 })

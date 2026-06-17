@@ -7,12 +7,14 @@ import (
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
+	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/kubernetes"
 )
 
 type Client struct {
-	k8s kubernetes.Interface
-	ns  string
+	k8s     kubernetes.Interface
+	dynamic dynamic.Interface
+	ns      string
 }
 
 func (c *Client) CreatePod(ctx context.Context, podName, pvcName string) (*v1.Pod, error) {

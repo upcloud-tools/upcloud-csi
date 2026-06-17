@@ -120,7 +120,7 @@ spec:
             - name: socket-dir
               mountPath: /var/lib/csi/sockets/pluginproxy/
         - name: csi-snapshotter
-          image: k8s.gcr.io/sig-storage/csi-snapshotter:v4.2.1
+          image: registry.k8s.io/sig-storage/csi-snapshotter:v8.6.0
           args:
             - "--csi-address=$(ADDRESS)"
             - "--v=5"
@@ -195,7 +195,7 @@ spec:
       serviceAccount: csi-upcloud-controller-sa
       containers:
         - name: snapshot-controller
-          image: k8s.gcr.io/sig-storage/snapshot-controller:v4.2.1
+          image: registry.k8s.io/sig-storage/snapshot-controller:v8.6.0
           args:
             - "--v=5"
             - "--leader-election=true"

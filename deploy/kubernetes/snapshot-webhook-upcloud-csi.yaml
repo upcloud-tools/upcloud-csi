@@ -10,9 +10,9 @@ webhooks:
   - name: validation-webhook.snapshot.storage.k8s.io
     rules:
       - apiGroups: ["snapshot.storage.k8s.io"]
-        apiVersions: ["v1", "v1beta1"]
+        apiVersions: ["v1"]
         operations: ["CREATE", "UPDATE"]
-        resources: ["volumesnapshots", "volumesnapshotcontents"]
+        resources: ["volumesnapshotclasses"]
         scope: "*"
     clientConfig:
       service:
@@ -77,7 +77,7 @@ spec:
       serviceAccountName: csi-upcloud-controller-sa
       containers:
         - name: snapshot-validation
-          image: k8s.gcr.io/sig-storage/snapshot-validation-webhook:v4.2.1
+          image: registry.k8s.io/sig-storage/snapshot-validation-webhook:v8.6.0
           imagePullPolicy: IfNotPresent
           args:
             [

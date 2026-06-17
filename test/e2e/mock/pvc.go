@@ -11,13 +11,21 @@ import (
 )
 
 func (c *Client) CreatePVC(ctx context.Context, p string) (*v1.PersistentVolumeClaim, error) {
-	persistentVolumeClaim := v1.PersistentVolumeClaim{
+	return c.createPVC(ctx, p, "", "")
+}
+
+func (c *Client) CreatePVCFromSnapshot(ctx context.Context, name, snapshotName, snapshotNamespace string) (*v1.PersistentVolumeClaim, error) {
+	return c.createPVC(ctx, name, snapshotName, snapshotNamespace)
+}
+
+func (c *Client) createPVC(ctx context.Context, name, snapshotName, snapshotNamespace string) (*v1.PersistentVolumeClaim, error) {
+	pvc := v1.PersistentVolumeClaim{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "PersistentVolumeClaim",
 			APIVersion: "v1",
 		},
 		ObjectMeta: metav1.ObjectMeta{
-			Name: p,
+			Name: name,
 		},
 		Spec: v1.PersistentVolumeClaimSpec{
 			AccessModes: []v1.PersistentVolumeAccessMode{
@@ -32,12 +40,29 @@ func (c *Client) CreatePVC(ctx context.Context, p string) (*v1.PersistentVolumeC
 		},
 	}
 
-	pvc, err := c.k8s.CoreV1().PersistentVolumeClaims(c.ns).Create(ctx, &persistentVolumeClaim, metav1.CreateOptions{})
+	if snapshotName != "" {
+		apiGroup := "snapshot.storage.k8s.io"
+		pvc.Spec.DataSource = &v1.TypedLocalObjectReference{
+			APIGroup: &apiGroup,
+			Kind:     "VolumeSnapshot",
+			Name:     snapshotName,
+		}
+		if snapshotNamespace != "" {
+			pvc.Spec.DataSourceRef = &v1.TypedObjectReference{
+				APIGroup: &apiGroup,
+				Kind:     "VolumeSnapshot",
+				Name:     snapshotName,
+				Namespace: &snapshotNamespace,
+			}
+		}
+	}
+
+	pvcResult, err := c.k8s.CoreV1().PersistentVolumeClaims(c.ns).Create(ctx, &pvc, metav1.CreateOptions{})
 	if err != nil {
 		return nil, err
 	}
 
-	return pvc, nil
+	return pvcResult, nil
 }
 
 func (c *Client) DeletePVC(ctx context.Context, pvcName, namespace string) error {
