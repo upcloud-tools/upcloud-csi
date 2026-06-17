@@ -20,7 +20,7 @@ func TestCreateAndRestoreSnapshot() {
 	restoredPVCName := "test-restored-" + uuid.New().String()
 
 	log.Println("creating VolumeSnapshotClass...")
-	vsc, err := client.CreateVolumeSnapshotClass(ctx, vsClassName, "csi.upcloud.com", "Delete")
+	vsc, err := client.CreateVolumeSnapshotClass(ctx, vsClassName, "storage.csi.upcloud.com", "Delete")
 	gomega.Expect(err).NotTo(gomega.HaveOccurred())
 	log.Printf("VolumeSnapshotClass %s created", vsc.GetName())
 

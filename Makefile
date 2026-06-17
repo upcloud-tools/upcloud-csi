@@ -33,9 +33,14 @@ deploy-manifests:
 
 .PHONY: clean-tests
 clean-tests:
-	kubectl -n default delete all --all
-	kubectl -n default delete persistentvolumeclaims --all
-	kubectl delete storageclass upcloud-block-storage-maxiops-test --ignore-not-found
+	kubectl -n default delete all --all --timeout=30s
+	kubectl -n default delete persistentvolumeclaims --all --timeout=30s
+	kubectl delete storageclass upcloud-block-storage-maxiops-test --ignore-not-found --timeout=30s
+	kubectl delete storageclass upcloud-block-storage-maxiops-xfs-test --ignore-not-found --timeout=30s
+	kubectl -n default delete volumesnapshots.snapshot.storage.k8s.io --all --ignore-not-found --timeout=30s
+	kubectl patch volumesnapshotcontents.snapshot.storage.k8s.io --all -p '{"metadata":{"finalizers":[]}}' --type=merge 2>/dev/null || true
+	kubectl delete volumesnapshotcontents.snapshot.storage.k8s.io --all --ignore-not-found --timeout=30s
+	kubectl delete volumesnapshotclasses.snapshot.storage.k8s.io --all --ignore-not-found --timeout=30s
 
 .PHONY: test
 test:
@@ -53,10 +58,22 @@ test-e2e:
 	cd test/e2e && go test -tags e2e -v -timeout 30m ./...
 
 # Local-development variant — sequential execution with real-time output.
+# Use named shortcuts to run a single test case:
+#   make test-e2e-verbose SNAPSHOT=y   — Create Snapshot And Restore
+#   make test-e2e-verbose RESIZE=y     — Resize Volume
+#   make test-e2e-verbose LIST=y       — List Volumes
+#   make test-e2e-verbose PERSISTENCE=y — Attach Detach Volume
+#   make test-e2e-verbose CREATEDELETE=y — Create Delete Volume
 .PHONY: test-e2e-verbose
 test-e2e-verbose:
 	@echo "==> Running e2e tests (verbose mode)"
-	cd test/e2e && go test -tags e2e -v --ginkgo.output-interceptor-mode=none -timeout 30m ./...
+	cd test/e2e && go test -tags e2e -v --ginkgo.output-interceptor-mode=none -timeout 30m \
+		$(if $(CREATEDELETE),--ginkgo.focus="Create Delete Volume",) \
+		$(if $(LIST),--ginkgo.focus="List Volumes",) \
+		$(if $(RESIZE),--ginkgo.focus="Resize Volume",) \
+		$(if $(PERSISTENCE),--ginkgo.focus="Attach Detach Volume",) \
+		$(if $(SNAPSHOT),--ginkgo.focus="Create Snapshot And Restore",) \
+		./...
 
 .PHONY: release-notes
 release-notes: CHANGELOG_HEADER = ^\#\# \[
