@@ -45,7 +45,7 @@ func (c *Client) CreatePVCWithSC(ctx context.Context, name, storageClassName str
 }
 
 func (c *Client) CreatePVCFromSnapshot(ctx context.Context, name, snapshotName string) (*v1.PersistentVolumeClaim, error) {
-	apiGroup := "snapshot.storage.k8s.io"
+	apiGroup := snapshotAPIGroup
 	pvc := v1.PersistentVolumeClaim{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: name,
@@ -59,7 +59,7 @@ func (c *Client) CreatePVCFromSnapshot(ctx context.Context, name, snapshotName s
 					v1.ResourceStorage: resource.MustParse("10Gi"),
 				},
 			},
-			StorageClassName: stringPtr(getMaxIOPSStorageClass()),
+			StorageClassName: stringPTR(getMaxIOPSStorageClass()),
 			DataSource: &v1.TypedLocalObjectReference{
 				APIGroup: &apiGroup,
 				Kind:     "VolumeSnapshot",
@@ -70,7 +70,7 @@ func (c *Client) CreatePVCFromSnapshot(ctx context.Context, name, snapshotName s
 	return c.k8s.CoreV1().PersistentVolumeClaims(c.ns).Create(ctx, &pvc, metav1.CreateOptions{})
 }
 
-func stringPtr(s string) *string { return &s }
+func stringPTR(s string) *string { return &s }
 
 func (c *Client) DeletePVC(ctx context.Context, pvcName, namespace string) error {
 	return c.k8s.CoreV1().PersistentVolumeClaims(namespace).Delete(ctx, pvcName, metav1.DeleteOptions{})

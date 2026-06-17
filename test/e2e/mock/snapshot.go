@@ -12,14 +12,17 @@ import (
 	"k8s.io/apimachinery/pkg/util/wait"
 )
 
+const snapshotAPIGroup = "snapshot.storage.k8s.io"
+
+//nolint:gochecknoglobals // immutable schema constants
 var (
 	snapshotGVR = schema.GroupVersionResource{
-		Group:    "snapshot.storage.k8s.io",
+		Group:    snapshotAPIGroup,
 		Version:  "v1",
 		Resource: "volumesnapshots",
 	}
 	snapshotClassGVR = schema.GroupVersionResource{
-		Group:    "snapshot.storage.k8s.io",
+		Group:    snapshotAPIGroup,
 		Version:  "v1",
 		Resource: "volumesnapshotclasses",
 	}
@@ -75,7 +78,10 @@ func (c *Client) WaitForVolumeSnapshotReady(ctx context.Context, name, namespace
 		}
 
 		ready, found, err := unstructured.NestedBool(vs.Object, "status", "readyToUse")
-		if err != nil || !found {
+		if err != nil {
+			return false, err
+		}
+		if !found {
 			return false, nil
 		}
 

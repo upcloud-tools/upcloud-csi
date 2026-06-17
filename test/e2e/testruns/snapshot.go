@@ -10,6 +10,7 @@ import (
 	"github.com/upcloud-tools/upcloud-csi/test/e2e/mock"
 )
 
+//nolint:funlen // test function with setup, verify, and cleanup
 func TestCreateAndRestoreSnapshot() {
 	ctx := context.Background()
 	client, err := mock.NewClient(Namespace)
