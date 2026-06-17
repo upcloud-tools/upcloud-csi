@@ -4,6 +4,18 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [2.3.0] - 2026-06-17
+
+### Added
+- ci: add Dependabot configuration for automated dependency updates (Go modules, GitHub Actions, Docker)
+
+### Changed
+- test: remove btrfs filesystem support from filesystem unit tests (xfs is the only supported fs)
+- test: add E2E test case for XFS filesystem resizing with dedicated StorageClass
+
+### Fixed
+- ci: remove unsupported `ginkgo.procs` flag from E2E test workflow
+
 ## [2.2.0] - 2026-06-17
 
 ### Changed
@@ -74,7 +86,8 @@ All notable changes to this project will be documented in this file.
 
 First stable release
 
-[Unreleased]: https://github.com/upcloud-tools/upcloud-csi/compare/v2.2.0...HEAD
+[Unreleased]: https://github.com/upcloud-tools/upcloud-csi/compare/v2.3.0...HEAD
+[2.3.0]: https://github.com/upcloud-tools/upcloud-csi/compare/v2.2.0...v2.3.0
 [2.2.0]: https://github.com/upcloud-tools/upcloud-csi/compare/v2.1.0...v2.2.0
 [2.1.0]: https://github.com/upcloud-tools/upcloud-csi/compare/v2.0.0...v2.1.0
 [2.0.0]: https://github.com/upcloud-tools/upcloud-csi/compare/v1.3.0...v2.0.0
