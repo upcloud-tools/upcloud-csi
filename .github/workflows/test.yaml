@@ -29,9 +29,8 @@ jobs:
       - name: Install filesystem tools
         run: |
           sudo apt-get update -qq
-          sudo apt-get install -y -qq xfsprogs btrfs-progs
+          sudo apt-get install -y -qq xfsprogs
           sudo modprobe xfs || true
-          sudo modprobe btrfs || true
 
       - name: Test Driver
         run: sudo make test
