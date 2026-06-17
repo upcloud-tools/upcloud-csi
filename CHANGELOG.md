@@ -4,6 +4,48 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [2.5.0] - 2026-06-17
+
+### Added
+- test: add E2E test for creating VolumeSnapshots and restoring PVCs from snapshots
+- test: add snapshot test helpers using dynamic K8s client
+- test: run each test in an isolated namespace with labeled cluster-scoped resources
+- ci: run e2e tests in parallel via matrix strategy (deploy once, test cases run concurrently)
+
+### Changed
+- csi-snapshotter: upgrade to v8.6.0 (registry migration: k8s.gcr.io → registry.k8s.io)
+- snapshot-controller: upgrade to v8.6.0
+- snapshot-validation-webhook: upgrade to v8.6.0, scoped to volumesnapshotclasses only
+- crd: regenerate VolumeSnapshot/Content/Class CRDs from release-8.6 with CEL validation
+- rbac: add patch/watch verbs for volumesnapshot resources
+
+### Fixed
+- build: use full commit SHA as default IMAGE_TAG to prevent tag mismatch between build and deploy
+- test: increase snapshot restore timeout from 3m to 6m (UpCloud clone operation can take ~3.5m)
+
+### Removed
+- webhook: drop v1beta1 API version support
+
+### Upgrade notes
+
+Before upgrading to v2.5.0, users with existing VolumeSnapshots need to:
+
+1. **Verify no v1beta1 API usage**: The webhook no longer serves `v1beta1`. Any tooling or automation using `snapshot.storage.k8s.io/v1beta1` must be migrated to `v1` before upgrading. Existing stored objects should already be on `v1` storage version, but verify:
+
+   ```bash
+   kubectl get volumesnapshotclasses.snapshot.storage.k8s.io -o json | jq '.items[].apiVersion'
+   ```
+
+   All should show `snapshot.storage.k8s.io/v1`.
+
+2. **CRD schema migration**: The new CRDs use CEL validation. Kubernetes will automatically convert stored objects. No manual data migration needed.
+
+3. **Validation webhook change**: Validation for `volumesnapshots` and `volumesnapshotcontents` is now handled by CEL rules in the CRDs — the webhook only covers `volumesnapshotclasses`. If you have custom admission policies relying on the old webhook, review them.
+
+4. **Container registry**: The snapshotter images moved from `k8s.gcr.io` (frozen) to `registry.k8s.io`. Ensure your cluster can pull from `registry.k8s.io/sig-storage/*` (most can, it's the default).
+
+5. **Rollback safety**: If you need to roll back, the old CRDs (release-4.2) may not accept objects created with CEL-populated fields. Keep a backup of the old CRD manifests.
+
 ## [2.3.0] - 2026-06-17
 
 ### Added
@@ -86,7 +128,8 @@ All notable changes to this project will be documented in this file.
 
 First stable release
 
-[Unreleased]: https://github.com/upcloud-tools/upcloud-csi/compare/v2.3.0...HEAD
+[Unreleased]: https://github.com/upcloud-tools/upcloud-csi/compare/v2.5.0...HEAD
+[2.5.0]: https://github.com/upcloud-tools/upcloud-csi/compare/v2.3.0...v2.5.0
 [2.3.0]: https://github.com/upcloud-tools/upcloud-csi/compare/v2.2.0...v2.3.0
 [2.2.0]: https://github.com/upcloud-tools/upcloud-csi/compare/v2.1.0...v2.2.0
 [2.1.0]: https://github.com/upcloud-tools/upcloud-csi/compare/v2.0.0...v2.1.0
