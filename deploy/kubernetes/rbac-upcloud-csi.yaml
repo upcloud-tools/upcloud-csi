@@ -250,6 +250,9 @@ rules:
   - apiGroups: [ "" ]
     resources: [ "pods" ]
     verbs: [ "watch", "list" ]
+  - apiGroups: [ "storage.k8s.io" ]
+    resources: [ "volumeattributesclasses" ]
+    verbs: [ "get", "list", "watch", "patch", "update" ]
 
 ---
 kind: ClusterRoleBinding
