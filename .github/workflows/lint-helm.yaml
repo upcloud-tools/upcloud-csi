@@ -29,7 +29,7 @@ jobs:
           format: plain
 
       - name: Run kubeconform
-        uses: azure/k8s-lint@e4234c50ea835112e72b145bdecd00a94bad42fd # v4.0.0
+        uses: aardbol/k8s-lint@02ccb533796f0d15bdc78ad4acd9055995615a5e # v4.1.0
         with:
           manifests: /tmp/rendered-chart.yaml
           lintType: kubeconform
