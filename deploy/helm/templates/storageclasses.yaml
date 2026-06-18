@@ -8,7 +8,7 @@ metadata:
     storageclass.kubernetes.io/is-default-class: {{ .isDefault | quote }}
 parameters:
   tier: {{ .tier }}
-provisioner: {{ $.Values.controller.csiDriver.name }}
+provisioner: {{ $.Values.csiDriver.name }}
 allowVolumeExpansion: {{ .allowVolumeExpansion }}
 reclaimPolicy: {{ .reclaimPolicy }}
 

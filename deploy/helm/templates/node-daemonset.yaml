@@ -44,7 +44,7 @@ spec:
             - name: ADDRESS
               value: /csi/csi.sock
             - name: DRIVER_REG_SOCK_PATH
-              value: /var/lib/kubelet/plugins/{{ .Values.controller.csiDriver.name }}/csi.sock
+              value: /var/lib/kubelet/plugins/{{ .Values.csiDriver.name }}/csi.sock
             - name: KUBE_NODE_NAME
               valueFrom:
                 fieldRef:
@@ -60,7 +60,7 @@ spec:
           {{- end }}
         - name: csi-upcloud-plugin
           image: {{ include "upcloud-csi.driverImage" . }}
-          imagePullPolicy: {{ .Values.node.image.pullPolicy }}
+          imagePullPolicy: {{ .Values.controller.image.pullPolicy }}
           args:
             - "--endpoint=$(CSI_ENDPOINT)"
             - "--nodehost=$(NODE_ID)"
@@ -88,7 +88,7 @@ spec:
               add: ["SYS_ADMIN"]
               drop: ["ALL"]
             allowPrivilegeEscalation: true
-          {{- with .Values.node.resources }}
+          {{- with .Values.controller.resources }}
           resources:
             {{- toYaml . | nindent 12 }}
           {{- end }}
@@ -107,7 +107,7 @@ spec:
             type: DirectoryOrCreate
         - name: plugin-dir
           hostPath:
-            path: /var/lib/kubelet/plugins/{{ .Values.controller.csiDriver.name }}
+            path: /var/lib/kubelet/plugins/{{ .Values.csiDriver.name }}
             type: DirectoryOrCreate
         - name: pods-mount-dir
           hostPath:

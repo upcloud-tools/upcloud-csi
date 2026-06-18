@@ -5,6 +5,6 @@ metadata:
   name: {{ .Values.volumeSnapshotClass.name }}
   labels:
     {{- include "upcloud-csi.labels" . | nindent 4 }}
-driver: {{ .Values.controller.csiDriver.name }}
+driver: {{ .Values.csiDriver.name }}
 deletionPolicy: {{ .Values.volumeSnapshotClass.deletionPolicy }}
 {{- end }}

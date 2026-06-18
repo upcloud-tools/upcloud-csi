@@ -23,19 +23,18 @@ credentials:
   # -- UpCloud password (required when createSecret is true).
   password: ""
 
+csiDriver:
+  # -- Name of the CSIDriver resource.
+  name: storage.csi.upcloud.com
+  attachRequired: true
+  podInfoOnMount: true
+  # -- fsGroupPolicy for the CSI driver (File, None, or ReadWriteOnceWithFSType).
+  fsGroupPolicy: File
+
 # Controller StatefulSet settings.
 controller:
-  # -- Log verbosity level.
   # -- Log verbosity (inherits global logLevel when null).
   logLevel:
-
-  csiDriver:
-    # -- Name of the CSIDriver resource.
-    name: storage.csi.upcloud.com
-    attachRequired: true
-    podInfoOnMount: true
-    # -- fsGroupPolicy for the CSI driver (File, None, or ReadWriteOnceWithFSType).
-    fsGroupPolicy: File
 
   # -- Driver container image.
   image:
@@ -73,18 +72,8 @@ controller:
 
 # Node DaemonSet settings.
 node:
-  # -- Log verbosity level.
   # -- Log verbosity (inherits global logLevel when null).
   logLevel:
-
-  # -- Driver container image.
-  image:
-    repository: ghcr.io/upcloudltd/upcloud-csi
-    tag: ""
-    pullPolicy: Always
-
-  # -- Driver container resources.
-  resources: {}
 
   sidecars:
     csiNodeDriverRegistrar:
