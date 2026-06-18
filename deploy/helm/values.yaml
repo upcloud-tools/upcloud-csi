@@ -97,9 +97,6 @@ node:
   nodeSelector: {}
   tolerations: []
   affinity: {}
-  podAntiAffinity:
-    enabled: true
-    topologyKey: kubernetes.io/hostname
 
 # Snapshot controller Deployment settings.
 snapshotController:
