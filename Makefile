@@ -107,3 +107,17 @@ helm-lint:
 .PHONY: helm-package
 helm-package:
 	helm package $(HELM_CHART_DIR) --destination ./dist
+
+.PHONY: kube-lint
+kube-lint:
+	kube-linter lint --config $(HELM_CHART_DIR)/.kube-linter.yaml $(HELM_CHART_DIR)
+
+.PHONY: k8s-lint
+k8s-lint:
+	helm template test-release $(HELM_CHART_DIR) > /tmp/upcloud-csi-rendered.yaml
+	@if command -v kubeconform > /dev/null 2>&1; then \
+		kubeconform /tmp/upcloud-csi-rendered.yaml; \
+	else \
+		echo "kubeconform not installed. Install from https://github.com/yannh/kubeconform"; \
+		exit 1; \
+	fi

@@ -6,7 +6,7 @@ on:
       - '**/*.go'
       - go.mod
       - go.sum
-      - '.github/workflows/golang-lint.yaml'
+      - '.github/workflows/lint-golang.yaml'
 
 env:
   GO_VERSION: '1.26'

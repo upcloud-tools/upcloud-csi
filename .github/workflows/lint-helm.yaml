@@ -4,7 +4,8 @@ on:
   pull_request:
     paths:
       - 'deploy/helm/**'
-      - '.github/workflows/golang-lint.yaml'
+      - '.github/workflows/lint-helm.yaml'
+      - '.github/workflows/lint-golang.yaml'
 
 jobs:
   helm-lint:
@@ -16,3 +17,20 @@ jobs:
 
       - name: Run helm lint
         run: make helm-lint
+
+      - name: Render Helm chart
+        run: helm template test-release deploy/helm/ > /tmp/rendered-chart.yaml
+
+      - name: Run kube-linter
+        uses: stackrox/kube-linter-action@87802a2f4e01abebb3ee3c67a3002fea71f6eae5 # v1.0.7
+        with:
+          directory: deploy/helm
+          config: deploy/helm/.kube-linter.yaml
+          format: plain
+
+      - name: Run kubeconform
+        uses: azure/k8s-lint@e4234c50ea835112e72b145bdecd00a94bad42fd # v4.0.0
+        with:
+          manifests: /tmp/rendered-chart.yaml
+          lintType: kubeconform
+          kubeconformOpts: -summary -strict

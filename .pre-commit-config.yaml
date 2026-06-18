@@ -11,3 +11,17 @@ repos:
         entry: make
         args: ["test"]
         pass_filenames: false
+      - id: kube-lint
+        name: kube-lint
+        language: system
+        entry: make
+        args: ["kube-lint"]
+        pass_filenames: false
+        files: ^deploy/helm/
+      - id: k8s-lint
+        name: k8s-lint
+        language: system
+        entry: make
+        args: ["k8s-lint"]
+        pass_filenames: false
+        files: ^deploy/helm/
