@@ -8,17 +8,20 @@ fullnameOverride: ""
 logLevel: 5
 
 # Credentials for UpCloud API access.
-# Provide either an existing secret or let the chart create one.
+# Reference an existing secret, or have the chart create one.
 credentials:
-  # -- Name of an existing secret containing UpCloud credentials.
-  # If empty, the chart requires a secret named by `secretName` to exist.
-  existingSecret: ""
-  # -- Name of the secret to use for UpCloud credentials.
+  # -- Create the secret in the release namespace.
+  createSecret: false
+  # -- Name of the secret (created or referenced).
   secretName: upcloud
   # -- Key within the secret that holds the UpCloud username.
   usernameKey: username
   # -- Key within the secret that holds the UpCloud password.
   passwordKey: password
+  # -- UpCloud username (required when createSecret is true).
+  username: ""
+  # -- UpCloud password (required when createSecret is true).
+  password: ""
 
 images:
   driver:

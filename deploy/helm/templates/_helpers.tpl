@@ -42,3 +42,7 @@ app.kubernetes.io/instance: {{ .Release.Name }}
 {{- $tag := .Values.images.driver.tag | default .Chart.AppVersion -}}
 {{- printf "%s:%s" $repository $tag -}}
 {{- end }}
+
+{{- define "upcloud-csi.credentialsSecret" -}}
+{{- .Values.credentials.secretName -}}
+{{- end }}

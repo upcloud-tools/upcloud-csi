@@ -79,12 +79,12 @@ spec:
             - name: UPCLOUD_USERNAME
               valueFrom:
                 secretKeyRef:
-                  name: {{ .Values.credentials.secretName }}
+                  name: {{ include "upcloud-csi.credentialsSecret" . }}
                   key: {{ .Values.credentials.usernameKey }}
             - name: UPCLOUD_PASSWORD
               valueFrom:
                 secretKeyRef:
-                  name: {{ .Values.credentials.secretName }}
+                  name: {{ include "upcloud-csi.credentialsSecret" . }}
                   key: {{ .Values.credentials.passwordKey }}
             - name: NODE_ID
               valueFrom:

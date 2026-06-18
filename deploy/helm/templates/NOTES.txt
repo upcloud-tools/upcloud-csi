@@ -6,7 +6,7 @@ UpCloud CSI driver has been installed.
 
 2. Create a secret with your UpCloud credentials (if not already present):
 
-   kubectl --namespace {{ .Release.Namespace }} create secret generic {{ .Values.credentials.secretName }} \
+   kubectl --namespace {{ .Release.Namespace }} create secret generic {{ include "upcloud-csi.credentialsSecret" . }} \
      --from-literal=username=YOUR_USERNAME \
      --from-literal=password=YOUR_PASSWORD
 
