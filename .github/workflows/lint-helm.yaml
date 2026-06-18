@@ -18,9 +18,6 @@ jobs:
       - name: Run helm lint
         run: make helm-lint
 
-      - name: Render Helm chart
-        run: helm template test-release deploy/helm/ > /tmp/rendered-chart.yaml
-
       - name: Run kube-linter
         uses: stackrox/kube-linter-action@87802a2f4e01abebb3ee3c67a3002fea71f6eae5 # v1.0.7
         with:
@@ -29,8 +26,8 @@ jobs:
           format: plain
 
       - name: Run kubeconform
-        uses: aardbol/k8s-lint@02ccb533796f0d15bdc78ad4acd9055995615a5e # v4.1.0
+        uses: aardbol/k8s-lint@4ac6a6ad40152ad8478533d7e4d4d3c210f68eca # v5.0.0
         with:
-          manifests: /tmp/rendered-chart.yaml
+          manifests: deploy/helm/
           lintType: kubeconform
           kubeconformOpts: -summary -strict
