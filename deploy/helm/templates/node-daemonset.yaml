@@ -41,18 +41,18 @@ spec:
         {{- toYaml . | nindent 8 }}
         {{- end }}
       containers:
-        - name: csi-node-driver-registrar
-          image: "{{ .Values.images.csiNodeDriverRegistrar.repository }}:{{ .Values.images.csiNodeDriverRegistrar.tag }}"
-          imagePullPolicy: {{ .Values.images.csiNodeDriverRegistrar.pullPolicy }}
+        - name: csiNodeDriverRegistrar
+          image: "{{ .Values.node.sidecars.csiNodeDriverRegistrar.image }}"
+          imagePullPolicy: {{ .Values.node.sidecars.csiNodeDriverRegistrar.pullPolicy }}
           args:
-            - "--v={{ .Values.logLevel }}"
+            - "--v={{ .Values.node.logLevel | default .Values.logLevel }}"
             - "--csi-address=$(ADDRESS)"
             - "--kubelet-registration-path=$(DRIVER_REG_SOCK_PATH)"
           env:
             - name: ADDRESS
               value: /csi/csi.sock
             - name: DRIVER_REG_SOCK_PATH
-              value: /var/lib/kubelet/plugins/{{ .Values.csiDriver.name }}/csi.sock
+              value: /var/lib/kubelet/plugins/{{ .Values.controller.csiDriver.name }}/csi.sock
             - name: KUBE_NODE_NAME
               valueFrom:
                 fieldRef:
@@ -62,13 +62,13 @@ spec:
               mountPath: /csi/
             - name: registration-dir
               mountPath: /registration/
-          {{- with .Values.node.resources }}
+          {{- with .Values.node.sidecars.csiNodeDriverRegistrar.resources }}
           resources:
             {{- toYaml . | nindent 12 }}
           {{- end }}
         - name: csi-upcloud-plugin
           image: {{ include "upcloud-csi.driverImage" . }}
-          imagePullPolicy: {{ .Values.images.driver.pullPolicy }}
+          imagePullPolicy: {{ .Values.node.image.pullPolicy }}
           args:
             - "--endpoint=$(CSI_ENDPOINT)"
             - "--nodehost=$(NODE_ID)"
@@ -115,7 +115,7 @@ spec:
             type: DirectoryOrCreate
         - name: plugin-dir
           hostPath:
-            path: /var/lib/kubelet/plugins/{{ .Values.csiDriver.name }}
+            path: /var/lib/kubelet/plugins/{{ .Values.controller.csiDriver.name }}
             type: DirectoryOrCreate
         - name: pods-mount-dir
           hostPath:

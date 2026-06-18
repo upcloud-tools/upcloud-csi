@@ -23,7 +23,8 @@ spec:
         {{- include "upcloud-csi.selectorLabels" . | nindent 8 }}
         app: {{ include "upcloud-csi.fullname" . }}-snapshot-controller
     spec:
-      serviceAccountName: {{ .Values.controller.serviceAccountName }}
+      serviceAccountName: {{ .Values.snapshotController.serviceAccountName }}
+      priorityClassName: {{ .Values.snapshotController.priorityClassName }}
       {{- with .Values.snapshotController.nodeSelector }}
       nodeSelector:
         {{- toYaml . | nindent 8 }}
@@ -38,10 +39,10 @@ spec:
       {{- end }}
       containers:
         - name: snapshot-controller
-          image: "{{ .Values.images.snapshotController.repository }}:{{ .Values.images.snapshotController.tag }}"
-          imagePullPolicy: {{ .Values.images.snapshotController.pullPolicy }}
+          image: "{{ .Values.snapshotController.image }}"
+          imagePullPolicy: {{ .Values.snapshotController.pullPolicy }}
           args:
-            - "--v={{ .Values.logLevel }}"
+            - "--v={{ .Values.snapshotController.logLevel | default .Values.logLevel }}"
             - "--leader-election=true"
           {{- with .Values.snapshotController.resources }}
           resources:

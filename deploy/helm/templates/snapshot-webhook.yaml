@@ -59,7 +59,7 @@ spec:
         {{- include "upcloud-csi.selectorLabels" . | nindent 8 }}
         app: {{ include "upcloud-csi.fullname" . }}-snapshot-validation
     spec:
-      serviceAccountName: {{ .Values.node.serviceAccountName }}
+      serviceAccountName: {{ .Values.snapshotValidationWebhook.serviceAccountName }}
       {{- with .Values.snapshotValidationWebhook.nodeSelector }}
       nodeSelector:
         {{- toYaml . | nindent 8 }}
@@ -74,8 +74,8 @@ spec:
       {{- end }}
       containers:
         - name: snapshot-validation-webhook
-          image: "{{ .Values.images.snapshotValidationWebhook.repository }}:{{ .Values.images.snapshotValidationWebhook.tag }}"
-          imagePullPolicy: {{ .Values.images.snapshotValidationWebhook.pullPolicy }}
+          image: "{{ .Values.snapshotValidationWebhook.image }}"
+          imagePullPolicy: {{ .Values.snapshotValidationWebhook.pullPolicy }}
           {{- with .Values.snapshotValidationWebhook.resources }}
           resources:
             {{- toYaml . | nindent 12 }}

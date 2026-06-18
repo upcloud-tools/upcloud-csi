@@ -1,10 +1,10 @@
 apiVersion: storage.k8s.io/v1
 kind: CSIDriver
 metadata:
-  name: {{ .Values.csiDriver.name }}
+  name: {{ .Values.controller.csiDriver.name }}
   labels:
     {{- include "upcloud-csi.labels" . | nindent 4 }}
 spec:
-  attachRequired: {{ .Values.csiDriver.attachRequired }}
-  podInfoOnMount: {{ .Values.csiDriver.podInfoOnMount }}
-  fsGroupPolicy: {{ .Values.csiDriver.fsGroupPolicy }}
+  attachRequired: {{ .Values.controller.csiDriver.attachRequired }}
+  podInfoOnMount: {{ .Values.controller.csiDriver.podInfoOnMount }}
+  fsGroupPolicy: {{ .Values.controller.csiDriver.fsGroupPolicy }}

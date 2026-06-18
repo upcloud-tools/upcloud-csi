@@ -34,12 +34,12 @@ spec:
         {{- toYaml . | nindent 8 }}
       {{- end }}
       containers:
-        - name: csi-provisioner
-          image: "{{ .Values.images.csiProvisioner.repository }}:{{ .Values.images.csiProvisioner.tag }}"
-          imagePullPolicy: {{ .Values.images.csiProvisioner.pullPolicy }}
+        - name: csiProvisioner
+          image: "{{ .Values.controller.sidecars.csiProvisioner.image }}"
+          imagePullPolicy: {{ .Values.controller.sidecars.csiProvisioner.pullPolicy }}
           args:
             - "--csi-address=$(ADDRESS)"
-            - "--v={{ .Values.logLevel }}"
+            - "--v={{ .Values.controller.logLevel | default .Values.logLevel }}"
             - "--timeout=600s"
           env:
             - name: ADDRESS
@@ -47,15 +47,15 @@ spec:
           volumeMounts:
             - name: socket-dir
               mountPath: /var/lib/csi/sockets/pluginproxy/
-          {{- with .Values.controller.resources }}
+          {{- with .Values.controller.sidecars.csiProvisioner.resources }}
           resources:
             {{- toYaml . | nindent 12 }}
           {{- end }}
-        - name: csi-attacher
-          image: "{{ .Values.images.csiAttacher.repository }}:{{ .Values.images.csiAttacher.tag }}"
-          imagePullPolicy: {{ .Values.images.csiAttacher.pullPolicy }}
+        - name: csiAttacher
+          image: "{{ .Values.controller.sidecars.csiAttacher.image }}"
+          imagePullPolicy: {{ .Values.controller.sidecars.csiAttacher.pullPolicy }}
           args:
-            - "--v={{ .Values.logLevel }}"
+            - "--v={{ .Values.controller.logLevel | default .Values.logLevel }}"
             - "--csi-address=$(ADDRESS)"
             - "--timeout=600s"
           env:
@@ -64,15 +64,15 @@ spec:
           volumeMounts:
             - name: socket-dir
               mountPath: /var/lib/csi/sockets/pluginproxy/
-          {{- with .Values.controller.resources }}
+          {{- with .Values.controller.sidecars.csiAttacher.resources }}
           resources:
             {{- toYaml . | nindent 12 }}
           {{- end }}
-        - name: csi-resizer
-          image: "{{ .Values.images.csiResizer.repository }}:{{ .Values.images.csiResizer.tag }}"
-          imagePullPolicy: {{ .Values.images.csiResizer.pullPolicy }}
+        - name: csiResizer
+          image: "{{ .Values.controller.sidecars.csiResizer.image }}"
+          imagePullPolicy: {{ .Values.controller.sidecars.csiResizer.pullPolicy }}
           args:
-            - "--v={{ .Values.logLevel }}"
+            - "--v={{ .Values.controller.logLevel | default .Values.logLevel }}"
             - "--timeout=600s"
             - "--csi-address=$(ADDRESS)"
             - "--handle-volume-inuse-error=true"
@@ -82,16 +82,16 @@ spec:
           volumeMounts:
             - name: socket-dir
               mountPath: /var/lib/csi/sockets/pluginproxy/
-          {{- with .Values.controller.resources }}
+          {{- with .Values.controller.sidecars.csiResizer.resources }}
           resources:
             {{- toYaml . | nindent 12 }}
           {{- end }}
-        - name: csi-snapshotter
-          image: "{{ .Values.images.csiSnapshotter.repository }}:{{ .Values.images.csiSnapshotter.tag }}"
-          imagePullPolicy: {{ .Values.images.csiSnapshotter.pullPolicy }}
+        - name: csiSnapshotter
+          image: "{{ .Values.controller.sidecars.csiSnapshotter.image }}"
+          imagePullPolicy: {{ .Values.controller.sidecars.csiSnapshotter.pullPolicy }}
           args:
             - "--csi-address=$(ADDRESS)"
-            - "--v={{ .Values.logLevel }}"
+            - "--v={{ .Values.controller.logLevel | default .Values.logLevel }}"
             - "--timeout=600s"
             - "--leader-election=false"
           env:
@@ -100,13 +100,13 @@ spec:
           volumeMounts:
             - name: socket-dir
               mountPath: /var/lib/csi/sockets/pluginproxy/
-          {{- with .Values.controller.resources }}
+          {{- with .Values.controller.sidecars.csiSnapshotter.resources }}
           resources:
             {{- toYaml . | nindent 12 }}
           {{- end }}
         - name: csi-upcloud-plugin
           image: {{ include "upcloud-csi.driverImage" . }}
-          imagePullPolicy: {{ .Values.images.driver.pullPolicy }}
+          imagePullPolicy: {{ .Values.controller.image.pullPolicy }}
           args:
             - "--endpoint=$(CSI_ENDPOINT)"
             - "--nodehost=$(NODE_ID)"

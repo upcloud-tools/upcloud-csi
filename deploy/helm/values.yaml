@@ -4,7 +4,7 @@ nameOverride: ""
 # -- Overrides the full name.
 fullnameOverride: ""
 
-# -- Log verbosity level for sidecar containers.
+# -- Default log verbosity, overridable per component.
 logLevel: 5
 
 # Credentials for UpCloud API access.
@@ -23,64 +23,77 @@ credentials:
   # -- UpCloud password (required when createSecret is true).
   password: ""
 
-images:
-  driver:
-    repository: ghcr.io/upcloudltd/upcloud-csi
-    # Empty tag defaults to .Chart.AppVersion via the upcloud-csi.driverImage helper.
-    tag: ""
-    pullPolicy: Always
-  csiProvisioner:
-    repository: registry.k8s.io/sig-storage/csi-provisioner
-    tag: v5.3.0
-    pullPolicy: Always
-  csiAttacher:
-    repository: registry.k8s.io/sig-storage/csi-attacher
-    tag: v4.12.0
-    pullPolicy: Always
-  csiResizer:
-    repository: registry.k8s.io/sig-storage/csi-resizer
-    tag: v2.2.0
-    pullPolicy: Always
-  csiSnapshotter:
-    repository: registry.k8s.io/sig-storage/csi-snapshotter
-    tag: v8.6.0
-    pullPolicy: Always
-  csiNodeDriverRegistrar:
-    repository: registry.k8s.io/sig-storage/csi-node-driver-registrar
-    tag: v2.17.0
-    pullPolicy: Always
-  snapshotController:
-    repository: registry.k8s.io/sig-storage/snapshot-controller
-    tag: v8.6.0
-    pullPolicy: IfNotPresent
-  snapshotValidationWebhook:
-    repository: registry.k8s.io/sig-storage/snapshot-validation-webhook
-    tag: v8.6.0
-    pullPolicy: IfNotPresent
-
-csiDriver:
-  # -- Name of the CSIDriver resource.
-  name: storage.csi.upcloud.com
-  attachRequired: true
-  podInfoOnMount: true
-  # -- fsGroupPolicy for the CSI driver (File, None, or ReadWriteOnceWithFSType).
-  fsGroupPolicy: File
-
 # Controller StatefulSet settings.
 controller:
+  # -- Log verbosity level.
+  # -- Log verbosity (inherits global logLevel when null).
+  logLevel:
+
+  csiDriver:
+    # -- Name of the CSIDriver resource.
+    name: storage.csi.upcloud.com
+    attachRequired: true
+    podInfoOnMount: true
+    # -- fsGroupPolicy for the CSI driver (File, None, or ReadWriteOnceWithFSType).
+    fsGroupPolicy: File
+
+  # -- Driver container image.
+  image:
+    repository: ghcr.io/upcloudltd/upcloud-csi
+    tag: ""
+    pullPolicy: Always
+
+  # -- Driver container resources.
+  resources: {}
+
+  sidecars:
+    csiProvisioner:
+      image: registry.k8s.io/sig-storage/csi-provisioner:v5.3.0
+      pullPolicy: Always
+      resources: {}
+    csiAttacher:
+      image: registry.k8s.io/sig-storage/csi-attacher:v4.12.0
+      pullPolicy: Always
+      resources: {}
+    csiResizer:
+      image: registry.k8s.io/sig-storage/csi-resizer:v2.2.0
+      pullPolicy: Always
+      resources: {}
+    csiSnapshotter:
+      image: registry.k8s.io/sig-storage/csi-snapshotter:v8.6.0
+      pullPolicy: Always
+      resources: {}
+
   replicas: 1
   serviceAccountName: csi-upcloud-controller-sa
   priorityClassName: system-cluster-critical
-  resources: {}
   nodeSelector: {}
   tolerations: []
   affinity: {}
 
 # Node DaemonSet settings.
 node:
+  # -- Log verbosity level.
+  # -- Log verbosity (inherits global logLevel when null).
+  logLevel:
+
+  # -- Driver container image.
+  image:
+    repository: ghcr.io/upcloudltd/upcloud-csi
+    tag: ""
+    pullPolicy: Always
+
+  # -- Driver container resources.
+  resources: {}
+
+  sidecars:
+    csiNodeDriverRegistrar:
+      image: registry.k8s.io/sig-storage/csi-node-driver-registrar:v2.17.0
+      pullPolicy: Always
+      resources: {}
+
   serviceAccountName: csi-upcloud-node-sa
   priorityClassName: system-node-critical
-  resources: {}
   nodeSelector: {}
   tolerations: []
   affinity: {}
@@ -90,9 +103,18 @@ node:
 
 # Snapshot controller Deployment settings.
 snapshotController:
+  # -- Log verbosity level.
+  # -- Log verbosity (inherits global logLevel when null).
+  logLevel:
+
+  image: registry.k8s.io/sig-storage/snapshot-controller:v8.6.0
+  pullPolicy: IfNotPresent
+  resources: {}
+
   replicas: 2
   minReadySeconds: 15
-  resources: {}
+  serviceAccountName: csi-upcloud-controller-sa
+  priorityClassName: system-cluster-critical
   nodeSelector: {}
   tolerations: []
   affinity: {}
@@ -101,8 +123,13 @@ snapshotController:
 snapshotValidationWebhook:
   # -- Enable the snapshot validation webhook.
   enabled: false
-  replicas: 3
+
+  image: registry.k8s.io/sig-storage/snapshot-validation-webhook:v8.6.0
+  pullPolicy: IfNotPresent
   resources: {}
+
+  replicas: 3
+  serviceAccountName: csi-upcloud-node-sa
   nodeSelector: {}
   tolerations: []
   affinity: {}
@@ -129,5 +156,6 @@ storageClasses:
 
 # VolumeSnapshotClass settings.
 volumeSnapshotClass:
+  enabled: true
   name: upcloud-csi-snapshotclass
   deletionPolicy: Delete
