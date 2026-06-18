@@ -6,7 +6,7 @@ metadata:
     {{- include "upcloud-csi.labels" . | nindent 4 }}
 subjects:
   - kind: ServiceAccount
-    name: {{ .Values.node.serviceAccountName }}
+    name: {{ .Values.node.serviceAccountName | default (printf "%s-node" (include "upcloud-csi.fullname" .)) }}
     namespace: {{ .Release.Namespace }}
 roleRef:
   kind: ClusterRole
@@ -22,7 +22,7 @@ metadata:
     {{- include "upcloud-csi.labels" . | nindent 4 }}
 subjects:
   - kind: ServiceAccount
-    name: {{ .Values.controller.serviceAccountName }}
+    name: {{ .Values.controller.serviceAccountName | default (printf "%s-controller" (include "upcloud-csi.fullname" .)) }}
     namespace: {{ .Release.Namespace }}
 roleRef:
   kind: ClusterRole
@@ -38,7 +38,7 @@ metadata:
     {{- include "upcloud-csi.labels" . | nindent 4 }}
 subjects:
   - kind: ServiceAccount
-    name: {{ .Values.controller.serviceAccountName }}
+    name: {{ .Values.controller.serviceAccountName | default (printf "%s-controller" (include "upcloud-csi.fullname" .)) }}
     namespace: {{ .Release.Namespace }}
 roleRef:
   kind: ClusterRole
@@ -54,7 +54,7 @@ metadata:
     {{- include "upcloud-csi.labels" . | nindent 4 }}
 subjects:
   - kind: ServiceAccount
-    name: {{ .Values.controller.serviceAccountName }}
+    name: {{ .Values.controller.serviceAccountName | default (printf "%s-controller" (include "upcloud-csi.fullname" .)) }}
     namespace: {{ .Release.Namespace }}
 roleRef:
   kind: ClusterRole
@@ -70,7 +70,7 @@ metadata:
     {{- include "upcloud-csi.labels" . | nindent 4 }}
 subjects:
   - kind: ServiceAccount
-    name: {{ .Values.controller.serviceAccountName }}
+    name: {{ .Values.controller.serviceAccountName | default (printf "%s-controller" (include "upcloud-csi.fullname" .)) }}
     namespace: {{ .Release.Namespace }}
 roleRef:
   kind: ClusterRole
@@ -86,7 +86,7 @@ metadata:
     {{- include "upcloud-csi.labels" . | nindent 4 }}
 subjects:
   - kind: ServiceAccount
-    name: {{ .Values.controller.serviceAccountName }}
+    name: {{ .Values.controller.serviceAccountName | default (printf "%s-controller" (include "upcloud-csi.fullname" .)) }}
     namespace: {{ .Release.Namespace }}
 roleRef:
   kind: ClusterRole
@@ -103,7 +103,7 @@ metadata:
     {{- include "upcloud-csi.labels" . | nindent 4 }}
 subjects:
   - kind: ServiceAccount
-    name: {{ .Values.node.serviceAccountName }}
+    name: {{ .Values.node.serviceAccountName | default (printf "%s-node" (include "upcloud-csi.fullname" .)) }}
     namespace: {{ .Release.Namespace }}
 roleRef:
   kind: ClusterRole

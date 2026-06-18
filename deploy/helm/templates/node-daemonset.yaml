@@ -18,7 +18,7 @@ spec:
         role: csi-upcloud
     spec:
       priorityClassName: {{ .Values.node.priorityClassName }}
-      serviceAccountName: {{ .Values.node.serviceAccountName }}
+      serviceAccountName: {{ .Values.node.serviceAccountName | default (printf "%s-node" (include "upcloud-csi.fullname" .)) }}
       hostNetwork: true
       {{- with .Values.node.nodeSelector }}
       nodeSelector:
@@ -34,7 +34,7 @@ spec:
       {{- end }}
       containers:
         - name: csiNodeDriverRegistrar
-          image: "{{ .Values.node.sidecars.csiNodeDriverRegistrar.image }}"
+          image: "{{ .Values.node.sidecars.csiNodeDriverRegistrar.repository }}:{{ .Values.node.sidecars.csiNodeDriverRegistrar.tag }}"
           imagePullPolicy: {{ .Values.node.sidecars.csiNodeDriverRegistrar.pullPolicy }}
           args:
             - "--v={{ .Values.node.logLevel | default .Values.logLevel }}"

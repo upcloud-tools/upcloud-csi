@@ -20,7 +20,7 @@ spec:
         role: csi-upcloud
     spec:
       priorityClassName: {{ .Values.controller.priorityClassName }}
-      serviceAccountName: {{ .Values.controller.serviceAccountName }}
+      serviceAccountName: {{ .Values.controller.serviceAccountName | default (printf "%s-controller" (include "upcloud-csi.fullname" .)) }}
       {{- with .Values.controller.nodeSelector }}
       nodeSelector:
         {{- toYaml . | nindent 8 }}
@@ -35,7 +35,7 @@ spec:
       {{- end }}
       containers:
         - name: csiProvisioner
-          image: "{{ .Values.controller.sidecars.csiProvisioner.image }}"
+          image: "{{ .Values.controller.sidecars.csiProvisioner.repository }}:{{ .Values.controller.sidecars.csiProvisioner.tag }}"
           imagePullPolicy: {{ .Values.controller.sidecars.csiProvisioner.pullPolicy }}
           args:
             - "--csi-address=$(ADDRESS)"
@@ -52,7 +52,7 @@ spec:
             {{- toYaml . | nindent 12 }}
           {{- end }}
         - name: csiAttacher
-          image: "{{ .Values.controller.sidecars.csiAttacher.image }}"
+          image: "{{ .Values.controller.sidecars.csiAttacher.repository }}:{{ .Values.controller.sidecars.csiAttacher.tag }}"
           imagePullPolicy: {{ .Values.controller.sidecars.csiAttacher.pullPolicy }}
           args:
             - "--v={{ .Values.controller.logLevel | default .Values.logLevel }}"
@@ -69,7 +69,7 @@ spec:
             {{- toYaml . | nindent 12 }}
           {{- end }}
         - name: csiResizer
-          image: "{{ .Values.controller.sidecars.csiResizer.image }}"
+          image: "{{ .Values.controller.sidecars.csiResizer.repository }}:{{ .Values.controller.sidecars.csiResizer.tag }}"
           imagePullPolicy: {{ .Values.controller.sidecars.csiResizer.pullPolicy }}
           args:
             - "--v={{ .Values.controller.logLevel | default .Values.logLevel }}"
@@ -87,7 +87,7 @@ spec:
             {{- toYaml . | nindent 12 }}
           {{- end }}
         - name: csiSnapshotter
-          image: "{{ .Values.controller.sidecars.csiSnapshotter.image }}"
+          image: "{{ .Values.controller.sidecars.csiSnapshotter.repository }}:{{ .Values.controller.sidecars.csiSnapshotter.tag }}"
           imagePullPolicy: {{ .Values.controller.sidecars.csiSnapshotter.pullPolicy }}
           args:
             - "--csi-address=$(ADDRESS)"

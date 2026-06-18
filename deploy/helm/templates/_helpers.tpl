@@ -29,14 +29,6 @@ app.kubernetes.io/name: {{ include "upcloud-csi.name" . }}
 app.kubernetes.io/instance: {{ .Release.Name }}
 {{- end }}
 
-{{- define "upcloud-csi.controllerServiceAccount" -}}
-{{ .Values.controller.serviceAccountName }}
-{{- end }}
-
-{{- define "upcloud-csi.nodeServiceAccount" -}}
-{{ .Values.node.serviceAccountName }}
-{{- end }}
-
 {{- define "upcloud-csi.driverImage" -}}
 {{- $repository := .Values.controller.image.repository -}}
 {{- $tag := .Values.controller.image.tag | default .Chart.AppVersion -}}
