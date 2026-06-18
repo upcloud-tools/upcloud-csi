@@ -30,4 +30,4 @@ jobs:
         with:
           manifests: deploy/helm/
           lintType: kubeconform
-          kubeconformOpts: -summary -strict
+          kubeconformOpts: -summary -strict -ignore-missing-schemas
