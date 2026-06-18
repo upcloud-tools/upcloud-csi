@@ -9,9 +9,18 @@ keywords:
   - csi
   - storage
   - upcloud
-home: https://github.com/upcloudltd/upcloud-csi
+home: https://github.com/upcloud-tools/upcloud-csi
 sources:
-  - https://github.com/upcloudltd/upcloud-csi
+  - https://github.com/upcloud-tools/upcloud-csi
 maintainers:
   - name: Leonardo (aardbol)
     url: https://github.com/aardbol
+annotations:
+  artifacthub.io/category: storage
+  artifacthub.io/license: MIT
+  artifacthub.io/changes: |
+    - "Initial release of the UpCloud CSI Helm chart"
+    - "Controller, node, snapshot-controller, and webhook deployments"
+    - "Configurable StorageClasses and VolumeSnapshotClass"
+    - "Per-component log levels, resources, and node selectors"
+    - "Credentials secret management"

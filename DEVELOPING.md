@@ -94,3 +94,30 @@ $ csc -e unix:///tmp/csi.sock controller get-capabilities
 &{type:CLONE_VOLUME }
 ```
 
+## Releasing
+
+### App release
+
+1. Update `appVersion` in `deploy/helm/Chart.yaml` to the new version.
+2. Add a changelog entry to root `CHANGELOG.md` under the new version header.
+3. Tag and push:
+   ```shell
+   git tag v2.6.0
+   git push origin v2.6.0
+   ```
+   The CI workflow creates a draft release with notes from `CHANGELOG.md`.
+
+### Helm chart release
+
+Bump when templates or values change independently of an app release.
+
+1. Update `version` in `deploy/helm/Chart.yaml`.
+2. Update `deploy/helm/CHANGELOG.md` and the `artifacthub.io/changes` annotation in `Chart.yaml`.
+3. Package and publish the chart to your OCI registry or chart repo.
+4. Tag and push:
+   ```shell
+   git tag chart-v1.0.1
+   git push origin chart-v1.0.1
+   ```
+   The CI workflow creates a draft release with notes from `deploy/helm/CHANGELOG.md`.
+

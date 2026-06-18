@@ -103,6 +103,15 @@ release-notes:
 		flag { if ( n ) { print prev; } n++; prev = $$0 }' \
 		CHANGELOG.md
 
+HELM_CHART_VERSION = $(or $(CHART_VERSION),$(shell awk '/^version:/ {print $$2}' deploy/helm/Chart.yaml))
+.PHONY: helm-release-notes
+helm-release-notes:
+	@awk \
+		'/^## \['$(HELM_CHART_VERSION)'\]/ { flag = 1; next } \
+		/^## \[/ { if ( flag ) { exit; } } \
+		flag { if ( n ) { print prev; } n++; prev = $$0 }' \
+		deploy/helm/CHANGELOG.md
+
 HELM_CHART_DIR = deploy/helm
 
 .PHONY: helm-lint
