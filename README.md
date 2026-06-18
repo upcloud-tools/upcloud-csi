@@ -29,7 +29,7 @@ and [Kubernetes Blog](https://kubernetes.io/blog/2019/01/15/container-storage-in
 ## Deployment
 
 ### Kubernetes
-Kubernetes deployment [README](deploy/kubernetes/README.md) describes how to deploy UpCloud CSI driver using `kubectl` and sidecar containers.
+Deploy UpCloud CSI driver using the [Helm chart](deploy/helm/).
 
 ## Developing the CSI driver
 

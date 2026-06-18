@@ -20,16 +20,21 @@ push-image: container-build
 	@echo "==> Pushing image $(CONTAINER_REPO):$(IMAGE_TAG)"
 	buildah push $(CONTAINER_REPO):$(IMAGE_TAG)
 
-.PHONY: deploy-manifests
-deploy-manifests:
-	@echo "==> Deploying CSI driver manifests (image: $(CONTAINER_REPO):$(IMAGE_TAG))"
-	kubectl apply -f deploy/kubernetes/crd-upcloud-csi.yaml
-	kubectl apply -f deploy/kubernetes/rbac-upcloud-csi.yaml
-	sed 's|ghcr.io/upcloudltd/upcloud-csi:latest|$(CONTAINER_REPO):$(IMAGE_TAG)|g' \
-		deploy/kubernetes/setup-upcloud-csi.yaml | kubectl apply -f -
-	kubectl apply -f deploy/kubernetes/test/sc-upcloud-csi-test.yaml
-	kubectl -n kube-system rollout status statefulset/csi-upcloud-controller --timeout=180s
-	kubectl -n kube-system rollout status daemonset/csi-upcloud-node --timeout=180s
+.PHONY: helm-install
+helm-install:
+	helm install upcloud-csi $(HELM_CHART_DIR) --namespace kube-system \
+		$(if $(HELM_VALUES),--values $(HELM_VALUES),) \
+		$(HELM_OPTS) --wait --timeout 180s
+
+.PHONY: helm-upgrade
+helm-upgrade:
+	helm upgrade upcloud-csi $(HELM_CHART_DIR) --namespace kube-system \
+		$(if $(HELM_VALUES),--values $(HELM_VALUES),) \
+		$(HELM_OPTS) --wait --timeout 180s
+
+.PHONY: deploy-test-sc
+deploy-test-sc:
+	kubectl apply -f test/e2e/test-storage-classes.yaml
 
 .PHONY: clean-tests
 clean-tests:

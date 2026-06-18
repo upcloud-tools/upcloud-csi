@@ -35,8 +35,8 @@ jobs:
           mkdir -p ~/.kube
           echo "${{ secrets.KUBE_CONFIG }}" | base64 -d > ~/.kube/config
 
-      - name: Deploy CSI driver manifests
-        run: make deploy-manifests CONTAINER_REPO=${{ env.REGISTRY }}/${{ env.TEST_IMAGE }} IMAGE_TAG=${{ github.sha }}
+      - name: Deploy CSI driver via Helm
+        run: make helm-install HELM_OPTS="--set image.repository=${{ env.REGISTRY }}/${{ env.TEST_IMAGE }} --set image.tag=${{ github.sha }}"
 
   e2e:
     runs-on: ubuntu-24.04
