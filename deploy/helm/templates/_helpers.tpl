@@ -30,8 +30,8 @@ app.kubernetes.io/instance: {{ .Release.Name }}
 {{- end }}
 
 {{- define "upcloud-csi.driverImage" -}}
-{{- $repository := .Values.controller.image.repository -}}
-{{- $tag := .Values.controller.image.tag | default .Chart.AppVersion -}}
+{{- $repository := .Values.image.repository -}}
+{{- $tag := .Values.image.tag | default .Chart.AppVersion -}}
 {{- printf "%s:%s" $repository $tag -}}
 {{- end }}
 

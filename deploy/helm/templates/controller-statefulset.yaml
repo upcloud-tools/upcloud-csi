@@ -34,7 +34,7 @@ spec:
         {{- toYaml . | nindent 8 }}
       {{- end }}
       containers:
-        - name: csiProvisioner
+        - name: csi-provisioner
           image: "{{ .Values.controller.sidecars.csiProvisioner.repository }}:{{ .Values.controller.sidecars.csiProvisioner.tag }}"
           imagePullPolicy: {{ .Values.controller.sidecars.csiProvisioner.pullPolicy }}
           args:
@@ -51,7 +51,7 @@ spec:
           resources:
             {{- toYaml . | nindent 12 }}
           {{- end }}
-        - name: csiAttacher
+        - name: csi-attacher
           image: "{{ .Values.controller.sidecars.csiAttacher.repository }}:{{ .Values.controller.sidecars.csiAttacher.tag }}"
           imagePullPolicy: {{ .Values.controller.sidecars.csiAttacher.pullPolicy }}
           args:
@@ -68,7 +68,7 @@ spec:
           resources:
             {{- toYaml . | nindent 12 }}
           {{- end }}
-        - name: csiResizer
+        - name: csi-resizer
           image: "{{ .Values.controller.sidecars.csiResizer.repository }}:{{ .Values.controller.sidecars.csiResizer.tag }}"
           imagePullPolicy: {{ .Values.controller.sidecars.csiResizer.pullPolicy }}
           args:
@@ -86,7 +86,7 @@ spec:
           resources:
             {{- toYaml . | nindent 12 }}
           {{- end }}
-        - name: csiSnapshotter
+        - name: csi-snapshotter
           image: "{{ .Values.controller.sidecars.csiSnapshotter.repository }}:{{ .Values.controller.sidecars.csiSnapshotter.tag }}"
           imagePullPolicy: {{ .Values.controller.sidecars.csiSnapshotter.pullPolicy }}
           args:
@@ -106,7 +106,7 @@ spec:
           {{- end }}
         - name: csi-upcloud-plugin
           image: {{ include "upcloud-csi.driverImage" . }}
-          imagePullPolicy: {{ .Values.controller.image.pullPolicy }}
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
           args:
             - "--endpoint=$(CSI_ENDPOINT)"
             - "--nodehost=$(NODE_ID)"

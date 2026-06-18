@@ -10,7 +10,6 @@ logLevel: 5
 # Credentials for UpCloud API access.
 # Reference an existing secret, or have the chart create one.
 credentials:
-  # -- Create the secret in the release namespace.
   createSecret: false
   # -- Name of the secret (created or referenced).
   secretName: upcloud
@@ -31,18 +30,18 @@ csiDriver:
   # -- fsGroupPolicy for the CSI driver (File, None, or ReadWriteOnceWithFSType).
   fsGroupPolicy: File
 
+# -- Driver container image (shared by controller and node).
+image:
+  repository: ghcr.io/upcloud-tools/upcloud-csi
+  tag: ""
+  pullPolicy: Always
+
 # Controller StatefulSet settings.
 controller:
   # -- Log verbosity (inherits global logLevel when null).
   logLevel:
 
-  # -- Driver container image.
-  image:
-    repository: ghcr.io/upcloudltd/upcloud-csi
-    tag: ""
-    pullPolicy: Always
-
-  # -- Driver container resources.
+  # -- Driver container resources (controller).
   resources: {}
 
   sidecars:
@@ -87,6 +86,9 @@ node:
       pullPolicy: Always
       resources: {}
 
+  # -- Driver container resources (node).
+  resources: {}
+
   # -- ServiceAccount name (defaults to {fullname}-node).
   serviceAccountName: ""
   priorityClassName: system-node-critical
@@ -96,7 +98,6 @@ node:
 
 # Snapshot controller Deployment settings.
 snapshotController:
-  # -- Log verbosity level.
   # -- Log verbosity (inherits global logLevel when null).
   logLevel:
 

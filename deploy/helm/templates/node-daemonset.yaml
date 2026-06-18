@@ -33,7 +33,7 @@ spec:
         {{- toYaml . | nindent 8 }}
       {{- end }}
       containers:
-        - name: csiNodeDriverRegistrar
+        - name: csi-node-driver-registrar
           image: "{{ .Values.node.sidecars.csiNodeDriverRegistrar.repository }}:{{ .Values.node.sidecars.csiNodeDriverRegistrar.tag }}"
           imagePullPolicy: {{ .Values.node.sidecars.csiNodeDriverRegistrar.pullPolicy }}
           args:
@@ -60,7 +60,7 @@ spec:
           {{- end }}
         - name: csi-upcloud-plugin
           image: {{ include "upcloud-csi.driverImage" . }}
-          imagePullPolicy: {{ .Values.controller.image.pullPolicy }}
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
           args:
             - "--endpoint=$(CSI_ENDPOINT)"
             - "--nodehost=$(NODE_ID)"
@@ -88,7 +88,7 @@ spec:
               add: ["SYS_ADMIN"]
               drop: ["ALL"]
             allowPrivilegeEscalation: true
-          {{- with .Values.controller.resources }}
+          {{- with .Values.node.resources }}
           resources:
             {{- toYaml . | nindent 12 }}
           {{- end }}

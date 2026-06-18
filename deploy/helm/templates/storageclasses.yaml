@@ -1,5 +1,6 @@
 {{- if .Values.storageClasses.enabled }}
 {{- range .Values.storageClasses.classes }}
+---
 apiVersion: storage.k8s.io/v1
 kind: StorageClass
 metadata:
@@ -11,7 +12,5 @@ parameters:
 provisioner: {{ $.Values.csiDriver.name }}
 allowVolumeExpansion: {{ .allowVolumeExpansion }}
 reclaimPolicy: {{ .reclaimPolicy }}
-
----
 {{- end }}
 {{- end }}
