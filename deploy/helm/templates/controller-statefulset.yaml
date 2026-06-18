@@ -105,7 +105,7 @@ spec:
             {{- toYaml . | nindent 12 }}
           {{- end }}
         - name: csi-upcloud-plugin
-          image: "{{ .Values.images.driver.repository }}:{{ .Values.images.driver.tag }}"
+          image: {{ include "upcloud-csi.driverImage" . }}
           imagePullPolicy: {{ .Values.images.driver.pullPolicy }}
           args:
             - "--endpoint=$(CSI_ENDPOINT)"

@@ -36,3 +36,9 @@ app.kubernetes.io/instance: {{ .Release.Name }}
 {{- define "upcloud-csi.nodeServiceAccount" -}}
 {{ .Values.node.serviceAccountName }}
 {{- end }}
+
+{{- define "upcloud-csi.driverImage" -}}
+{{- $repository := .Values.images.driver.repository -}}
+{{- $tag := .Values.images.driver.tag | default .Chart.AppVersion -}}
+{{- printf "%s:%s" $repository $tag -}}
+{{- end }}
