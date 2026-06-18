@@ -1,0 +1,49 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "upcloud-csi.fullname" . }}-snapshot-controller
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "upcloud-csi.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.snapshotController.replicas }}
+  minReadySeconds: {{ .Values.snapshotController.minReadySeconds }}
+  strategy:
+    rollingUpdate:
+      maxSurge: 0
+      maxUnavailable: 1
+    type: RollingUpdate
+  selector:
+    matchLabels:
+      {{- include "upcloud-csi.selectorLabels" . | nindent 6 }}
+      app: {{ include "upcloud-csi.fullname" . }}-snapshot-controller
+  template:
+    metadata:
+      labels:
+        {{- include "upcloud-csi.selectorLabels" . | nindent 8 }}
+        app: {{ include "upcloud-csi.fullname" . }}-snapshot-controller
+    spec:
+      serviceAccountName: {{ .Values.controller.serviceAccountName }}
+      {{- with .Values.snapshotController.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.snapshotController.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.snapshotController.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      containers:
+        - name: snapshot-controller
+          image: "{{ .Values.images.snapshotController.repository }}:{{ .Values.images.snapshotController.tag }}"
+          imagePullPolicy: {{ .Values.images.snapshotController.pullPolicy }}
+          args:
+            - "--v={{ .Values.logLevel }}"
+            - "--leader-election=true"
+          {{- with .Values.snapshotController.resources }}
+          resources:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}

@@ -1,0 +1,32 @@
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: {{ include "upcloud-csi.fullname" . }}-provisioner-role-cfg-binding
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "upcloud-csi.labels" . | nindent 4 }}
+subjects:
+  - kind: ServiceAccount
+    name: {{ .Values.controller.serviceAccountName }}
+    namespace: {{ .Release.Namespace }}
+roleRef:
+  kind: Role
+  name: {{ include "upcloud-csi.fullname" . }}-provisioner-cfg-role
+  apiGroup: rbac.authorization.k8s.io
+
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: {{ include "upcloud-csi.fullname" . }}-snapshot-controller-leaderelection-binding
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "upcloud-csi.labels" . | nindent 4 }}
+subjects:
+  - kind: ServiceAccount
+    name: {{ .Values.controller.serviceAccountName }}
+    namespace: {{ .Release.Namespace }}
+roleRef:
+  kind: Role
+  name: {{ include "upcloud-csi.fullname" . }}-snapshot-controller-leaderelection-role
+  apiGroup: rbac.authorization.k8s.io

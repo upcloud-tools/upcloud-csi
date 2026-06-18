@@ -1,0 +1,83 @@
+{{- if .Values.snapshotValidationWebhook.enabled }}
+apiVersion: admissionregistration.k8s.io/v1
+kind: ValidatingWebhookConfiguration
+metadata:
+  name: {{ include "upcloud-csi.fullname" . }}-snapshot-validation-webhook
+  labels:
+    {{- include "upcloud-csi.labels" . | nindent 4 }}
+webhooks:
+  - name: validation-webhook.snapshot.storage.k8s.io
+    clientConfig:
+      service:
+        name: {{ include "upcloud-csi.fullname" . }}-snapshot-validation-service
+        namespace: {{ .Release.Namespace }}
+        path: /volumesnapshot
+    rules:
+      - apiGroups: ["snapshot.storage.k8s.io"]
+        apiVersions: ["v1"]
+        operations: ["CREATE", "UPDATE"]
+        resources: ["volumesnapshotclasses"]
+        scope: "*"
+    failurePolicy: Ignore
+    admissionReviewVersions: ["v1", "v1beta1"]
+    sideEffects: None
+    timeoutSeconds: 10
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "upcloud-csi.fullname" . }}-snapshot-validation-service
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "upcloud-csi.labels" . | nindent 4 }}
+spec:
+  selector:
+    app: {{ include "upcloud-csi.fullname" . }}-snapshot-validation
+  ports:
+    - port: 443
+      targetPort: 8443
+      protocol: TCP
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "upcloud-csi.fullname" . }}-snapshot-validation-deployment
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "upcloud-csi.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.snapshotValidationWebhook.replicas }}
+  selector:
+    matchLabels:
+      {{- include "upcloud-csi.selectorLabels" . | nindent 6 }}
+      app: {{ include "upcloud-csi.fullname" . }}-snapshot-validation
+  template:
+    metadata:
+      labels:
+        {{- include "upcloud-csi.selectorLabels" . | nindent 8 }}
+        app: {{ include "upcloud-csi.fullname" . }}-snapshot-validation
+    spec:
+      serviceAccountName: {{ .Values.node.serviceAccountName }}
+      {{- with .Values.snapshotValidationWebhook.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.snapshotValidationWebhook.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.snapshotValidationWebhook.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      containers:
+        - name: snapshot-validation-webhook
+          image: "{{ .Values.images.snapshotValidationWebhook.repository }}:{{ .Values.images.snapshotValidationWebhook.tag }}"
+          imagePullPolicy: {{ .Values.images.snapshotValidationWebhook.pullPolicy }}
+          {{- with .Values.snapshotValidationWebhook.resources }}
+          resources:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+{{- end }}

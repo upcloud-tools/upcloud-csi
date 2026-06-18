@@ -1,0 +1,17 @@
+{{- if .Values.storageClasses.enabled }}
+{{- range .Values.storageClasses.classes }}
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: {{ .name }}
+  annotations:
+    storageclass.kubernetes.io/is-default-class: {{ .isDefault | quote }}
+parameters:
+  tier: {{ .tier }}
+provisioner: {{ $.Values.csiDriver.name }}
+allowVolumeExpansion: {{ .allowVolumeExpansion }}
+reclaimPolicy: {{ .reclaimPolicy }}
+
+---
+{{- end }}
+{{- end }}

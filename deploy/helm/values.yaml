@@ -1,0 +1,126 @@
+# -- Overrides the chart name.
+nameOverride: ""
+
+# -- Overrides the full name.
+fullnameOverride: ""
+
+# -- Log verbosity level for sidecar containers.
+logLevel: 5
+
+# Credentials for UpCloud API access.
+# Provide either an existing secret or let the chart create one.
+credentials:
+  # -- Name of an existing secret containing UpCloud credentials.
+  # If empty, the chart requires a secret named by `secretName` to exist.
+  existingSecret: ""
+  # -- Name of the secret to use for UpCloud credentials.
+  secretName: upcloud
+  # -- Key within the secret that holds the UpCloud username.
+  usernameKey: username
+  # -- Key within the secret that holds the UpCloud password.
+  passwordKey: password
+
+images:
+  driver:
+    repository: ghcr.io/upcloudltd/upcloud-csi
+    tag: latest
+    pullPolicy: Always
+  csiProvisioner:
+    repository: registry.k8s.io/sig-storage/csi-provisioner
+    tag: v5.3.0
+    pullPolicy: Always
+  csiAttacher:
+    repository: registry.k8s.io/sig-storage/csi-attacher
+    tag: v4.12.0
+    pullPolicy: Always
+  csiResizer:
+    repository: registry.k8s.io/sig-storage/csi-resizer
+    tag: v2.2.0
+    pullPolicy: Always
+  csiSnapshotter:
+    repository: registry.k8s.io/sig-storage/csi-snapshotter
+    tag: v8.6.0
+    pullPolicy: Always
+  csiNodeDriverRegistrar:
+    repository: registry.k8s.io/sig-storage/csi-node-driver-registrar
+    tag: v2.17.0
+    pullPolicy: Always
+  snapshotController:
+    repository: registry.k8s.io/sig-storage/snapshot-controller
+    tag: v8.6.0
+    pullPolicy: IfNotPresent
+  snapshotValidationWebhook:
+    repository: registry.k8s.io/sig-storage/snapshot-validation-webhook
+    tag: v8.6.0
+    pullPolicy: IfNotPresent
+
+csiDriver:
+  # -- Name of the CSIDriver resource.
+  name: storage.csi.upcloud.com
+  attachRequired: true
+  podInfoOnMount: true
+  # -- fsGroupPolicy for the CSI driver (File, None, or ReadWriteOnceWithFSType).
+  fsGroupPolicy: File
+
+# Controller StatefulSet settings.
+controller:
+  replicas: 1
+  serviceAccountName: csi-upcloud-controller-sa
+  priorityClassName: system-cluster-critical
+  resources: {}
+  nodeSelector: {}
+  tolerations: []
+  affinity: {}
+
+# Node DaemonSet settings.
+node:
+  serviceAccountName: csi-upcloud-node-sa
+  priorityClassName: system-node-critical
+  resources: {}
+  nodeSelector: {}
+  tolerations: []
+  affinity: {}
+
+# Snapshot controller Deployment settings.
+snapshotController:
+  replicas: 2
+  minReadySeconds: 15
+  resources: {}
+  nodeSelector: {}
+  tolerations: []
+  affinity: {}
+
+# Snapshot validation webhook settings.
+snapshotValidationWebhook:
+  # -- Enable the snapshot validation webhook.
+  enabled: false
+  replicas: 3
+  resources: {}
+  nodeSelector: {}
+  tolerations: []
+  affinity: {}
+
+# StorageClasses managed by the chart.
+storageClasses:
+  enabled: true
+  classes:
+    - name: upcloud-block-storage-maxiops
+      tier: maxiops
+      isDefault: true
+      reclaimPolicy: Retain
+      allowVolumeExpansion: true
+    - name: upcloud-block-storage-hdd
+      tier: hdd
+      isDefault: false
+      reclaimPolicy: Retain
+      allowVolumeExpansion: true
+    - name: upcloud-block-storage-standard
+      tier: standard
+      isDefault: false
+      reclaimPolicy: Retain
+      allowVolumeExpansion: true
+
+# VolumeSnapshotClass settings.
+volumeSnapshotClass:
+  name: upcloud-csi-snapshotclass
+  deletionPolicy: Delete

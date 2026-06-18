@@ -1,0 +1,46 @@
+UpCloud CSI driver has been installed.
+
+1. Verify the driver is running:
+
+   kubectl --namespace {{ .Release.Namespace }} get pods -l app.kubernetes.io/name={{ include "upcloud-csi.name" . }}
+
+2. Create a secret with your UpCloud credentials (if not already present):
+
+   kubectl --namespace {{ .Release.Namespace }} create secret generic {{ .Values.credentials.secretName }} \
+     --from-literal=username=YOUR_USERNAME \
+     --from-literal=password=YOUR_PASSWORD
+
+3. Create a PVC to test the driver:
+
+   kubectl apply -f - <<EOF
+   apiVersion: v1
+   kind: PersistentVolumeClaim
+   metadata:
+     name: upcloud-test-pvc
+   spec:
+     storageClassName: upcloud-block-storage-maxiops
+     accessModes:
+       - ReadWriteOnce
+     resources:
+       requests:
+         storage: 10Gi
+   EOF
+
+4. For snapshot support, create a VolumeSnapshotClass and test:
+
+   kubectl apply -f - <<EOF
+   apiVersion: snapshot.storage.k8s.io/v1
+   kind: VolumeSnapshot
+   metadata:
+     name: test-snapshot
+   spec:
+     volumeSnapshotClassName: {{ .Values.volumeSnapshotClass.name }}
+     source:
+       persistentVolumeClaimName: upcloud-test-pvc
+   EOF
+
+{{- if .Values.snapshotValidationWebhook.enabled }}
+5. The snapshot validation webhook is enabled.
+{{- end }}
+
+Visit https://github.com/upcloudltd/upcloud-csi for more information.

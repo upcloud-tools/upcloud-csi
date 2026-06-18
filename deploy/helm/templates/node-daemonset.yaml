@@ -1,0 +1,123 @@
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: {{ include "upcloud-csi.fullname" . }}-node
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "upcloud-csi.labels" . | nindent 4 }}
+spec:
+  selector:
+    matchLabels:
+      {{- include "upcloud-csi.selectorLabels" . | nindent 6 }}
+      app: {{ include "upcloud-csi.fullname" . }}-node
+  template:
+    metadata:
+      labels:
+        {{- include "upcloud-csi.selectorLabels" . | nindent 8 }}
+        app: {{ include "upcloud-csi.fullname" . }}-node
+        role: csi-upcloud
+    spec:
+      priorityClassName: {{ .Values.node.priorityClassName }}
+      serviceAccountName: {{ .Values.node.serviceAccountName }}
+      hostNetwork: true
+      {{- with .Values.node.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.node.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      affinity:
+        podAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            - labelSelector:
+                matchLabels:
+                  app: {{ include "upcloud-csi.fullname" . }}-node
+              topologyKey: kubernetes.io/hostname
+        {{- with .Values.node.affinity }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+      containers:
+        - name: csi-node-driver-registrar
+          image: "{{ .Values.images.csiNodeDriverRegistrar.repository }}:{{ .Values.images.csiNodeDriverRegistrar.tag }}"
+          imagePullPolicy: {{ .Values.images.csiNodeDriverRegistrar.pullPolicy }}
+          args:
+            - "--v={{ .Values.logLevel }}"
+            - "--csi-address=$(ADDRESS)"
+            - "--kubelet-registration-path=$(DRIVER_REG_SOCK_PATH)"
+          env:
+            - name: ADDRESS
+              value: /csi/csi.sock
+            - name: DRIVER_REG_SOCK_PATH
+              value: /var/lib/kubelet/plugins/{{ .Values.csiDriver.name }}/csi.sock
+            - name: KUBE_NODE_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: spec.nodeName
+          volumeMounts:
+            - name: plugin-dir
+              mountPath: /csi/
+            - name: registration-dir
+              mountPath: /registration/
+          {{- with .Values.node.resources }}
+          resources:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+        - name: csi-upcloud-plugin
+          image: "{{ .Values.images.driver.repository }}:{{ .Values.images.driver.tag }}"
+          imagePullPolicy: {{ .Values.images.driver.pullPolicy }}
+          args:
+            - "--endpoint=$(CSI_ENDPOINT)"
+            - "--nodehost=$(NODE_ID)"
+            - "--mode=monolith"
+          env:
+            - name: CSI_ENDPOINT
+              value: unix:///csi/csi.sock
+            - name: UPCLOUD_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.credentials.secretName }}
+                  key: {{ .Values.credentials.usernameKey }}
+            - name: UPCLOUD_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.credentials.secretName }}
+                  key: {{ .Values.credentials.passwordKey }}
+            - name: NODE_ID
+              valueFrom:
+                fieldRef:
+                  fieldPath: spec.nodeName
+          securityContext:
+            privileged: true
+            capabilities:
+              add: ["SYS_ADMIN"]
+            allowPrivilegeEscalation: true
+          {{- with .Values.node.resources }}
+          resources:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          volumeMounts:
+            - name: plugin-dir
+              mountPath: /csi
+            - name: pods-mount-dir
+              mountPath: /var/lib/kubelet
+              mountPropagation: "Bidirectional"
+            - name: device-dir
+              mountPath: /dev
+      volumes:
+        - name: registration-dir
+          hostPath:
+            path: /var/lib/kubelet/plugins_registry/
+            type: DirectoryOrCreate
+        - name: plugin-dir
+          hostPath:
+            path: /var/lib/kubelet/plugins/{{ .Values.csiDriver.name }}
+            type: DirectoryOrCreate
+        - name: pods-mount-dir
+          hostPath:
+            path: /var/lib/kubelet
+            type: Directory
+        - name: device-dir
+          hostPath:
+            path: /dev
