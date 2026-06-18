@@ -5,6 +5,7 @@ cmd/upcloud-csi-manifest/upcloud-csi-manifest
 .vscode
 temp/ 
 .idea/
+.zed/
 .DS_Store
 vendor/
 dist/
