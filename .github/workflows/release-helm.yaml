@@ -1,0 +1,47 @@
+name: Release Helm chart
+
+on:
+  push:
+    tags: ["chart-v*.*.*"]
+
+permissions:
+  contents: write
+  packages: write
+
+jobs:
+  release-helm:
+    runs-on: ubuntu-24.04
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+
+      - name: Verify chart version matches tag
+        run: |
+          CHART_VERSION=$(awk '/^version:/ {print $2}' deploy/helm/Chart.yaml)
+          TAG_VERSION="${GITHUB_REF_NAME#chart-v}"
+          if [ "$CHART_VERSION" != "$TAG_VERSION" ]; then
+            echo "Chart version ($CHART_VERSION) does not match tag version ($TAG_VERSION)"
+            exit 1
+          fi
+
+      - name: Log in to GHCR
+        uses: docker/login-action@650006c6eb7dba73a995cc03b0b2d7f5ca915bee # v4.2.0
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Get release notes
+        run: make helm-release-notes > .release_notes
+
+      - name: Package and push Helm chart to OCI
+        run: |
+          CHART_VERSION=$(awk '/^version:/ {print $2}' deploy/helm/Chart.yaml)
+          helm package deploy/helm/ --destination ./dist
+          helm push ./dist/upcloud-csi-${CHART_VERSION}.tgz oci://ghcr.io/${{ github.repository_owner }}/helm-charts/upcloud-csi
+
+      - name: Create release
+        run: gh release create "${{ github.ref_name }}" --notes-file .release_notes --draft
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

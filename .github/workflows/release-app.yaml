@@ -1,0 +1,53 @@
+name: Release App
+
+on:
+  push:
+    tags: ["v*.*.*"]
+
+permissions:
+  contents: write
+  packages: write
+
+jobs:
+  release-app:
+    runs-on: ubuntu-24.04
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+
+      - name: Log in to GHCR
+        uses: docker/login-action@650006c6eb7dba73a995cc03b0b2d7f5ca915bee # v4.2.0
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Pull SHA image
+        run: |
+          buildah pull ghcr.io/${{ github.repository }}:${{ github.sha }} || {
+            echo "## Release failed" >> "$GITHUB_STEP_SUMMARY"
+            echo "No container image found for commit \`${{ github.sha }}\`." >> "$GITHUB_STEP_SUMMARY"
+            echo "" >> "$GITHUB_STEP_SUMMARY"
+            echo "The **Build image** workflow must have built this commit" >> "$GITHUB_STEP_SUMMARY"
+            echo "before it can be released. Only commits pushed to \`main\`" >> "$GITHUB_STEP_SUMMARY"
+            echo "that changed source code produce an image." >> "$GITHUB_STEP_SUMMARY"
+            echo "" >> "$GITHUB_STEP_SUMMARY"
+            echo "Tag a commit that was pushed to main and built successfully." >> "$GITHUB_STEP_SUMMARY"
+            exit 1
+          }
+
+      - name: Tag and push release
+        run: |
+          buildah tag ghcr.io/${{ github.repository }}:${{ github.sha }} ghcr.io/${{ github.repository }}:${{ github.ref_name }}
+          buildah tag ghcr.io/${{ github.repository }}:${{ github.sha }} ghcr.io/${{ github.repository }}:latest
+          buildah push ghcr.io/${{ github.repository }}:${{ github.ref_name }}
+          buildah push ghcr.io/${{ github.repository }}:latest
+
+      - name: Get release notes
+        run: make release-notes > .release_notes
+
+      - name: Create release
+        run: gh release create "${{ github.ref_name }}" --notes-file .release_notes --draft
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

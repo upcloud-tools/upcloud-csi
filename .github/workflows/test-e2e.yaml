@@ -38,6 +38,16 @@ jobs:
       - name: Deploy CSI driver via Helm
         run: make helm-install HELM_OPTS="--set image.repository=${{ env.REGISTRY }}/${{ env.TEST_IMAGE }} --set image.tag=${{ github.sha }}"
 
+      - name: Deploy summary
+        run: |
+          echo "## E2E deployment" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Field | Value |" >> "$GITHUB_STEP_SUMMARY"
+          echo "|---|---|" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Release | \`test-upcloud-csi\` |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Namespace | \`kube-system\` |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Image | \`${{ env.REGISTRY }}/${{ env.TEST_IMAGE }}:${{ github.sha }}\` |" >> "$GITHUB_STEP_SUMMARY"
+
   e2e:
     runs-on: ubuntu-24.04
     needs: deploy
@@ -58,4 +68,5 @@ jobs:
           echo "${{ secrets.KUBE_CONFIG }}" | base64 -d > ~/.kube/config
 
       - name: Run ${{ matrix.test-case }} e2e test
+        id: test
         run: make test-e2e ${{ matrix.test-case }}=y
