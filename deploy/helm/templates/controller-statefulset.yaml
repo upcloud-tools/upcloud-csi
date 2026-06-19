@@ -1,0 +1,142 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: {{ include "upcloud-csi.fullname" . }}-controller
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "upcloud-csi.labels" . | nindent 4 }}
+spec:
+  serviceName: {{ include "upcloud-csi.fullname" . }}
+  replicas: {{ .Values.controller.replicas }}
+  selector:
+    matchLabels:
+      {{- include "upcloud-csi.selectorLabels" . | nindent 6 }}
+      app: {{ include "upcloud-csi.fullname" . }}-controller
+  template:
+    metadata:
+      labels:
+        {{- include "upcloud-csi.selectorLabels" . | nindent 8 }}
+        app: {{ include "upcloud-csi.fullname" . }}-controller
+        role: csi-upcloud
+      annotations:
+        checksum/credentials: {{ include "upcloud-csi.credentialsChecksum" . | quote }}
+    spec:
+      priorityClassName: {{ .Values.controller.priorityClassName }}
+      serviceAccountName: {{ .Values.controller.serviceAccountName | default (printf "%s-controller" (include "upcloud-csi.fullname" .)) }}
+      {{- with .Values.controller.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.controller.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.controller.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      containers:
+        - name: csi-provisioner
+          image: "{{ .Values.controller.sidecars.csiProvisioner.repository }}:{{ .Values.controller.sidecars.csiProvisioner.tag }}"
+          imagePullPolicy: {{ .Values.controller.sidecars.csiProvisioner.pullPolicy }}
+          args:
+            - "--csi-address=$(ADDRESS)"
+            - "--v={{ .Values.controller.logLevel | default .Values.logLevel }}"
+            - "--timeout=600s"
+          env:
+            - name: ADDRESS
+              value: /var/lib/csi/sockets/pluginproxy/csi.sock
+          volumeMounts:
+            - name: socket-dir
+              mountPath: /var/lib/csi/sockets/pluginproxy/
+          {{- with .Values.controller.sidecars.csiProvisioner.resources }}
+          resources:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+        - name: csi-attacher
+          image: "{{ .Values.controller.sidecars.csiAttacher.repository }}:{{ .Values.controller.sidecars.csiAttacher.tag }}"
+          imagePullPolicy: {{ .Values.controller.sidecars.csiAttacher.pullPolicy }}
+          args:
+            - "--v={{ .Values.controller.logLevel | default .Values.logLevel }}"
+            - "--csi-address=$(ADDRESS)"
+            - "--timeout=600s"
+          env:
+            - name: ADDRESS
+              value: /var/lib/csi/sockets/pluginproxy/csi.sock
+          volumeMounts:
+            - name: socket-dir
+              mountPath: /var/lib/csi/sockets/pluginproxy/
+          {{- with .Values.controller.sidecars.csiAttacher.resources }}
+          resources:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+        - name: csi-resizer
+          image: "{{ .Values.controller.sidecars.csiResizer.repository }}:{{ .Values.controller.sidecars.csiResizer.tag }}"
+          imagePullPolicy: {{ .Values.controller.sidecars.csiResizer.pullPolicy }}
+          args:
+            - "--v={{ .Values.controller.logLevel | default .Values.logLevel }}"
+            - "--timeout=600s"
+            - "--csi-address=$(ADDRESS)"
+            - "--handle-volume-inuse-error=true"
+          env:
+            - name: ADDRESS
+              value: /var/lib/csi/sockets/pluginproxy/csi.sock
+          volumeMounts:
+            - name: socket-dir
+              mountPath: /var/lib/csi/sockets/pluginproxy/
+          {{- with .Values.controller.sidecars.csiResizer.resources }}
+          resources:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+        - name: csi-snapshotter
+          image: "{{ .Values.controller.sidecars.csiSnapshotter.repository }}:{{ .Values.controller.sidecars.csiSnapshotter.tag }}"
+          imagePullPolicy: {{ .Values.controller.sidecars.csiSnapshotter.pullPolicy }}
+          args:
+            - "--csi-address=$(ADDRESS)"
+            - "--v={{ .Values.controller.logLevel | default .Values.logLevel }}"
+            - "--timeout=600s"
+            - "--leader-election=false"
+          env:
+            - name: ADDRESS
+              value: /var/lib/csi/sockets/pluginproxy/csi.sock
+          volumeMounts:
+            - name: socket-dir
+              mountPath: /var/lib/csi/sockets/pluginproxy/
+          {{- with .Values.controller.sidecars.csiSnapshotter.resources }}
+          resources:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+        - name: csi-upcloud-plugin
+          image: {{ include "upcloud-csi.driverImage" . }}
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          args:
+            - "--endpoint=$(CSI_ENDPOINT)"
+            - "--nodehost=$(NODE_ID)"
+            - "--mode=monolith"
+          env:
+            - name: CSI_ENDPOINT
+              value: unix:///var/lib/csi/sockets/pluginproxy/csi.sock
+            - name: UPCLOUD_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "upcloud-csi.credentialsSecret" . }}
+                  key: {{ .Values.credentials.usernameKey }}
+            - name: UPCLOUD_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "upcloud-csi.credentialsSecret" . }}
+                  key: {{ .Values.credentials.passwordKey }}
+            - name: NODE_ID
+              valueFrom:
+                fieldRef:
+                  fieldPath: spec.nodeName
+          {{- with .Values.controller.resources }}
+          resources:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          volumeMounts:
+            - name: socket-dir
+              mountPath: /var/lib/csi/sockets/pluginproxy/
+      volumes:
+        - name: socket-dir
+          emptyDir: {}

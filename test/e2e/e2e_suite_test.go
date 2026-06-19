@@ -44,13 +44,13 @@ var _ = BeforeSuite(func() {
 		startLog: "Creating test namespace...",
 		endLog:   "Test namespace created",
 	}
-	deployManifests := cmd{
+	deployTestSC := cmd{
 		command:  "make",
-		args:     []string{"deploy-manifests"},
-		startLog: "Deploying CSI driver manifests...",
-		endLog:   "CSI driver manifests deployed",
+		args:     []string{"deploy-test-sc"},
+		startLog: "Deploying test StorageClasses...",
+		endLog:   "Test StorageClasses deployed",
 	}
-	execCmd([]cmd{createNS, deployManifests})
+	execCmd([]cmd{createNS, deployTestSC})
 })
 
 var _ = AfterSuite(func() {

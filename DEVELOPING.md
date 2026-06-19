@@ -1,7 +1,7 @@
 # Developing the CSI driver
 
 CSI driver's primary goal is to conform to [Container Storage Interface (CSI)](https://github.com/container-storage-interface/spec/blob/6bdbaa0472f5a1dc0e0e1f3738c65b4cac951d1f/spec.md) specification by implementing required gRPC endpoints. Unsupported endpoints should return an `CALL_NOT_IMPLEMENTED` error.  
-Depending on [CO](https://www.vmware.com/topics/glossary/content/container-orchestration.html), endpoints are called directly or by [sidecar containers](deploy/kubernetes/README.md#sidecars).
+Depending on [CO](https://www.vmware.com/topics/glossary/content/container-orchestration.html), endpoints are called directly or by sidecar containers (see [values.yaml](deploy/helm/values.yaml) for available sidecars).
 
 ## Requirements
 - [Go](https://golang.org/doc/install) >= 1.26
@@ -93,4 +93,27 @@ $ csc -e unix:///tmp/csi.sock controller get-capabilities
 &{type:EXPAND_VOLUME }
 &{type:CLONE_VOLUME }
 ```
+
+## Releasing
+
+### App release
+
+1. Update `appVersion` in `deploy/helm/Chart.yaml` to the new version.
+   Optionally bump `version` as well.
+2. Add a changelog entry to root `CHANGELOG.md` under the new version header.
+3. Tag and push — CI validates the Chart versions were bumped and matches `appVersion` to the tag.
+   ```shell
+   git tag v2.6.0
+   git push origin v2.6.0
+   ```
+
+### Helm chart release
+
+The chart is released automatically on every push to `main` that changes `deploy/helm/Chart.yaml`.
+No manual tagging is needed.
+
+1. Update `version` in `deploy/helm/Chart.yaml`.
+2. Update `deploy/helm/CHANGELOG.md` and the `artifacthub.io/changes` annotation in `Chart.yaml`.
+3. Merge the PR to `main` — CI packages the chart, pushes it to the OCI registry,
+   pushes Artifact Hub metadata, and creates a `helm-v<version>` GitHub release.
 

@@ -1,7 +1,12 @@
-name: Lint
+name: Lint Golang
 
 on:
   pull_request:
+    paths:
+      - '**/*.go'
+      - go.mod
+      - go.sum
+      - '.github/workflows/lint-golang.yaml'
 
 env:
   GO_VERSION: '1.26'

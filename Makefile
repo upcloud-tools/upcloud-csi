@@ -20,16 +20,21 @@ push-image: container-build
 	@echo "==> Pushing image $(CONTAINER_REPO):$(IMAGE_TAG)"
 	buildah push $(CONTAINER_REPO):$(IMAGE_TAG)
 
-.PHONY: deploy-manifests
-deploy-manifests:
-	@echo "==> Deploying CSI driver manifests (image: $(CONTAINER_REPO):$(IMAGE_TAG))"
-	kubectl apply -f deploy/kubernetes/crd-upcloud-csi.yaml
-	kubectl apply -f deploy/kubernetes/rbac-upcloud-csi.yaml
-	sed 's|ghcr.io/upcloudltd/upcloud-csi:latest|$(CONTAINER_REPO):$(IMAGE_TAG)|g' \
-		deploy/kubernetes/setup-upcloud-csi.yaml | kubectl apply -f -
-	kubectl apply -f deploy/kubernetes/test/sc-upcloud-csi-test.yaml
-	kubectl -n kube-system rollout status statefulset/csi-upcloud-controller --timeout=180s
-	kubectl -n kube-system rollout status daemonset/csi-upcloud-node --timeout=180s
+.PHONY: helm-install
+helm-install:
+	helm install upcloud-csi $(HELM_CHART_DIR) --namespace kube-system \
+		$(if $(HELM_VALUES),--values $(HELM_VALUES),) \
+		$(HELM_OPTS) --wait --timeout 180s
+
+.PHONY: helm-upgrade
+helm-upgrade:
+	helm upgrade upcloud-csi $(HELM_CHART_DIR) --namespace kube-system \
+		$(if $(HELM_VALUES),--values $(HELM_VALUES),) \
+		$(HELM_OPTS) --wait --timeout 180s
+
+.PHONY: deploy-test-sc
+deploy-test-sc:
+	kubectl apply -f test/e2e/test-storage-classes.yaml
 
 .PHONY: clean-tests
 clean-tests:
@@ -54,17 +59,21 @@ test-integration:
 
 # CI-friendly e2e test — used in matrix strategy where each job runs one test.
 # Use named shortcuts to run a single test case:
-#   make test-e2e SNAPSHOT=y     — Create Snapshot And Restore
-#   make test-e2e RESIZE=y       — Resize Volume
-#   make test-e2e LIST=y         — List Volumes
-#   make test-e2e PERSISTENCE=y  — Attach Detach Volume
-#   make test-e2e CREATEDELETE=y — Create Delete Volume
+#   make test-e2e SNAPSHOT=y       — Create Snapshot And Restore
+#   make test-e2e RESIZE=y         — Resize Volume (ext4 + xfs, sequential)
+#   make test-e2e RESIZE_EXT4=y    — Resize Volume (ext4 only)
+#   make test-e2e RESIZE_XFS=y     — Resize Volume (xfs only)
+#   make test-e2e LIST=y           — List Volumes
+#   make test-e2e PERSISTENCE=y    — Attach Detach Volume
+#   make test-e2e CREATEDELETE=y   — Create Delete Volume
 .PHONY: test-e2e
 test-e2e:
 	@echo "==> Running e2e tests"
 	cd test/e2e && go test -tags e2e -v -timeout 30m \
 		$(if $(CREATEDELETE),--ginkgo.focus="Create Delete Volume",) \
 		$(if $(LIST),--ginkgo.focus="List Volumes",) \
+		$(if $(RESIZE_EXT4),--ginkgo.focus="Resize Volume$$",) \
+		$(if $(RESIZE_XFS),--ginkgo.focus="Resize Volume XFS",) \
 		$(if $(RESIZE),--ginkgo.focus="Resize Volume",) \
 		$(if $(PERSISTENCE),--ginkgo.focus="Attach Detach Volume",) \
 		$(if $(SNAPSHOT),--ginkgo.focus="Create Snapshot And Restore",) \
@@ -72,17 +81,21 @@ test-e2e:
 
 # Local-development variant — sequential execution with real-time output.
 # Use named shortcuts to run a single test case:
-#   make test-e2e-verbose SNAPSHOT=y   — Create Snapshot And Restore
-#   make test-e2e-verbose RESIZE=y     — Resize Volume
-#   make test-e2e-verbose LIST=y       — List Volumes
-#   make test-e2e-verbose PERSISTENCE=y — Attach Detach Volume
-#   make test-e2e-verbose CREATEDELETE=y — Create Delete Volume
+#   make test-e2e-verbose SNAPSHOT=y      — Create Snapshot And Restore
+#   make test-e2e-verbose RESIZE=y        — Resize Volume (ext4 + xfs, sequential)
+#   make test-e2e-verbose RESIZE_EXT4=y   — Resize Volume (ext4 only)
+#   make test-e2e-verbose RESIZE_XFS=y    — Resize Volume (xfs only)
+#   make test-e2e-verbose LIST=y          — List Volumes
+#   make test-e2e-verbose PERSISTENCE=y   — Attach Detach Volume
+#   make test-e2e-verbose CREATEDELETE=y  — Create Delete Volume
 .PHONY: test-e2e-verbose
 test-e2e-verbose:
 	@echo "==> Running e2e tests (verbose mode)"
 	cd test/e2e && go test -tags e2e -v --ginkgo.output-interceptor-mode=none -timeout 30m \
 		$(if $(CREATEDELETE),--ginkgo.focus="Create Delete Volume",) \
 		$(if $(LIST),--ginkgo.focus="List Volumes",) \
+		$(if $(RESIZE_EXT4),--ginkgo.focus="Resize Volume$$",) \
+		$(if $(RESIZE_XFS),--ginkgo.focus="Resize Volume XFS",) \
 		$(if $(RESIZE),--ginkgo.focus="Resize Volume",) \
 		$(if $(PERSISTENCE),--ginkgo.focus="Attach Detach Volume",) \
 		$(if $(SNAPSHOT),--ginkgo.focus="Create Snapshot And Restore",) \
@@ -97,3 +110,36 @@ release-notes:
 		/${CHANGELOG_HEADER}/ { if ( flag ) { exit; } } \
 		flag { if ( n ) { print prev; } n++; prev = $$0 }' \
 		CHANGELOG.md
+
+HELM_CHART_VERSION = $(or $(CHART_VERSION),$(shell awk '/^version:/ {print $$2}' deploy/helm/Chart.yaml))
+.PHONY: helm-release-notes
+helm-release-notes:
+	@awk \
+		'/^## \['$(HELM_CHART_VERSION)'\]/ { flag = 1; next } \
+		/^## \[/ { if ( flag ) { exit; } } \
+		flag { if ( n ) { print prev; } n++; prev = $$0 }' \
+		deploy/helm/CHANGELOG.md
+
+HELM_CHART_DIR = deploy/helm
+
+.PHONY: helm-lint
+helm-lint:
+	helm lint $(HELM_CHART_DIR)
+
+.PHONY: helm-package
+helm-package:
+	helm package $(HELM_CHART_DIR) --destination ./dist
+
+.PHONY: kube-lint
+kube-lint:
+	kube-linter lint --config $(HELM_CHART_DIR)/.kube-linter.yaml $(HELM_CHART_DIR)
+
+.PHONY: k8s-lint
+k8s-lint:
+	helm template test-release $(HELM_CHART_DIR) > /tmp/upcloud-csi-rendered.yaml
+	@if command -v kubeconform > /dev/null 2>&1; then \
+		kubeconform /tmp/upcloud-csi-rendered.yaml; \
+	else \
+		echo "kubeconform not installed. Install from https://github.com/yannh/kubeconform"; \
+		exit 1; \
+	fi

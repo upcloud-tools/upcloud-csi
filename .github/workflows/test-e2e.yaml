@@ -13,7 +13,7 @@ env:
 
 jobs:
   build-image:
-    uses: ./.github/workflows/reusable-build.yaml
+    uses: ./.github/workflows/_reusable-build.yaml
     with:
       checkout_ref: ${{ github.sha }}
       image_suffix: '-test'
@@ -35,8 +35,8 @@ jobs:
           mkdir -p ~/.kube
           echo "${{ secrets.KUBE_CONFIG }}" | base64 -d > ~/.kube/config
 
-      - name: Deploy CSI driver manifests
-        run: make deploy-manifests CONTAINER_REPO=${{ env.REGISTRY }}/${{ env.TEST_IMAGE }} IMAGE_TAG=${{ github.sha }}
+      - name: Deploy CSI driver via Helm
+        run: make helm-upgrade HELM_OPTS="--install --set image.repository=${{ env.REGISTRY }}/${{ env.TEST_IMAGE }} --set image.tag=${{ github.sha }}"
 
   e2e:
     runs-on: ubuntu-24.04
@@ -44,7 +44,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        test-case: [SNAPSHOT, RESIZE, LIST, CREATEDELETE, PERSISTENCE]
+        test-case: [SNAPSHOT, RESIZE_EXT4, RESIZE_XFS, LIST, CREATEDELETE, PERSISTENCE]
     steps:
       - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
 
@@ -58,4 +58,5 @@ jobs:
           echo "${{ secrets.KUBE_CONFIG }}" | base64 -d > ~/.kube/config
 
       - name: Run ${{ matrix.test-case }} e2e test
+        id: test
         run: make test-e2e ${{ matrix.test-case }}=y

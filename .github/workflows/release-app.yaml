@@ -1,0 +1,80 @@
+name: Release App
+
+on:
+  push:
+    tags: ["v*.*.*"]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  packages: write
+
+jobs:
+  release-app:
+    runs-on: ubuntu-24.04
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+        with:
+          fetch-depth: 0
+
+      - name: Validate Chart versions
+        env:
+          APP: ${{ github.ref_name }}
+        run: |
+          MAIN_VERSION=$(git show main:deploy/helm/Chart.yaml | yq .version)
+          MAIN_APP_VERSION=$(git show main:deploy/helm/Chart.yaml | yq .appVersion)
+          TAG_VERSION=$(yq .version deploy/helm/Chart.yaml)
+          TAG_APP_VERSION=$(yq .appVersion deploy/helm/Chart.yaml)
+
+          if [ "$TAG_VERSION" = "$MAIN_VERSION" ] && [ "$TAG_APP_VERSION" = "$MAIN_APP_VERSION" ]; then
+            echo "Both version ($TAG_VERSION) and appVersion ($TAG_APP_VERSION) in" >> "$GITHUB_STEP_SUMMARY"
+            echo "deploy/helm/Chart.yaml match main. Bump at least one before tagging." >> "$GITHUB_STEP_SUMMARY"
+            exit 1
+          fi
+
+          if [ "$TAG_APP_VERSION" != "$APP" ]; then
+            echo "Tag ($APP) does not match appVersion ($TAG_APP_VERSION) in deploy/helm/Chart.yaml." >> "$GITHUB_STEP_SUMMARY"
+            echo "Update appVersion in deploy/helm/Chart.yaml to match the tag." >> "$GITHUB_STEP_SUMMARY"
+            exit 1
+          fi
+
+          echo "Chart version: $TAG_VERSION (main: $MAIN_VERSION)"
+          echo "App version:   $TAG_APP_VERSION (main: $MAIN_APP_VERSION)"
+
+      - name: Log in to GHCR
+        uses: docker/login-action@650006c6eb7dba73a995cc03b0b2d7f5ca915bee # v4.2.0
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Pull SHA image
+        run: |
+          buildah pull ghcr.io/${{ github.repository }}:${{ github.sha }} || {
+            echo "## Release failed" >> "$GITHUB_STEP_SUMMARY"
+            echo "No container image found for commit \`${{ github.sha }}\`." >> "$GITHUB_STEP_SUMMARY"
+            echo "" >> "$GITHUB_STEP_SUMMARY"
+            echo "The **Build image** workflow must have built this commit" >> "$GITHUB_STEP_SUMMARY"
+            echo "before it can be released. Only commits pushed to \`main\`" >> "$GITHUB_STEP_SUMMARY"
+            echo "that changed source code produce an image." >> "$GITHUB_STEP_SUMMARY"
+            echo "" >> "$GITHUB_STEP_SUMMARY"
+            echo "Tag a commit that was pushed to main and built successfully." >> "$GITHUB_STEP_SUMMARY"
+            exit 1
+          }
+
+      - name: Tag and push release
+        run: |
+          buildah tag ghcr.io/${{ github.repository }}:${{ github.sha }} ghcr.io/${{ github.repository }}:${{ github.ref_name }}
+          buildah tag ghcr.io/${{ github.repository }}:${{ github.sha }} ghcr.io/${{ github.repository }}:latest
+          buildah push ghcr.io/${{ github.repository }}:${{ github.ref_name }}
+          buildah push ghcr.io/${{ github.repository }}:latest
+
+      - name: Get release notes
+        run: make release-notes > .release_notes
+
+      - name: Create release
+        run: gh release create "${{ github.ref_name }}" --notes-file .release_notes --draft
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
