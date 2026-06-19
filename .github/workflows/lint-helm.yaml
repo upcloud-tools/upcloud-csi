@@ -1,4 +1,4 @@
-name: Helm Lint
+name: Lint Helm
 
 on:
   pull_request:

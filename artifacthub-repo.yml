@@ -1,6 +1,6 @@
 # Artifact Hub repository metadata
 # https://artifacthub.io/docs/topics/repositories/#artifacthub-repository-metadata
-# repositoryID: <fill-in-after-adding-repo-on-artifacthub>
+repositoryID: cc52ea37-41d2-493d-8681-55902e4bcc65
 owners:
   - name: aardbol
     email: aardbol@github.repo
