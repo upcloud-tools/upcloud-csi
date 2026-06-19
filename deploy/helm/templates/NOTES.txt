@@ -45,4 +45,4 @@ UpCloud CSI driver has been installed.
 5. The snapshot validation webhook is enabled.
 {{- end }}
 
-Visit https://github.com/upcloudltd/upcloud-csi for more information.
+Visit https://github.com/upcloud-tools/upcloud-csi for more information.

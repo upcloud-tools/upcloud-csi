@@ -3,7 +3,7 @@ name: upcloud-csi
 description: CSI driver for UpCloud block storage
 type: application
 version: 1.0.0
-appVersion: 2.5.0
+appVersion: v2.5.0
 kubeVersion: ">=1.21.0"
 keywords:
   - csi

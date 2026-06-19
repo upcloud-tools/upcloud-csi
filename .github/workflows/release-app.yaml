@@ -23,7 +23,6 @@ jobs:
         env:
           APP: ${{ github.ref_name }}
         run: |
-          APP="${APP#v}"
           MAIN_VERSION=$(git show main:deploy/helm/Chart.yaml | yq .version)
           MAIN_APP_VERSION=$(git show main:deploy/helm/Chart.yaml | yq .appVersion)
           TAG_VERSION=$(yq .version deploy/helm/Chart.yaml)
@@ -36,8 +35,8 @@ jobs:
           fi
 
           if [ "$TAG_APP_VERSION" != "$APP" ]; then
-            echo "appVersion ($TAG_APP_VERSION) does not match tag version ($APP)." >> "$GITHUB_STEP_SUMMARY"
-            echo "Update appVersion in deploy/helm/Chart.yaml." >> "$GITHUB_STEP_SUMMARY"
+            echo "Tag ($APP) does not match appVersion ($TAG_APP_VERSION) in deploy/helm/Chart.yaml." >> "$GITHUB_STEP_SUMMARY"
+            echo "Update appVersion in deploy/helm/Chart.yaml to match the tag." >> "$GITHUB_STEP_SUMMARY"
             exit 1
           fi
 
