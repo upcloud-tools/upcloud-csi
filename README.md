@@ -29,7 +29,7 @@ and [Kubernetes Blog](https://kubernetes.io/blog/2019/01/15/container-storage-in
 ### Helm chart
 
 ```shell
-helm install upcloud-csi oci://ghcr.io/upcloud-tools/helm-charts/upcloud-csi \
+helm install upcloud-csi oci://ghcr.io/upcloud-tools/charts/upcloud-csi \
   --namespace kube-system --version 1.0.0 \
   --set credentials.username=YOUR_USERNAME \
   --set credentials.password=YOUR_PASSWORD
@@ -38,7 +38,7 @@ helm install upcloud-csi oci://ghcr.io/upcloud-tools/helm-charts/upcloud-csi \
 If the `upcloud` secret already exists in the namespace, omit the credentials:
 
 ```shell
-helm install upcloud-csi oci://ghcr.io/upcloud-tools/helm-charts/upcloud-csi \
+helm install upcloud-csi oci://ghcr.io/upcloud-tools/charts/upcloud-csi \
   --namespace kube-system --version 1.0.0 \
   --set credentials.createSecret=false
 ```
@@ -48,7 +48,7 @@ All values have sensible defaults. See [values.yaml](deploy/helm/values.yaml) fo
 To customize, create a values file and pass it with `--values`:
 
 ```shell
-helm install upcloud-csi oci://ghcr.io/upcloud-tools/helm-charts/upcloud-csi \
+helm install upcloud-csi oci://ghcr.io/upcloud-tools/charts/upcloud-csi \
   --namespace kube-system --version 1.0.0 --values my-values.yaml
 ```
 

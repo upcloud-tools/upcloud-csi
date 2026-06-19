@@ -2,12 +2,19 @@ name: Release Helm chart
 
 on:
   push:
-    tags: ["chart-v*.*.*"]
+    branches: [main]
+    paths:
+      - deploy/helm/Chart.yaml
   workflow_dispatch:
 
 permissions:
   contents: write
   packages: write
+
+env:
+  CHART_DIR: deploy/helm
+  REGISTRY: ghcr.io
+  CHART_OCI_REPO: ${{ github.repository_owner }}/charts
 
 jobs:
   release-helm:
@@ -16,45 +23,69 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
-        with:
-          fetch-depth: 0
 
-      - name: Validate Chart version bump
-        run: |
-          MAIN_VERSION=$(git show main:deploy/helm/Chart.yaml | yq .version)
-          TAG_VERSION=$(yq .version deploy/helm/Chart.yaml)
-          if [ "$TAG_VERSION" = "$MAIN_VERSION" ]; then
-            echo "Chart version ($TAG_VERSION) has not been bumped from main ($MAIN_VERSION)." >> "$GITHUB_STEP_SUMMARY"
-            exit 1
-          fi
-          echo "Chart version: $TAG_VERSION (main: $MAIN_VERSION)"
+      - name: Setup ORAS
+        uses: oras-project/setup-oras@38de303aac69abb66f3e6255b7198bff35f323e3 # v2.0.0
 
-      - name: Verify chart version matches tag
+      - name: Check version bump
+        id: check
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          CHART_VERSION=$(yq .version deploy/helm/Chart.yaml)
-          TAG_VERSION="${GITHUB_REF_NAME#chart-v}"
-          if [ "$CHART_VERSION" != "$TAG_VERSION" ]; then
-            echo "Chart version ($CHART_VERSION) does not match tag version ($TAG_VERSION)"
-            exit 1
+          chart_version=$(yq .version "$CHART_DIR/Chart.yaml")
+          echo "chart_version=$chart_version" >> "$GITHUB_OUTPUT"
+
+          if gh release view "helm-v$chart_version" > /dev/null 2>&1; then
+            echo "Release helm-v$chart_version already exists. Skipping."
+            echo "skip_release=true" >> "$GITHUB_OUTPUT"
+            exit 0
           fi
+
+          is_prerelease="false"
+          if [[ "$chart_version" == *-* ]]; then
+            is_prerelease="true"
+          fi
+          echo "is_prerelease=$is_prerelease" >> "$GITHUB_OUTPUT"
+          echo "skip_release=false" >> "$GITHUB_OUTPUT"
 
       - name: Log in to GHCR
+        if: steps.check.outputs.skip_release == 'false'
         uses: docker/login-action@650006c6eb7dba73a995cc03b0b2d7f5ca915bee # v4.2.0
         with:
-          registry: ghcr.io
+          registry: ${{ env.REGISTRY }}
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Get release notes
+        if: steps.check.outputs.skip_release == 'false'
         run: make helm-release-notes > .release_notes
 
-      - name: Package and push Helm chart to OCI
+      - name: Package chart
+        if: steps.check.outputs.skip_release == 'false'
         run: |
-          CHART_VERSION=$(awk '/^version:/ {print $2}' deploy/helm/Chart.yaml)
-          helm package deploy/helm/ --destination ./dist
-          helm push ./dist/upcloud-csi-${CHART_VERSION}.tgz oci://ghcr.io/${{ github.repository_owner }}/helm-charts/upcloud-csi
+          mkdir -p dist
+          helm package ${{ env.CHART_DIR }} --destination dist
+
+      - name: Push chart to GHCR OCI
+        if: steps.check.outputs.skip_release == 'false'
+        run: |
+          helm push dist/*.tgz oci://${{ env.REGISTRY }}/${{ env.CHART_OCI_REPO }}
+
+      - name: Push Artifact Hub metadata
+        if: steps.check.outputs.skip_release == 'false'
+        run: |
+          chart_name=$(yq .name "$CHART_DIR/Chart.yaml")
+          oras push ${{ env.REGISTRY }}/${{ env.CHART_OCI_REPO }}/${chart_name}:artifacthub.io \
+            --config /dev/null:application/vnd.cncf.artifacthub.config.v1+yaml \
+            artifacthub-repo.yml:application/vnd.cncf.artifacthub.repository-metadata.layer.v1.yaml
 
       - name: Create release
-        run: gh release create "${{ github.ref_name }}" --notes-file .release_notes --draft
+        if: steps.check.outputs.skip_release == 'false'
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release create "helm-v${{ steps.check.outputs.chart_version }}" \
+            dist/*.tgz \
+            --notes-file .release_notes \
+            --title "helm-v${{ steps.check.outputs.chart_version }}" \
+            ${{ steps.check.outputs.is_prerelease == 'true' && '--prerelease' || '' }}

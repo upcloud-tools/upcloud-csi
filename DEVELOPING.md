@@ -109,15 +109,11 @@ $ csc -e unix:///tmp/csi.sock controller get-capabilities
 
 ### Helm chart release
 
-Bump when templates or values change independently of an app release.
+The chart is released automatically on every push to `main` that changes `deploy/helm/Chart.yaml`.
+No manual tagging is needed.
 
 1. Update `version` in `deploy/helm/Chart.yaml`.
 2. Update `deploy/helm/CHANGELOG.md` and the `artifacthub.io/changes` annotation in `Chart.yaml`.
-3. Package and publish the chart to your OCI registry or chart repo.
-4. Tag and push:
-   ```shell
-   git tag chart-v1.0.1
-   git push origin chart-v1.0.1
-   ```
-   The CI workflow creates a draft release with notes from `deploy/helm/CHANGELOG.md`.
+3. Merge the PR to `main` — CI packages the chart, pushes it to the OCI registry,
+   pushes Artifact Hub metadata, and creates a `helm-v<version>` GitHub release.
 
