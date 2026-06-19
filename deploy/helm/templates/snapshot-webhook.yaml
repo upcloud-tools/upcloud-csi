@@ -12,6 +12,9 @@ webhooks:
         name: {{ include "upcloud-csi.fullname" . }}-snapshot-validation-service
         namespace: {{ .Release.Namespace }}
         path: /volumesnapshot
+      {{- if .Values.snapshotValidationWebhook.caBundle }}
+      caBundle: {{ .Values.snapshotValidationWebhook.caBundle }}
+      {{- end }}
     rules:
       - apiGroups: ["snapshot.storage.k8s.io"]
         apiVersions: ["v1"]
@@ -21,7 +24,7 @@ webhooks:
     failurePolicy: Ignore
     admissionReviewVersions: ["v1"]
     sideEffects: None
-    timeoutSeconds: 10
+    timeoutSeconds: {{ .Values.snapshotValidationWebhook.timeoutSeconds }}
 
 ---
 apiVersion: v1
@@ -36,7 +39,7 @@ spec:
     app: {{ include "upcloud-csi.fullname" . }}-snapshot-validation
   ports:
     - port: 443
-      targetPort: 8443
+      targetPort: 443
       protocol: TCP
 
 ---
@@ -59,7 +62,7 @@ spec:
         {{- include "upcloud-csi.selectorLabels" . | nindent 8 }}
         app: {{ include "upcloud-csi.fullname" . }}-snapshot-validation
     spec:
-      serviceAccountName: {{ .Values.node.serviceAccountName | default (printf "%s-node" (include "upcloud-csi.fullname" .)) }}
+      serviceAccountName: {{ .Values.controller.serviceAccountName | default (printf "%s-controller" (include "upcloud-csi.fullname" .)) }}
       {{- with .Values.snapshotValidationWebhook.nodeSelector }}
       nodeSelector:
         {{- toYaml . | nindent 8 }}
@@ -76,8 +79,23 @@ spec:
         - name: snapshot-validation-webhook
           image: "{{ .Values.snapshotValidationWebhook.image.repository }}:{{ .Values.snapshotValidationWebhook.image.tag }}"
           imagePullPolicy: {{ .Values.snapshotValidationWebhook.image.pullPolicy }}
+          args:
+            - "--v={{ .Values.snapshotValidationWebhook.logLevel | default .Values.logLevel }}"
+            - "--tls-cert-file=/etc/snapshot-validation-webhook/certs/cert.pem"
+            - "--tls-private-key-file=/etc/snapshot-validation-webhook/certs/key.pem"
+          ports:
+            - containerPort: 443
+              protocol: TCP
+          volumeMounts:
+            - name: webhook-certs
+              mountPath: /etc/snapshot-validation-webhook/certs
+              readOnly: true
           {{- with .Values.snapshotValidationWebhook.resources }}
           resources:
             {{- toYaml . | nindent 12 }}
           {{- end }}
+      volumes:
+        - name: webhook-certs
+          secret:
+            secretName: {{ .Values.snapshotValidationWebhook.tlsSecretName }}
 {{- end }}
