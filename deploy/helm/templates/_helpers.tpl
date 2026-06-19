@@ -38,3 +38,12 @@ app.kubernetes.io/instance: {{ .Release.Name }}
 {{- define "upcloud-csi.credentialsSecret" -}}
 {{- .Values.credentials.secretName -}}
 {{- end }}
+
+{{- define "upcloud-csi.credentialsChecksum" -}}
+{{- $secret := lookup "v1" "Secret" .Release.Namespace (include "upcloud-csi.credentialsSecret" .) -}}
+{{- if $secret -}}
+{{- sha256sum (toJson $secret.data) -}}
+{{- else -}}
+{{- "" -}}
+{{- end -}}
+{{- end }}

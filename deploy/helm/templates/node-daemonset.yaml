@@ -16,6 +16,8 @@ spec:
         {{- include "upcloud-csi.selectorLabels" . | nindent 8 }}
         app: {{ include "upcloud-csi.fullname" . }}-node
         role: csi-upcloud
+      annotations:
+        checksum/credentials: {{ include "upcloud-csi.credentialsChecksum" . | quote }}
     spec:
       priorityClassName: {{ .Values.node.priorityClassName }}
       serviceAccountName: {{ .Values.node.serviceAccountName | default (printf "%s-node" (include "upcloud-csi.fullname" .)) }}
