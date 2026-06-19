@@ -104,7 +104,7 @@ snapshotController:
   image:
     repository: registry.k8s.io/sig-storage/snapshot-controller
     tag: v8.6.0
-    pullPolicy: IfNotPresent
+    pullPolicy: Always
   resources: {}
 
   replicas: 2
@@ -122,7 +122,7 @@ snapshotValidationWebhook:
   image:
     repository: registry.k8s.io/sig-storage/snapshot-validation-webhook
     tag: v8.6.0
-    pullPolicy: IfNotPresent
+    pullPolicy: Always
   resources: {}
 
   replicas: 3
