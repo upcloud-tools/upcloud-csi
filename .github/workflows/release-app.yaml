@@ -3,6 +3,7 @@ name: Release App
 on:
   push:
     tags: ["v*.*.*"]
+  workflow_dispatch:
 
 permissions:
   contents: write
@@ -15,6 +16,33 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+        with:
+          fetch-depth: 0
+
+      - name: Validate Chart versions
+        env:
+          APP: ${{ github.ref_name }}
+        run: |
+          APP="${APP#v}"
+          MAIN_VERSION=$(git show main:deploy/helm/Chart.yaml | yq .version)
+          MAIN_APP_VERSION=$(git show main:deploy/helm/Chart.yaml | yq .appVersion)
+          TAG_VERSION=$(yq .version deploy/helm/Chart.yaml)
+          TAG_APP_VERSION=$(yq .appVersion deploy/helm/Chart.yaml)
+
+          if [ "$TAG_VERSION" = "$MAIN_VERSION" ] && [ "$TAG_APP_VERSION" = "$MAIN_APP_VERSION" ]; then
+            echo "Both version ($TAG_VERSION) and appVersion ($TAG_APP_VERSION) in" >> "$GITHUB_STEP_SUMMARY"
+            echo "deploy/helm/Chart.yaml match main. Bump at least one before tagging." >> "$GITHUB_STEP_SUMMARY"
+            exit 1
+          fi
+
+          if [ "$TAG_APP_VERSION" != "$APP" ]; then
+            echo "appVersion ($TAG_APP_VERSION) does not match tag version ($APP)." >> "$GITHUB_STEP_SUMMARY"
+            echo "Update appVersion in deploy/helm/Chart.yaml." >> "$GITHUB_STEP_SUMMARY"
+            exit 1
+          fi
+
+          echo "Chart version: $TAG_VERSION (main: $MAIN_VERSION)"
+          echo "App version:   $TAG_APP_VERSION (main: $MAIN_APP_VERSION)"
 
       - name: Log in to GHCR
         uses: docker/login-action@650006c6eb7dba73a995cc03b0b2d7f5ca915bee # v4.2.0
