@@ -59,17 +59,21 @@ test-integration:
 
 # CI-friendly e2e test — used in matrix strategy where each job runs one test.
 # Use named shortcuts to run a single test case:
-#   make test-e2e SNAPSHOT=y     — Create Snapshot And Restore
-#   make test-e2e RESIZE=y       — Resize Volume
-#   make test-e2e LIST=y         — List Volumes
-#   make test-e2e PERSISTENCE=y  — Attach Detach Volume
-#   make test-e2e CREATEDELETE=y — Create Delete Volume
+#   make test-e2e SNAPSHOT=y       — Create Snapshot And Restore
+#   make test-e2e RESIZE=y         — Resize Volume (ext4 + xfs, sequential)
+#   make test-e2e RESIZE_EXT4=y    — Resize Volume (ext4 only)
+#   make test-e2e RESIZE_XFS=y     — Resize Volume (xfs only)
+#   make test-e2e LIST=y           — List Volumes
+#   make test-e2e PERSISTENCE=y    — Attach Detach Volume
+#   make test-e2e CREATEDELETE=y   — Create Delete Volume
 .PHONY: test-e2e
 test-e2e:
 	@echo "==> Running e2e tests"
 	cd test/e2e && go test -tags e2e -v -timeout 30m \
 		$(if $(CREATEDELETE),--ginkgo.focus="Create Delete Volume",) \
 		$(if $(LIST),--ginkgo.focus="List Volumes",) \
+		$(if $(RESIZE_EXT4),--ginkgo.focus="Resize Volume$$",) \
+		$(if $(RESIZE_XFS),--ginkgo.focus="Resize Volume XFS",) \
 		$(if $(RESIZE),--ginkgo.focus="Resize Volume",) \
 		$(if $(PERSISTENCE),--ginkgo.focus="Attach Detach Volume",) \
 		$(if $(SNAPSHOT),--ginkgo.focus="Create Snapshot And Restore",) \
@@ -77,17 +81,21 @@ test-e2e:
 
 # Local-development variant — sequential execution with real-time output.
 # Use named shortcuts to run a single test case:
-#   make test-e2e-verbose SNAPSHOT=y   — Create Snapshot And Restore
-#   make test-e2e-verbose RESIZE=y     — Resize Volume
-#   make test-e2e-verbose LIST=y       — List Volumes
-#   make test-e2e-verbose PERSISTENCE=y — Attach Detach Volume
-#   make test-e2e-verbose CREATEDELETE=y — Create Delete Volume
+#   make test-e2e-verbose SNAPSHOT=y      — Create Snapshot And Restore
+#   make test-e2e-verbose RESIZE=y        — Resize Volume (ext4 + xfs, sequential)
+#   make test-e2e-verbose RESIZE_EXT4=y   — Resize Volume (ext4 only)
+#   make test-e2e-verbose RESIZE_XFS=y    — Resize Volume (xfs only)
+#   make test-e2e-verbose LIST=y          — List Volumes
+#   make test-e2e-verbose PERSISTENCE=y   — Attach Detach Volume
+#   make test-e2e-verbose CREATEDELETE=y  — Create Delete Volume
 .PHONY: test-e2e-verbose
 test-e2e-verbose:
 	@echo "==> Running e2e tests (verbose mode)"
 	cd test/e2e && go test -tags e2e -v --ginkgo.output-interceptor-mode=none -timeout 30m \
 		$(if $(CREATEDELETE),--ginkgo.focus="Create Delete Volume",) \
 		$(if $(LIST),--ginkgo.focus="List Volumes",) \
+		$(if $(RESIZE_EXT4),--ginkgo.focus="Resize Volume$$",) \
+		$(if $(RESIZE_XFS),--ginkgo.focus="Resize Volume XFS",) \
 		$(if $(RESIZE),--ginkgo.focus="Resize Volume",) \
 		$(if $(PERSISTENCE),--ginkgo.focus="Attach Detach Volume",) \
 		$(if $(SNAPSHOT),--ginkgo.focus="Create Snapshot And Restore",) \
