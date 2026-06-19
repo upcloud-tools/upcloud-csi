@@ -1,5 +1,13 @@
 # Helm chart changelog
 
+## [1.1.0] - 2026-06-19
+
+### Added
+- PodDisruptionBudget for controller StatefulSet and snapshot-controller Deployment (opt-in)
+
+### Fixed
+- NOTES.txt credential key references now use configurable key names instead of hardcoded values
+
 ## [1.0.0] - 2026-06-18
 
 Initial release of the UpCloud CSI Helm chart.

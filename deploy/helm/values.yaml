@@ -74,6 +74,11 @@ controller:
   tolerations: []
   affinity: {}
 
+  podDisruptionBudget:
+    enabled: false
+    maxUnavailable:
+    minAvailable:
+
 # Node DaemonSet settings.
 node:
   # -- Log verbosity (inherits global logLevel when null).
@@ -113,6 +118,11 @@ snapshotController:
   nodeSelector: {}
   tolerations: []
   affinity: {}
+
+  podDisruptionBudget:
+    enabled: false
+    maxUnavailable:
+    minAvailable:
 
 # Snapshot validation webhook settings. (Beta, not yet recommended to use in production)
 # The webhook requires a TLS secret to be created before enabling:

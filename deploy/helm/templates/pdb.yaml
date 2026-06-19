@@ -1,0 +1,42 @@
+{{- if .Values.controller.podDisruptionBudget.enabled }}
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: {{ include "upcloud-csi.fullname" . }}-controller
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "upcloud-csi.labels" . | nindent 4 }}
+spec:
+  {{- with .Values.controller.podDisruptionBudget.maxUnavailable }}
+  maxUnavailable: {{ . }}
+  {{- end }}
+  {{- with .Values.controller.podDisruptionBudget.minAvailable }}
+  minAvailable: {{ . }}
+  {{- end }}
+  selector:
+    matchLabels:
+      {{- include "upcloud-csi.selectorLabels" . | nindent 6 }}
+      app: {{ include "upcloud-csi.fullname" . }}-controller
+{{- end }}
+
+{{- if .Values.snapshotController.podDisruptionBudget.enabled }}
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: {{ include "upcloud-csi.fullname" . }}-snapshot-controller
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "upcloud-csi.labels" . | nindent 4 }}
+spec:
+  {{- with .Values.snapshotController.podDisruptionBudget.maxUnavailable }}
+  maxUnavailable: {{ . }}
+  {{- end }}
+  {{- with .Values.snapshotController.podDisruptionBudget.minAvailable }}
+  minAvailable: {{ . }}
+  {{- end }}
+  selector:
+    matchLabels:
+      {{- include "upcloud-csi.selectorLabels" . | nindent 6 }}
+      app: {{ include "upcloud-csi.fullname" . }}-snapshot-controller
+{{- end }}
