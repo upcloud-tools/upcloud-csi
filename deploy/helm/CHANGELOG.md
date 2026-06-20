@@ -1,5 +1,17 @@
 # Helm chart changelog
 
+## [1.2.0] - 2026-06-20
+
+### Changed
+- StorageClasses are now disabled by default to avoid conflicts during installation (`storageClasses.enabled: false`)
+- Consolidated install/upgrade docs to use `helm upgrade --install`
+
+### Added
+- VolumeSnapshot CRD conflict resolution instructions to README
+- `--skip-crds` install option for clusters with pre-existing CRDs
+- Upgrade instructions to README
+- Warning block before destructive snapshot deletion commands
+
 ## [1.1.0] - 2026-06-19
 
 ### Added

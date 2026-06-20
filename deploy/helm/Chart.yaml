@@ -2,7 +2,7 @@ apiVersion: v2
 name: upcloud-csi
 description: CSI driver for UpCloud block storage
 type: application
-version: "1.1.1"
+version: "1.2.0"
 appVersion: "v2.5.1"
 kubeVersion: ">=1.21.0"
 keywords:
@@ -25,5 +25,9 @@ annotations:
     - name: Support
       url: https://github.com/upcloud-tools/upcloud-csi/issues
   artifacthub.io/changes: |
-    - "Add PodDisruptionBudget support for controller and snapshot-controller"
-    - "Fix NOTES.txt credential key references to use configurable key names"
+    - "Disable StorageClasses by default"
+    - "Add VolumeSnapshot CRD conflict resolution instructions to README"
+    - "Add --skip-crds install option for clusters with pre-existing CRDs"
+    - "Consolidate install/upgrade into helm upgrade --install"
+    - "Add upgrade instructions to README"
+    - "Add shell history protection note to install commands"
