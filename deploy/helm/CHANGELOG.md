@@ -1,5 +1,12 @@
 # Helm chart changelog
 
+## [1.2.1] - 2026-06-20
+
+### Fixed
+- Changed health probe bind address from `127.0.0.1` to `0.0.0.0` so Kubernetes `httpGet` probes can reach the health endpoint
+- Fixed snapshot-controller and webhook probe paths from `/healthz` to `/metrics` (the actual endpoint exposed by `--http-endpoint`)
+- Removed redundant sidecar probes (driver `httpGet` already covers pod health)
+
 ## [1.2.0] - 2026-06-20
 
 ### Changed
@@ -11,6 +18,7 @@
 - `--skip-crds` install option for clusters with pre-existing CRDs
 - Upgrade instructions to README
 - Warning block before destructive snapshot deletion commands
+- Liveness and readiness probes for csi-upcloud-plugin driver, snapshot-controller, and snapshot-validation-webhook
 
 ## [1.1.0] - 2026-06-19
 

@@ -67,6 +67,7 @@ spec:
             - "--endpoint=$(CSI_ENDPOINT)"
             - "--nodehost=$(NODE_ID)"
             - "--mode=monolith"
+            - "--address=tcp://0.0.0.0:13071"
           env:
             - name: CSI_ENDPOINT
               value: unix:///csi/csi.sock
@@ -94,6 +95,20 @@ spec:
           resources:
             {{- toYaml . | nindent 12 }}
           {{- end }}
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 13071
+            initialDelaySeconds: 10
+            periodSeconds: 20
+            timeoutSeconds: 5
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 13071
+            initialDelaySeconds: 3
+            periodSeconds: 5
+            timeoutSeconds: 5
           volumeMounts:
             - name: plugin-dir
               mountPath: /csi
