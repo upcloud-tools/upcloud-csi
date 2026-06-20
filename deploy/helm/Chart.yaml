@@ -25,4 +25,6 @@ annotations:
     - name: Support
       url: https://github.com/upcloud-tools/upcloud-csi/issues
   artifacthub.io/changes: |
-    - "Add commonLabels, podLabels, podAnnotations, serviceAccountAnnotations, and tpl wrapping support"
+    - "Add commonLabels, podLabels, podAnnotations, serviceAccountAnnotations"
+    - "Add tpl wrapping"
+    - "Add helm unit tests"

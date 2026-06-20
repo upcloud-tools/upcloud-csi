@@ -1,0 +1,159 @@
+suite: common metadata
+tests:
+  - it: should apply commonLabels to all resources
+    set:
+      commonLabels:
+        environment: production
+        team: platform
+    asserts:
+      - equal:
+          path: metadata.labels.environment
+          value: production
+        template: controller-statefulset.yaml
+      - equal:
+          path: metadata.labels.team
+          value: platform
+        template: controller-statefulset.yaml
+      - equal:
+          path: metadata.labels.environment
+          value: production
+        template: node-daemonset.yaml
+      - equal:
+          path: metadata.labels.environment
+          value: production
+        template: serviceaccounts.yaml
+        documentIndex: 0
+      - equal:
+          path: metadata.labels.environment
+          value: production
+        template: clusterroles.yaml
+        documentIndex: 0
+
+  - it: should apply podLabels to controller StatefulSet
+    set:
+      controller:
+        podLabels:
+          custom-label: custom-value
+    template: controller-statefulset.yaml
+    asserts:
+      - equal:
+          path: spec.template.metadata.labels.custom-label
+          value: custom-value
+
+  - it: should apply podAnnotations to controller StatefulSet
+    set:
+      controller:
+        podAnnotations:
+          sidecar.istio.io/inject: "true"
+    template: controller-statefulset.yaml
+    asserts:
+      - equal:
+          path: "spec.template.metadata.annotations['sidecar.istio.io/inject']"
+          value: "true"
+      - equal:
+          path: "spec.template.metadata.annotations['checksum/credentials']"
+          value: ""
+
+  - it: should apply podLabels to node DaemonSet
+    set:
+      node:
+        podLabels:
+          custom-label: custom-value
+    template: node-daemonset.yaml
+    asserts:
+      - equal:
+          path: spec.template.metadata.labels.custom-label
+          value: custom-value
+
+  - it: should apply podAnnotations to node DaemonSet
+    set:
+      node:
+        podAnnotations:
+          prometheus.io/scrape: "true"
+    template: node-daemonset.yaml
+    asserts:
+      - equal:
+          path: "spec.template.metadata.annotations['prometheus.io/scrape']"
+          value: "true"
+
+  - it: should apply podLabels to snapshot controller
+    set:
+      snapshotController:
+        podLabels:
+          app-tier: cache
+    template: snapshot-controller-deployment.yaml
+    asserts:
+      - equal:
+          path: spec.template.metadata.labels.app-tier
+          value: cache
+
+  - it: should apply podAnnotations to snapshot controller
+    set:
+      snapshotController:
+        podAnnotations:
+          sidecar.istio.io/inject: "true"
+    template: snapshot-controller-deployment.yaml
+    asserts:
+      - equal:
+          path: "spec.template.metadata.annotations['sidecar.istio.io/inject']"
+          value: "true"
+
+  - it: should apply podLabels to snapshot validation webhook
+    set:
+      snapshotValidationWebhook:
+        enabled: true
+        podLabels:
+          custom-label: webhook-value
+    template: snapshot-webhook.yaml
+    asserts:
+      - equal:
+          path: spec.template.metadata.labels.custom-label
+          value: webhook-value
+        documentIndex: 2
+
+  - it: should apply podAnnotations to snapshot validation webhook
+    set:
+      snapshotValidationWebhook:
+        enabled: true
+        podAnnotations:
+          sidecar.istio.io/inject: "true"
+    template: snapshot-webhook.yaml
+    asserts:
+      - equal:
+          path: "spec.template.metadata.annotations['sidecar.istio.io/inject']"
+          value: "true"
+        documentIndex: 2
+
+  - it: should apply serviceAccountAnnotations to controller SA
+    set:
+      controller:
+        serviceAccountAnnotations:
+          eks.amazonaws.com/role-arn: arn:aws:iam::123:role/csi
+    template: serviceaccounts.yaml
+    asserts:
+      - equal:
+          path: "metadata.annotations['eks.amazonaws.com/role-arn']"
+          value: arn:aws:iam::123:role/csi
+        documentIndex: 0
+
+  - it: should apply serviceAccountAnnotations to node SA
+    set:
+      controller:
+        serviceAccountAnnotations:
+          eks.amazonaws.com/role-arn: arn:aws:iam::456:role/node
+    template: serviceaccounts.yaml
+    asserts:
+      - equal:
+          path: "metadata.annotations['eks.amazonaws.com/role-arn']"
+          value: arn:aws:iam::456:role/node
+        documentIndex: 0
+
+  - it: should not have SA annotations by default
+    template: serviceaccounts.yaml
+    asserts:
+      - isNull:
+          path: metadata.annotations
+        documentIndex: 0
+      - isNull:
+          path: metadata.annotations
+        documentIndex: 1

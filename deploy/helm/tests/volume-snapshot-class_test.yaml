@@ -1,0 +1,43 @@
+suite: volume snapshot class
+tests:
+  - it: should render VolumeSnapshotClass with defaults
+    template: volumesnapshotclass.yaml
+    asserts:
+      - hasDocuments:
+          count: 1
+      - equal:
+          path: metadata.name
+          value: upcloud-csi-snapshotclass
+      - equal:
+          path: driver
+          value: storage.csi.upcloud.com
+      - equal:
+          path: deletionPolicy
+          value: Delete
+      - equal:
+          path: metadata.labels["app.kubernetes.io/name"]
+          value: upcloud-csi
+
+  - it: should render with custom name and deletion policy
+    set:
+      volumeSnapshotClass:
+        enabled: true
+        name: my-custom-class
+        deletionPolicy: Retain
+    template: volumesnapshotclass.yaml
+    asserts:
+      - equal:
+          path: metadata.name
+          value: my-custom-class
+      - equal:
+          path: deletionPolicy
+          value: Retain
+
+  - it: should not render when disabled
+    set:
+      volumeSnapshotClass:
+        enabled: false
+    template: volumesnapshotclass.yaml
+    asserts:
+      - hasDocuments:
+          count: 0

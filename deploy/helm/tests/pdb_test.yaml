@@ -1,0 +1,72 @@
+suite: pod disruption budgets
+tests:
+  - it: should not render PDBs by default
+    template: pdb.yaml
+    asserts:
+      - hasDocuments:
+          count: 0
+
+  - it: should render controller PDB when enabled
+    set:
+      controller:
+        podDisruptionBudget:
+          enabled: true
+          maxUnavailable: 1
+    template: pdb.yaml
+    asserts:
+      - hasDocuments:
+          count: 1
+      - isKind:
+          of: PodDisruptionBudget
+      - equal:
+          path: metadata.name
+          value: RELEASE-NAME-upcloud-csi-controller
+      - equal:
+          path: spec.maxUnavailable
+          value: 1
+      - isNull:
+          path: spec.minAvailable
+
+  - it: should render snapshot controller PDB when enabled
+    set:
+      snapshotController:
+        podDisruptionBudget:
+          enabled: true
+          minAvailable: 2
+    template: pdb.yaml
+    asserts:
+      - hasDocuments:
+          count: 1
+      - isKind:
+          of: PodDisruptionBudget
+      - equal:
+          path: metadata.name
+          value: RELEASE-NAME-upcloud-csi-snapshot-controller
+      - equal:
+          path: spec.minAvailable
+          value: 2
+      - isNull:
+          path: spec.maxUnavailable
+
+  - it: should render both PDBs when both enabled
+    set:
+      controller:
+        podDisruptionBudget:
+          enabled: true
+          maxUnavailable: 1
+      snapshotController:
+        podDisruptionBudget:
+          enabled: true
+          minAvailable: 1
+    template: pdb.yaml
+    asserts:
+      - hasDocuments:
+          count: 2
+      - equal:
+          path: metadata.name
+          value: RELEASE-NAME-upcloud-csi-controller
+        documentIndex: 0
+      - equal:
+          path: metadata.name
+          value: RELEASE-NAME-upcloud-csi-snapshot-controller
+        documentIndex: 1

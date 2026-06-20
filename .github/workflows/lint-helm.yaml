@@ -30,6 +30,10 @@ jobs:
         run: make helm-lint
 
       - if: steps.filter.outputs.helm == 'true'
+        name: Run helm unit tests
+        run: make helm-unittest
+
+      - if: steps.filter.outputs.helm == 'true'
         name: Run kube-linter
         uses: stackrox/kube-linter-action@87802a2f4e01abebb3ee3c67a3002fea71f6eae5 # v1.0.7
         with:
