@@ -50,12 +50,14 @@ This repository uses the following security and supply-chain measures:
 
 ## Deployment
 
-> **UpCloud Kubernetes clusters** ship with the official UpCloud CSI driver pre-installed.
+> **UpCloud Kubernetes clusters** ship with the official UpCloud CSI driver pre-installed as raw manifests.
 > To replace it with this fork, remove the old installation first:
 
 ```shell
-helm uninstall upcloud-csi --namespace kube-system
-kubectl delete crd -l app.kubernetes.io/name=upcloud-csi
+kubectl delete sts csi-upcloud-controller -n kube-system --ignore-not-found
+kubectl delete daemonset csi-upcloud-node -n kube-system --ignore-not-found
+kubectl delete deployment csi-upcloud-snapshot-controller -n kube-system --ignore-not-found
+kubectl delete crd -l app.kubernetes.io/name=upcloud-csi --ignore-not-found
 ```
 
 ### Helm chart
