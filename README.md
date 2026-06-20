@@ -85,6 +85,11 @@ helm install upcloud-csi oci://ghcr.io/upcloud-tools/charts/upcloud-csi \
   --namespace kube-system --version 1.0.0 --values my-values.yaml
 ```
 
+## Credits
+
+- **UpCloud Ltd** — Sponsors the test infrastructure used for integration and e2e testing.
+- **Zed Industries** — Provides a free version of their editor.
+
 ## Developing
 
 See [DEVELOPING.md](DEVELOPING.md) for instructions on how to develop and debug the UpCloud CSI driver.
