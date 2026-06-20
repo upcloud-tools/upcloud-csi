@@ -12,7 +12,7 @@ logLevel: 5
 
 # Credentials for UpCloud API access.
 # Reference an existing secret, or have the chart create one.
-credentials:
+credentials:  # @schema additionalProperties: false
   createSecret: false
   # -- Name of the secret (created or referenced).
   secretName: upcloud
@@ -25,24 +25,24 @@ credentials:
   # -- UpCloud password (required when createSecret is true).
   password: ""
 
-csiDriver:
+csiDriver:  # @schema additionalProperties: false
   # -- Name of the CSIDriver resource.
   name: storage.csi.upcloud.com
   attachRequired: true
   podInfoOnMount: true
-  # -- fsGroupPolicy for the CSI driver (File, None, or ReadWriteOnceWithFSType).
-  fsGroupPolicy: File
+  # -- fsGroupPolicy for the CSI driver
+  fsGroupPolicy: File  # @schema enum:["File","None","ReadWriteOnceWithFSType"]
 
 # -- Driver container image (shared by controller and node).
-image:
+image:  # @schema additionalProperties: false
   repository: ghcr.io/upcloud-tools/upcloud-csi
   tag: ""
   pullPolicy: IfNotPresent
 
 # Controller StatefulSet settings.
-controller:
+controller:  # @schema additionalProperties: false
   # -- Log verbosity (inherits global logLevel when null).
-  logLevel:
+  logLevel:  # @schema type:[integer, null]; minimum:0; maximum:10
 
   # -- Image pull secrets for controller pods.
   imagePullSecrets: []
@@ -72,7 +72,7 @@ controller:
       pullPolicy: IfNotPresent
       resources: {}
 
-  replicas: 1
+  replicas: 1  # @schema minimum:0
   # -- ServiceAccount name (defaults to {fullname}-controller).
   serviceAccountName: ""
   # -- Annotations for the controller service account.
@@ -86,15 +86,15 @@ controller:
   tolerations: []
   affinity: {}
 
-  podDisruptionBudget:
+  podDisruptionBudget:  # @schema additionalProperties: false
     enabled: false
-    maxUnavailable:
-    minAvailable:
+    maxUnavailable:  # @schema type:[string, integer, null]
+    minAvailable:  # @schema type:[string, integer, null]
 
 # Node DaemonSet settings.
-node:
+node:  # @schema additionalProperties: false
   # -- Log verbosity (inherits global logLevel when null).
-  logLevel:
+  logLevel:  # @schema type:[integer, null]; minimum:0; maximum:10
 
   # -- Image pull secrets for node pods.
   imagePullSecrets: []
@@ -123,9 +123,9 @@ node:
   affinity: {}
 
 # Snapshot controller Deployment settings.
-snapshotController:
+snapshotController:  # @schema additionalProperties: false
   # -- Log verbosity (inherits global logLevel when null).
-  logLevel:
+  logLevel:  # @schema type:[integer, null]; minimum:0; maximum:10
 
   # -- Image pull secrets for snapshot controller pods.
   imagePullSecrets: []
@@ -136,8 +136,8 @@ snapshotController:
     pullPolicy: IfNotPresent
   resources: {}
 
-  replicas: 2
-  minReadySeconds: 15
+  replicas: 2  # @schema minimum:0
+  minReadySeconds: 15  # @schema minimum:0
   priorityClassName: system-cluster-critical
   nodeSelector: {}
   tolerations: []
@@ -147,17 +147,17 @@ snapshotController:
   # -- Extra annotations for the snapshot controller pod template.
   podAnnotations: {}
 
-  podDisruptionBudget:
+  podDisruptionBudget:  # @schema additionalProperties: false
     enabled: false
-    maxUnavailable:
-    minAvailable:
+    maxUnavailable:  # @schema type:[string, integer, null]
+    minAvailable:  # @schema type:[string, integer, null]
 
 # Snapshot validation webhook settings. (Beta, not yet recommended to use in production)
 # The webhook requires a TLS secret to be created before enabling:
 #   kubectl create secret generic snapshot-validation-secret --from-file=cert.pem --from-file=key.pem
 # See https://github.com/kubernetes-csi/external-snapshotter/tree/master/deploy/kubernetes/webhook-example
 # for instructions on generating certificates.
-snapshotValidationWebhook:
+snapshotValidationWebhook:  # @schema additionalProperties: false
   enabled: false
 
   # -- Image pull secrets for webhook pods.
@@ -177,9 +177,9 @@ snapshotValidationWebhook:
   caBundle: ""
 
   # -- Admission webhook timeout in seconds.
-  timeoutSeconds: 5
+  timeoutSeconds: 5  # @schema minimum:1
 
-  replicas: 1
+  replicas: 1  # @schema minimum:0
   nodeSelector: {}
   tolerations: []
   affinity: {}
@@ -189,7 +189,7 @@ snapshotValidationWebhook:
   podAnnotations: {}
 
 # StorageClasses managed by the chart.
-storageClasses:
+storageClasses:  # @schema additionalProperties: false
   enabled: false
   classes:
     - name: upcloud-block-storage-maxiops
@@ -209,7 +209,7 @@ storageClasses:
       allowVolumeExpansion: true
 
 # VolumeSnapshotClass settings.
-volumeSnapshotClass:
+volumeSnapshotClass:  # @schema additionalProperties: false
   enabled: true
   name: upcloud-csi-snapshotclass
   deletionPolicy: Delete
