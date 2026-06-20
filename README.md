@@ -57,32 +57,52 @@ This repository uses the following security and supply-chain measures:
 kubectl delete sts csi-upcloud-controller -n kube-system --ignore-not-found
 kubectl delete daemonset csi-upcloud-node -n kube-system --ignore-not-found
 kubectl delete deployment csi-upcloud-snapshot-controller -n kube-system --ignore-not-found
-kubectl delete crd -l app.kubernetes.io/name=upcloud-csi --ignore-not-found
 ```
 
-### Helm chart
+> **Warning:** The commands below delete VolumeSnapshots and VolumeSnapshotContents
+> across all namespaces. This is a destructive operation — make sure no data depends
+> on those snapshots before proceeding.
+
+If the cluster already has VolumeSnapshot CRDs (e.g. from a previous CSI driver installation), remove them before installing this chart:
 
 ```shell
-helm install upcloud-csi oci://ghcr.io/upcloud-tools/charts/upcloud-csi \
-  --namespace kube-system --version 1.0.0 \
+kubectl delete volumesnapshot --all --all-namespaces --ignore-not-found
+kubectl delete volumesnapshotcontent --all --ignore-not-found
+kubectl delete crd volumesnapshotclasses.snapshot.storage.k8s.io \
+                   volumesnapshotcontents.snapshot.storage.k8s.io \
+                   volumesnapshots.snapshot.storage.k8s.io
+```
+
+Or keep the existing CRDs and install with `--skip-crds`:
+
+### Helm chart (install/upgrade)
+
+If the `upcloud` secret already exists in the namespace, omit the credentials (default behavior):
+
+```shell
+helm upgrade --install upcloud-csi oci://ghcr.io/upcloud-tools/charts/upcloud-csi \
+  --namespace kube-system --version 1.2.0
+```
+
+Or specify credentials to create the secret (prepend with a space to avoid saving to shell history):
+
+```shell
+helm upgrade --install upcloud-csi oci://ghcr.io/upcloud-tools/charts/upcloud-csi \
+  --namespace kube-system --version 1.2.0 \
+  --set credentials.createSecret=true \
   --set credentials.username=YOUR_USERNAME \
   --set credentials.password=YOUR_PASSWORD
 ```
 
-If the `upcloud` secret already exists in the namespace, omit credentials:
+By default, StorageClasses are **disabled**. Enable them with `--set storageClasses.enabled=true` if you want the chart to manage them.
+
+All values have sensible defaults. See [values.yaml](deploy/helm/values.yaml) for the full reference.
+
+To customize, create a values file and pass it with `--values`:
 
 ```shell
-helm install upcloud-csi oci://ghcr.io/upcloud-tools/charts/upcloud-csi \
-  --namespace kube-system --version 1.0.0 \
-  --set credentials.createSecret=false
-```
-
-All values have sensible defaults. See [values.yaml](deploy/helm/values.yaml) for the full reference. To customize,
-create a values file and pass it with `--values`:
-
-```shell
-helm install upcloud-csi oci://ghcr.io/upcloud-tools/charts/upcloud-csi \
-  --namespace kube-system --version 1.0.0 --values my-values.yaml
+helm upgrade --install upcloud-csi oci://ghcr.io/upcloud-tools/charts/upcloud-csi \
+  --namespace kube-system --version 1.2.0 --values values.yaml
 ```
 
 ## Credits

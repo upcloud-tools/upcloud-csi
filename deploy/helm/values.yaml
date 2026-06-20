@@ -155,7 +155,7 @@ snapshotValidationWebhook:
 
 # StorageClasses managed by the chart.
 storageClasses:
-  enabled: true
+  enabled: false
   classes:
     - name: upcloud-block-storage-maxiops
       tier: maxiops

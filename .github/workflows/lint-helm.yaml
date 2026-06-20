@@ -2,30 +2,38 @@ name: Lint Helm
 
 on:
   pull_request:
-    paths:
-      - 'deploy/helm/**'
-      - '.github/workflows/lint-helm.yaml'
-      - '.github/workflows/lint-golang.yaml'
 
 jobs:
   helm-lint:
     name: helm-lint
     runs-on: ubuntu-24.04
     steps:
-      - name: Checkout head
+      - uses: dorny/paths-filter@fbd0ab8f3e69293af611ebaee6363fc25e6d187d # v4.0.1
+        id: filter
+        with:
+          filters: |
+            helm:
+              - 'deploy/helm/**'
+              - '.github/workflows/lint-helm.yaml'
+              - '.github/workflows/lint-golang.yaml'
+
+      - if: steps.filter.outputs.helm == 'true'
         uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
 
-      - name: Run helm lint
+      - if: steps.filter.outputs.helm == 'true'
+        name: Run helm lint
         run: make helm-lint
 
-      - name: Run kube-linter
+      - if: steps.filter.outputs.helm == 'true'
+        name: Run kube-linter
         uses: stackrox/kube-linter-action@87802a2f4e01abebb3ee3c67a3002fea71f6eae5 # v1.0.7
         with:
           directory: deploy/helm
           config: deploy/helm/.kube-linter.yaml
           format: plain
 
-      - name: Run kubeconform
+      - if: steps.filter.outputs.helm == 'true'
+        name: Run kubeconform
         uses: aardbol/k8s-lint@4ac6a6ad40152ad8478533d7e4d4d3c210f68eca # v5.0.0
         with:
           manifests: deploy/helm/
