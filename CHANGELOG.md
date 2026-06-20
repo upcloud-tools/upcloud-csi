@@ -4,6 +4,12 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [2.5.1] - 2026-06-20
+
+### Fixed
+- controller: return proper gRPC error on volume resize failures (non-published paths)
+- filesystem: wait for storage to be online before calling ResizeStorageFilesystem API
+
 ## [2.5.0] - 2026-06-17
 
 ### Added
@@ -128,7 +134,8 @@ Before upgrading to v2.5.0, users with existing VolumeSnapshots need to:
 
 First stable release
 
-[Unreleased]: https://github.com/upcloud-tools/upcloud-csi/compare/v2.5.0...HEAD
+[Unreleased]: https://github.com/upcloud-tools/upcloud-csi/compare/v2.5.1...HEAD
+[2.5.1]: https://github.com/upcloud-tools/upcloud-csi/compare/v2.5.0...v2.5.1
 [2.5.0]: https://github.com/upcloud-tools/upcloud-csi/compare/v2.3.0...v2.5.0
 [2.3.0]: https://github.com/upcloud-tools/upcloud-csi/compare/v2.2.0...v2.3.0
 [2.2.0]: https://github.com/upcloud-tools/upcloud-csi/compare/v2.1.0...v2.2.0

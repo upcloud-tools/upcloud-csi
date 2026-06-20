@@ -242,6 +242,10 @@ func (u *UpCloudService) ResizeStorage(ctx context.Context, uuid string, newSize
 		return nil, err
 	}
 
+	if _, err = u.waitForStorageOnline(ctx, storage.Storage.UUID); err != nil {
+		return nil, err
+	}
+
 	backup, err := u.client.ResizeStorageFilesystem(ctx, &request.ResizeStorageFilesystemRequest{UUID: uuid})
 	if err != nil {
 		return nil, err

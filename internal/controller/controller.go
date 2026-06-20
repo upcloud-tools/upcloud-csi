@@ -623,13 +623,13 @@ func (c *Controller) ControllerExpandVolume(ctx context.Context, req *csi.Contro
 		log.Info("resizing block device")
 		_, err = c.svc.ResizeBlockDevice(ctx, volume.UUID, int(resizeGigaBytes))
 		if err != nil {
-			c.log.Errorf("cannot resizeBlockDevice volume %s: %s", volumeID, err.Error())
+			return nil, status.Errorf(codes.Internal, "cannot resizeBlockDevice volume %s: %s", volumeID, err.Error())
 		}
 	} else {
 		log.Info("resizing volume")
 		_, err = c.svc.ResizeStorage(ctx, volume.UUID, int(resizeGigaBytes), false)
 		if err != nil {
-			c.log.Errorf("cannot resizeStorage volume %s: %s", volumeID, err.Error())
+			return nil, status.Errorf(codes.Internal, "cannot resizeStorage volume %s: %s", volumeID, err.Error())
 		}
 	}
 
