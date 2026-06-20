@@ -57,6 +57,7 @@ This repository uses the following security and supply-chain measures:
 kubectl delete sts csi-upcloud-controller -n kube-system --ignore-not-found
 kubectl delete daemonset csi-upcloud-node -n kube-system --ignore-not-found
 kubectl delete deployment csi-upcloud-snapshot-controller -n kube-system --ignore-not-found
+kubectl delete csidriver storage.csi.upcloud.com --ignore-not-found
 ```
 
 > **Warning:** The commands below delete VolumeSnapshots and VolumeSnapshotContents
