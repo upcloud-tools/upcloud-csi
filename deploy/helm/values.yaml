@@ -340,6 +340,24 @@ volumeSnapshotClass:  # @schema additionalProperties: false
   name: upcloud-csi-snapshotclass
   deletionPolicy: Delete
 
+# -- Metrics configuration for Prometheus scraping.
+metrics:  # @schema additionalProperties: false
+  # -- Enable metrics endpoints and service (adds --http-endpoint to sidecars).
+  enabled: true
+  serviceMonitor:
+    # -- Enable ServiceMonitor resource (requires prometheus-operator CRDs).
+    enabled: false
+    interval: 30s
+    # -- Additional labels for the ServiceMonitor.
+    additionalLabels: {}
+  prometheusRule:
+    # -- Enable PrometheusRule resource.
+    enabled: false
+    # -- Additional labels for the PrometheusRule.
+    additionalLabels: {}
+    # -- Prometheus alerting rules.
+    rules: []
+
 # -- Extra Kubernetes objects to deploy as part of this release.
 # Supports Go template expressions.
 extraObjects: []

@@ -2,7 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
-## [Unreleased]
+## [2.6.0] - 2026-06-20
+
+### Added
+- metrics: Prometheus metrics server on `--metrics-address` (default `:8090`) with go/process collectors at `/metrics`
+- metrics: CSI gRPC operation counters and histograms — `csi_plugin_operations_total`, `csi_plugin_operation_duration_seconds`, `csi_plugin_operations_in_flight`
+- metrics: instrumented UpCloud API client wrapper — `upcloud_api_requests_total`, `upcloud_api_request_duration_seconds`
 
 ## [2.5.1] - 2026-06-20
 

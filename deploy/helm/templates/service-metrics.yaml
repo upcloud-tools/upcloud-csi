@@ -1,0 +1,36 @@
+{{- if .Values.metrics.enabled }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "upcloud-csi.fullname" . }}-metrics
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "upcloud-csi.labels" . | nindent 4 }}
+    app.kubernetes.io/component: metrics
+spec:
+  type: ClusterIP
+  ports:
+    - name: prov-metrics
+      port: 8080
+      targetPort: 8080
+      protocol: TCP
+    - name: att-metrics
+      port: 8081
+      targetPort: 8081
+      protocol: TCP
+    - name: res-metrics
+      port: 8082
+      targetPort: 8082
+      protocol: TCP
+    - name: snap-metrics
+      port: 8083
+      targetPort: 8083
+      protocol: TCP
+    - name: csi-metrics
+      port: 8090
+      targetPort: 8090
+      protocol: TCP
+  selector:
+    {{- include "upcloud-csi.selectorLabels" . | nindent 4 }}
+    app: {{ include "upcloud-csi.fullname" . }}-controller
+{{- end }}

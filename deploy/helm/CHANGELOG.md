@@ -1,5 +1,14 @@
 # Helm chart changelog
 
+## [1.5.0] - 2026-06-20
+
+### Changed
+- App version bumped to `v2.6.0`
+
+### Added
+- `metrics` block with configurable ServiceMonitor and PrometheusRule support — controller sidecars now expose `--http-endpoint` on standard ports (8080-8083) and a ClusterIP metrics Service is created by default
+- Driver metrics port (`csi-metrics:8090`) on controller and node, wired into metrics Service and ServiceMonitor
+
 ## [1.4.0] - 2026-06-20
 
 ### Added

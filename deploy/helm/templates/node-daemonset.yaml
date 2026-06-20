@@ -121,6 +121,9 @@ spec:
             - "--nodehost=$(NODE_ID)"
             - "--mode=monolith"
             - "--address=tcp://0.0.0.0:13071"
+            {{- if .Values.metrics.enabled }}
+            - "--metrics-address=tcp://0.0.0.0:8090"
+            {{- end }}
           env:
             - name: CSI_ENDPOINT
               value: unix:///csi/csi.sock
@@ -150,6 +153,11 @@ spec:
             - containerPort: 13071
               name: health
               protocol: TCP
+            {{- if .Values.metrics.enabled }}
+            - containerPort: 8090
+              name: csi-metrics
+              protocol: TCP
+            {{- end }}
           livenessProbe:
             httpGet:
               path: /health

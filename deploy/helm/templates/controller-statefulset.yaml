@@ -92,6 +92,9 @@ spec:
             - "--csi-address=$(ADDRESS)"
             - "--v={{ .Values.controller.logLevel | default .Values.logLevel }}"
             - "--timeout=600s"
+            {{- if .Values.metrics.enabled }}
+            - "--http-endpoint=:8080"
+            {{- end }}
           env:
             - name: ADDRESS
               value: /var/lib/csi/sockets/pluginproxy/csi.sock
@@ -106,6 +109,12 @@ spec:
           resources:
             {{- tpl (toYaml .) $ | nindent 12 }}
           {{- end }}
+          {{- if .Values.metrics.enabled }}
+          ports:
+            - containerPort: 8080
+              name: prov-metrics
+              protocol: TCP
+          {{- end }}
         - name: csi-attacher
           image: "{{ .Values.controller.sidecars.csiAttacher.repository }}:{{ .Values.controller.sidecars.csiAttacher.tag }}"
           imagePullPolicy: {{ .Values.controller.sidecars.csiAttacher.pullPolicy }}
@@ -113,6 +122,9 @@ spec:
             - "--v={{ .Values.controller.logLevel | default .Values.logLevel }}"
             - "--csi-address=$(ADDRESS)"
             - "--timeout=600s"
+            {{- if .Values.metrics.enabled }}
+            - "--http-endpoint=:8081"
+            {{- end }}
           env:
             - name: ADDRESS
               value: /var/lib/csi/sockets/pluginproxy/csi.sock
@@ -127,6 +139,12 @@ spec:
           resources:
             {{- tpl (toYaml .) $ | nindent 12 }}
           {{- end }}
+          {{- if .Values.metrics.enabled }}
+          ports:
+            - containerPort: 8081
+              name: att-metrics
+              protocol: TCP
+          {{- end }}
         - name: csi-resizer
           image: "{{ .Values.controller.sidecars.csiResizer.repository }}:{{ .Values.controller.sidecars.csiResizer.tag }}"
           imagePullPolicy: {{ .Values.controller.sidecars.csiResizer.pullPolicy }}
@@ -135,6 +153,9 @@ spec:
             - "--timeout=600s"
             - "--csi-address=$(ADDRESS)"
             - "--handle-volume-inuse-error=true"
+            {{- if .Values.metrics.enabled }}
+            - "--http-endpoint=:8082"
+            {{- end }}
           env:
             - name: ADDRESS
               value: /var/lib/csi/sockets/pluginproxy/csi.sock
@@ -149,6 +170,12 @@ spec:
           resources:
             {{- tpl (toYaml .) $ | nindent 12 }}
           {{- end }}
+          {{- if .Values.metrics.enabled }}
+          ports:
+            - containerPort: 8082
+              name: res-metrics
+              protocol: TCP
+          {{- end }}
         - name: csi-snapshotter
           image: "{{ .Values.controller.sidecars.csiSnapshotter.repository }}:{{ .Values.controller.sidecars.csiSnapshotter.tag }}"
           imagePullPolicy: {{ .Values.controller.sidecars.csiSnapshotter.pullPolicy }}
@@ -157,6 +184,9 @@ spec:
             - "--v={{ .Values.controller.logLevel | default .Values.logLevel }}"
             - "--timeout=600s"
             - "--leader-election=false"
+            {{- if .Values.metrics.enabled }}
+            - "--http-endpoint=:8083"
+            {{- end }}
           env:
             - name: ADDRESS
               value: /var/lib/csi/sockets/pluginproxy/csi.sock
@@ -171,6 +201,12 @@ spec:
           resources:
             {{- tpl (toYaml .) $ | nindent 12 }}
           {{- end }}
+          {{- if .Values.metrics.enabled }}
+          ports:
+            - containerPort: 8083
+              name: snap-metrics
+              protocol: TCP
+          {{- end }}
         - name: csi-upcloud-plugin
           image: {{ include "upcloud-csi.driverImage" . }}
           imagePullPolicy: {{ .Values.image.pullPolicy }}
@@ -179,6 +215,9 @@ spec:
             - "--nodehost=$(NODE_ID)"
             - "--mode=monolith"
             - "--address=tcp://0.0.0.0:13071"
+            {{- if .Values.metrics.enabled }}
+            - "--metrics-address=tcp://0.0.0.0:8090"
+            {{- end }}
           env:
             - name: CSI_ENDPOINT
               value: "unix:///var/lib/csi/sockets/pluginproxy/csi.sock"
@@ -208,6 +247,11 @@ spec:
             - containerPort: 13071
               name: health
               protocol: TCP
+            {{- if .Values.metrics.enabled }}
+            - containerPort: 8090
+              name: csi-metrics
+              protocol: TCP
+            {{- end }}
           livenessProbe:
             httpGet:
               path: /health
