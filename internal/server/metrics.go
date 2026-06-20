@@ -23,6 +23,7 @@ const (
 	metricsTimeout = 15
 )
 
+//nolint:gochecknoglobals // Prometheus metrics are inherently global per application
 var (
 	metricsRegistry    *prometheus.Registry
 	csiOpsTotal        *prometheus.CounterVec
@@ -44,7 +45,7 @@ func initMetrics() {
 				Name: "csi_plugin_operations_total",
 				Help: "Total number of CSI gRPC operations by method and status code.",
 			},
-			[]string{"method", "status"},
+			[]string{"method", "status"}, //nolint:goconst // Prometheus label names are convention
 		)
 		csiOpsDuration = prometheus.NewHistogramVec(
 			prometheus.HistogramOpts{
