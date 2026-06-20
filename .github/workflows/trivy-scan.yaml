@@ -1,0 +1,82 @@
+name: trivy
+
+on:
+  push:
+    branches: ["main"]
+    paths:
+      - "**/*.go"
+      - go.mod
+      - go.sum
+      - cmd/upcloud-csi-plugin/Containerfile
+      - '.github/workflows/trivy-scan.yaml'
+  pull_request:
+  schedule:
+    - cron: '5 5 * * 2'
+
+permissions:
+  contents: read
+
+jobs:
+  analyze:
+    permissions:
+      contents: read
+      security-events: write
+      actions: read
+    name: Trivy scan
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          fetch-depth: 0
+
+      - uses: dorny/paths-filter@fbd0ab8f3e69293af611ebaee6363fc25e6d187d # v4.0.1
+        id: filter
+        with:
+          filters: |
+            source:
+              - '**/*.go'
+              - go.mod
+              - go.sum
+              - 'cmd/upcloud-csi-plugin/Containerfile'
+              - '.github/workflows/trivy-scan.yaml'
+
+      - if: steps.filter.outputs.source == 'true' || github.event_name != 'pull_request'
+        name: Log in to GHCR
+        uses: docker/login-action@650006c6eb7dba73a995cc03b0b2d7f5ca915bee # v4.2.0
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - if: steps.filter.outputs.source == 'true' || github.event_name != 'pull_request'
+        name: Run Trivy vulnerability scanner (filesystem)
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
+        with:
+          scan-type: 'fs'
+          scan-ref: .
+          format: 'sarif'
+          output: 'trivy-fs-results.sarif'
+          severity: 'CRITICAL,HIGH'
+          ignore-unfixed: true
+
+      - if: steps.filter.outputs.source == 'true' || github.event_name != 'pull_request'
+        name: Upload filesystem scan results to GitHub Security tab
+        uses: github/codeql-action/upload-sarif@dd903d2e4f5405488e5ef1422510ee31c8b32357 # v3.36.2
+        with:
+          sarif_file: 'trivy-fs-results.sarif'
+
+      - if: github.event_name == 'schedule'
+        name: Run Trivy vulnerability scanner (image)
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
+        with:
+          image-ref: 'ghcr.io/${{ github.repository }}:main'
+          format: 'sarif'
+          output: 'trivy-image-results.sarif'
+          severity: 'CRITICAL,HIGH'
+          ignore-unfixed: true
+
+      - if: github.event_name == 'schedule'
+        name: Upload image scan results to GitHub Security tab
+        uses: github/codeql-action/upload-sarif@dd903d2e4f5405488e5ef1422510ee31c8b32357 # v3.36.2
+        with:
+          sarif_file: 'trivy-image-results.sarif'

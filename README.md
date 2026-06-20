@@ -45,6 +45,7 @@ This repository uses the following security and supply-chain measures:
 - **Action pinning** — All GitHub Actions pinned by commit SHA with a human-readable version comment; enforced globally.
 - **Static analysis** — `golangci-lint` with 50+ linters (`gosec`, `staticcheck`, `errcheck`, etc.) runs on every PR.
 - **Container image** — Distroless-inspired Alpine runtime, multistage build, pinned base image versions.
+- **Container scanning (Trivy)** — `aquasecurity/trivy-action` scans the built image for OS and application CVEs before push to GHCR; scheduled weekly rescan catches newly discovered vulnerabilities. Go module dependencies also scanned on every push/PR.
 - **Release integrity** — Helm chart validates that `appVersion` matches the git tag and that the container image exists before publishing.
 - **Artifact Hub** — Helm chart metadata published to Artifact Hub for discoverability.
 
