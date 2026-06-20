@@ -13,13 +13,11 @@ const (
 	// DefaultDriverName defines the name that is used in Kubernetes and the CSI
 	// system for the canonical, official name of this plugin.
 	DefaultDriverName string = "storage.csi.upcloud.com"
-	// DefaultAddress is the default address that the csi plugin will serve its
-	// http handler on.
+	// DefaultAddress is the default address that the csi plugin will serve its http handler on.
 	DefaultHealtServerAddress string = "tcp://127.0.0.1:13071"
 	// DefaultMetricsServerAddress is the default address for the Prometheus metrics HTTP server.
 	DefaultMetricsServerAddress string = "tcp://0.0.0.0:8090"
-	// DefaultPluginServerAddress is the default endpoint that the csi plugin will serve its
-	// GRPC handlers on.
+	// DefaultPluginServerAddress is the default endpoint that the csi plugin will serve its GRPC handlers on.
 	DefaultPluginServerAddress string = "unix:///var/lib/kubelet/plugins/" + DefaultDriverName + "/csi.sock"
 
 	// MaxVolumesPerNode is maxium volume count that one node can handle.
