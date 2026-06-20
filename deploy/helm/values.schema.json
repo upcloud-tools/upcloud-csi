@@ -1,0 +1,607 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "properties": {
+    "nameOverride": {
+      "type": "string",
+      "default": ""
+    },
+    "fullnameOverride": {
+      "type": "string",
+      "default": ""
+    },
+    "commonLabels": {
+      "type": "object",
+      "default": {},
+      "additionalProperties": {
+        "type": "string"
+      }
+    },
+    "logLevel": {
+      "type": "integer",
+      "default": 5,
+      "minimum": 0,
+      "maximum": 10
+    },
+    "credentials": {
+      "type": "object",
+      "properties": {
+        "createSecret": {
+          "type": "boolean",
+          "default": false
+        },
+        "secretName": {
+          "type": "string",
+          "default": "upcloud"
+        },
+        "usernameKey": {
+          "type": "string",
+          "default": "username"
+        },
+        "passwordKey": {
+          "type": "string",
+          "default": "password"
+        },
+        "username": {
+          "type": "string",
+          "default": ""
+        },
+        "password": {
+          "type": "string",
+          "default": ""
+        }
+      }
+    },
+    "csiDriver": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "default": "storage.csi.upcloud.com"
+        },
+        "attachRequired": {
+          "type": "boolean",
+          "default": true
+        },
+        "podInfoOnMount": {
+          "type": "boolean",
+          "default": true
+        },
+        "fsGroupPolicy": {
+          "type": "string",
+          "enum": ["File", "None", "ReadWriteOnceWithFSType"],
+          "default": "File"
+        }
+      }
+    },
+    "image": {
+      "type": "object",
+      "properties": {
+        "repository": {
+          "type": "string",
+          "default": "ghcr.io/upcloud-tools/upcloud-csi"
+        },
+        "tag": {
+          "type": "string",
+          "default": ""
+        },
+        "pullPolicy": {
+          "type": "string",
+          "enum": ["Always", "Never", "IfNotPresent"],
+          "default": "IfNotPresent"
+        }
+      }
+    },
+    "controller": {
+      "type": "object",
+      "properties": {
+    "logLevel": {
+      "oneOf": [
+        { "type": "null" },
+        { "type": "integer", "minimum": 0, "maximum": 10 }
+      ],
+      "default": null
+    },
+    "resources": {
+          "type": "object",
+          "default": {},
+          "properties": {
+            "requests": {
+              "type": "object",
+              "additionalProperties": {
+                "type": "string"
+              }
+            },
+            "limits": {
+              "type": "object",
+              "additionalProperties": {
+                "type": "string"
+              }
+            }
+          }
+        },
+        "sidecars": {
+          "type": "object",
+          "properties": {
+            "csiProvisioner": { "$ref": "#/definitions/sidecar" },
+            "csiAttacher": { "$ref": "#/definitions/sidecar" },
+            "csiResizer": { "$ref": "#/definitions/sidecar" },
+            "csiSnapshotter": { "$ref": "#/definitions/sidecar" }
+          }
+        },
+        "replicas": {
+          "type": "integer",
+          "default": 1,
+          "minimum": 0
+        },
+        "serviceAccountName": {
+          "type": "string",
+          "default": ""
+        },
+        "serviceAccountAnnotations": {
+          "type": "object",
+          "default": {},
+          "additionalProperties": {
+            "type": "string"
+          }
+        },
+        "priorityClassName": {
+          "type": "string",
+          "default": "system-cluster-critical"
+        },
+        "podLabels": {
+          "type": "object",
+          "default": {},
+          "additionalProperties": {
+            "type": "string"
+          }
+        },
+        "podAnnotations": {
+          "type": "object",
+          "default": {},
+          "additionalProperties": {
+            "type": "string"
+          }
+        },
+        "nodeSelector": {
+          "type": "object",
+          "default": {},
+          "additionalProperties": {
+            "type": "string"
+          }
+        },
+        "tolerations": {
+          "type": "array",
+          "default": [],
+          "items": {
+            "$ref": "#/definitions/toleration"
+          }
+        },
+        "affinity": {
+          "type": "object",
+          "default": {}
+        },
+        "podDisruptionBudget": {
+          "type": "object",
+          "properties": {
+            "enabled": {
+              "type": "boolean",
+              "default": false
+            },
+            "maxUnavailable": {
+              "oneOf": [
+                { "type": "null" },
+                { "type": "integer", "minimum": 0 },
+                { "type": "string", "pattern": "^\\d+%$" }
+              ],
+              "default": null
+            },
+            "minAvailable": {
+              "oneOf": [
+                { "type": "null" },
+                { "type": "integer", "minimum": 0 },
+                { "type": "string", "pattern": "^\\d+%$" }
+              ],
+              "default": null
+            }
+          }
+        }
+      }
+    },
+    "node": {
+      "type": "object",
+      "properties": {
+        "logLevel": {
+          "oneOf": [
+            { "type": "null" },
+            { "type": "integer", "minimum": 0, "maximum": 10 }
+          ],
+          "default": null
+        },
+        "sidecars": {
+          "type": "object",
+          "properties": {
+            "csiNodeDriverRegistrar": { "$ref": "#/definitions/sidecar" }
+          }
+        },
+        "resources": {
+          "type": "object",
+          "default": {},
+          "properties": {
+            "requests": {
+              "type": "object",
+              "additionalProperties": {
+                "type": "string"
+              }
+            },
+            "limits": {
+              "type": "object",
+              "additionalProperties": {
+                "type": "string"
+              }
+            }
+          }
+        },
+        "serviceAccountName": {
+          "type": "string",
+          "default": ""
+        },
+        "serviceAccountAnnotations": {
+          "type": "object",
+          "default": {},
+          "additionalProperties": {
+            "type": "string"
+          }
+        },
+        "priorityClassName": {
+          "type": "string",
+          "default": "system-node-critical"
+        },
+        "podLabels": {
+          "type": "object",
+          "default": {},
+          "additionalProperties": {
+            "type": "string"
+          }
+        },
+        "podAnnotations": {
+          "type": "object",
+          "default": {},
+          "additionalProperties": {
+            "type": "string"
+          }
+        },
+        "nodeSelector": {
+          "type": "object",
+          "default": {},
+          "additionalProperties": {
+            "type": "string"
+          }
+        },
+        "tolerations": {
+          "type": "array",
+          "default": [],
+          "items": {
+            "$ref": "#/definitions/toleration"
+          }
+        },
+        "affinity": {
+          "type": "object",
+          "default": {}
+        }
+      }
+    },
+    "snapshotController": {
+      "type": "object",
+      "properties": {
+        "logLevel": {
+          "oneOf": [
+            { "type": "null" },
+            { "type": "integer", "minimum": 0, "maximum": 10 }
+          ],
+          "default": null
+        },
+        "image": { "$ref": "#/definitions/imageSpec" },
+        "resources": {
+          "type": "object",
+          "default": {},
+          "properties": {
+            "requests": {
+              "type": "object",
+              "additionalProperties": {
+                "type": "string"
+              }
+            },
+            "limits": {
+              "type": "object",
+              "additionalProperties": {
+                "type": "string"
+              }
+            }
+          }
+        },
+        "replicas": {
+          "type": "integer",
+          "default": 2,
+          "minimum": 0
+        },
+        "minReadySeconds": {
+          "type": "integer",
+          "default": 15,
+          "minimum": 0
+        },
+        "priorityClassName": {
+          "type": "string",
+          "default": "system-cluster-critical"
+        },
+        "nodeSelector": {
+          "type": "object",
+          "default": {},
+          "additionalProperties": {
+            "type": "string"
+          }
+        },
+        "tolerations": {
+          "type": "array",
+          "default": [],
+          "items": {
+            "$ref": "#/definitions/toleration"
+          }
+        },
+        "affinity": {
+          "type": "object",
+          "default": {}
+        },
+        "podLabels": {
+          "type": "object",
+          "default": {},
+          "additionalProperties": {
+            "type": "string"
+          }
+        },
+        "podAnnotations": {
+          "type": "object",
+          "default": {},
+          "additionalProperties": {
+            "type": "string"
+          }
+        },
+        "podDisruptionBudget": {
+          "type": "object",
+          "properties": {
+            "enabled": {
+              "type": "boolean",
+              "default": false
+            },
+            "maxUnavailable": {
+              "oneOf": [
+                { "type": "null" },
+                { "type": "integer", "minimum": 0 },
+                { "type": "string", "pattern": "^\\d+%$" }
+              ],
+              "default": null
+            },
+            "minAvailable": {
+              "oneOf": [
+                { "type": "null" },
+                { "type": "integer", "minimum": 0 },
+                { "type": "string", "pattern": "^\\d+%$" }
+              ],
+              "default": null
+            }
+          }
+        }
+      }
+    },
+    "snapshotValidationWebhook": {
+      "type": "object",
+      "properties": {
+        "enabled": {
+          "type": "boolean",
+          "default": false
+        },
+        "image": { "$ref": "#/definitions/imageSpec" },
+        "resources": {
+          "type": "object",
+          "default": {},
+          "properties": {
+            "requests": {
+              "type": "object",
+              "additionalProperties": {
+                "type": "string"
+              }
+            },
+            "limits": {
+              "type": "object",
+              "additionalProperties": {
+                "type": "string"
+              }
+            }
+          }
+        },
+        "tlsSecretName": {
+          "type": "string",
+          "default": "snapshot-validation-secret"
+        },
+        "caBundle": {
+          "type": "string",
+          "default": ""
+        },
+        "timeoutSeconds": {
+          "type": "integer",
+          "default": 5,
+          "minimum": 1,
+          "maximum": 30
+        },
+        "replicas": {
+          "type": "integer",
+          "default": 1,
+          "minimum": 0
+        },
+        "nodeSelector": {
+          "type": "object",
+          "default": {},
+          "additionalProperties": {
+            "type": "string"
+          }
+        },
+        "tolerations": {
+          "type": "array",
+          "default": [],
+          "items": {
+            "$ref": "#/definitions/toleration"
+          }
+        },
+        "affinity": {
+          "type": "object",
+          "default": {}
+        },
+        "podLabels": {
+          "type": "object",
+          "default": {},
+          "additionalProperties": {
+            "type": "string"
+          }
+        },
+        "podAnnotations": {
+          "type": "object",
+          "default": {},
+          "additionalProperties": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "storageClasses": {
+      "type": "object",
+      "properties": {
+        "enabled": {
+          "type": "boolean",
+          "default": false
+        },
+        "classes": {
+          "type": "array",
+          "default": [],
+          "items": {
+            "type": "object",
+            "properties": {
+              "name": {
+                "type": "string"
+              },
+              "tier": {
+                "type": "string",
+                "enum": ["maxiops", "hdd", "standard"]
+              },
+              "isDefault": {
+                "type": "boolean",
+                "default": false
+              },
+              "reclaimPolicy": {
+                "type": "string",
+                "enum": ["Delete", "Retain"],
+                "default": "Retain"
+              },
+              "allowVolumeExpansion": {
+                "type": "boolean",
+                "default": true
+              }
+            }
+          }
+        }
+      }
+    },
+    "volumeSnapshotClass": {
+      "type": "object",
+      "properties": {
+        "enabled": {
+          "type": "boolean",
+          "default": true
+        },
+        "name": {
+          "type": "string",
+          "default": "upcloud-csi-snapshotclass"
+        },
+        "deletionPolicy": {
+          "type": "string",
+          "enum": ["Delete", "Retain"],
+          "default": "Delete"
+        }
+      }
+    }
+  },
+  "definitions": {
+    "sidecar": {
+      "type": "object",
+      "properties": {
+        "repository": {
+          "type": "string"
+        },
+        "tag": {
+          "type": "string"
+        },
+        "pullPolicy": {
+          "type": "string",
+          "enum": ["Always", "Never", "IfNotPresent"],
+          "default": "IfNotPresent"
+        },
+        "resources": {
+          "type": "object",
+          "default": {},
+          "properties": {
+            "requests": {
+              "type": "object",
+              "additionalProperties": {
+                "type": "string"
+              }
+            },
+            "limits": {
+              "type": "object",
+              "additionalProperties": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      }
+    },
+    "imageSpec": {
+      "type": "object",
+      "properties": {
+        "repository": {
+          "type": "string"
+        },
+        "tag": {
+          "type": "string"
+        },
+        "pullPolicy": {
+          "type": "string",
+          "enum": ["Always", "Never", "IfNotPresent"],
+          "default": "IfNotPresent"
+        }
+      }
+    },
+    "toleration": {
+      "type": "object",
+      "properties": {
+        "key": {
+          "type": "string"
+        },
+        "operator": {
+          "type": "string",
+          "enum": ["Equal", "Exists"]
+        },
+        "value": {
+          "type": "string"
+        },
+        "effect": {
+          "type": "string",
+          "enum": ["NoSchedule", "PreferNoSchedule", "NoExecute"]
+        },
+        "tolerationSeconds": {
+          "type": "integer",
+          "minimum": 0
+        }
+      }
+    }
+  }
+}
