@@ -22,6 +22,9 @@ helm.sh/chart: {{ include "upcloud-csi.name" . }}-{{ .Chart.Version | replace "+
 app.kubernetes.io/version: {{ .Chart.AppVersion | quote }}
 {{- end }}
 app.kubernetes.io/managed-by: {{ .Release.Service }}
+{{- with .Values.commonLabels }}
+{{ tpl (toYaml .) $ }}
+{{- end }}
 {{- end }}
 
 {{- define "upcloud-csi.selectorLabels" -}}

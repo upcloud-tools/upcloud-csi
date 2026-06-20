@@ -61,19 +61,26 @@ spec:
       labels:
         {{- include "upcloud-csi.selectorLabels" . | nindent 8 }}
         app: {{ include "upcloud-csi.fullname" . }}-snapshot-validation
+{{- with .Values.snapshotValidationWebhook.podLabels }}
+{{ tpl (toYaml .) $ | indent 8 }}
+{{- end }}
+      annotations:
+{{- with .Values.snapshotValidationWebhook.podAnnotations }}
+{{ tpl (toYaml .) $ | indent 8 }}
+{{- end }}
     spec:
       serviceAccountName: {{ .Values.controller.serviceAccountName | default (printf "%s-controller" (include "upcloud-csi.fullname" .)) }}
       {{- with .Values.snapshotValidationWebhook.nodeSelector }}
       nodeSelector:
-        {{- toYaml . | nindent 8 }}
+        {{- tpl (toYaml .) $ | nindent 8 }}
       {{- end }}
       {{- with .Values.snapshotValidationWebhook.tolerations }}
       tolerations:
-        {{- toYaml . | nindent 8 }}
+        {{- tpl (toYaml .) $ | nindent 8 }}
       {{- end }}
       {{- with .Values.snapshotValidationWebhook.affinity }}
       affinity:
-        {{- toYaml . | nindent 8 }}
+        {{- tpl (toYaml .) $ | nindent 8 }}
       {{- end }}
       containers:
         - name: snapshot-validation-webhook
@@ -96,7 +103,7 @@ spec:
               readOnly: true
           {{- with .Values.snapshotValidationWebhook.resources }}
           resources:
-            {{- toYaml . | nindent 12 }}
+            {{- tpl (toYaml .) $ | nindent 12 }}
           {{- end }}
           livenessProbe:
             httpGet:

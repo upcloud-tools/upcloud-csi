@@ -22,20 +22,27 @@ spec:
       labels:
         {{- include "upcloud-csi.selectorLabels" . | nindent 8 }}
         app: {{ include "upcloud-csi.fullname" . }}-snapshot-controller
+{{- with .Values.snapshotController.podLabels }}
+{{ tpl (toYaml .) $ | indent 8 }}
+{{- end }}
+      annotations:
+{{- with .Values.snapshotController.podAnnotations }}
+{{ tpl (toYaml .) $ | indent 8 }}
+{{- end }}
     spec:
       serviceAccountName: {{ .Values.controller.serviceAccountName | default (printf "%s-controller" (include "upcloud-csi.fullname" .)) }}
       priorityClassName: {{ .Values.snapshotController.priorityClassName }}
       {{- with .Values.snapshotController.nodeSelector }}
       nodeSelector:
-        {{- toYaml . | nindent 8 }}
+        {{- tpl (toYaml .) $ | nindent 8 }}
       {{- end }}
       {{- with .Values.snapshotController.tolerations }}
       tolerations:
-        {{- toYaml . | nindent 8 }}
+        {{- tpl (toYaml .) $ | nindent 8 }}
       {{- end }}
       {{- with .Values.snapshotController.affinity }}
       affinity:
-        {{- toYaml . | nindent 8 }}
+        {{- tpl (toYaml .) $ | nindent 8 }}
       {{- end }}
       containers:
         - name: snapshot-controller
@@ -47,7 +54,7 @@ spec:
             - "--http-endpoint=:8080"
           {{- with .Values.snapshotController.resources }}
           resources:
-            {{- toYaml . | nindent 12 }}
+            {{- tpl (toYaml .) $ | nindent 12 }}
           {{- end }}
           ports:
             - containerPort: 8080

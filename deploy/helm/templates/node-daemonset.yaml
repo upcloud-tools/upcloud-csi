@@ -16,23 +16,29 @@ spec:
         {{- include "upcloud-csi.selectorLabels" . | nindent 8 }}
         app: {{ include "upcloud-csi.fullname" . }}-node
         role: csi-upcloud
+{{- with .Values.node.podLabels }}
+{{ tpl (toYaml .) $ | indent 8 }}
+{{- end }}
       annotations:
         checksum/credentials: {{ include "upcloud-csi.credentialsChecksum" . | quote }}
+{{- with .Values.node.podAnnotations }}
+{{ tpl (toYaml .) $ | indent 8 }}
+{{- end }}
     spec:
       priorityClassName: {{ .Values.node.priorityClassName }}
       serviceAccountName: {{ .Values.node.serviceAccountName | default (printf "%s-node" (include "upcloud-csi.fullname" .)) }}
       hostNetwork: true
       {{- with .Values.node.nodeSelector }}
       nodeSelector:
-        {{- toYaml . | nindent 8 }}
+        {{- tpl (toYaml .) $ | nindent 8 }}
       {{- end }}
       {{- with .Values.node.tolerations }}
       tolerations:
-        {{- toYaml . | nindent 8 }}
+        {{- tpl (toYaml .) $ | nindent 8 }}
       {{- end }}
       {{- with .Values.node.affinity }}
       affinity:
-        {{- toYaml . | nindent 8 }}
+        {{- tpl (toYaml .) $ | nindent 8 }}
       {{- end }}
       containers:
         - name: csi-node-driver-registrar
@@ -58,7 +64,7 @@ spec:
               mountPath: /registration/
           {{- with .Values.node.sidecars.csiNodeDriverRegistrar.resources }}
           resources:
-            {{- toYaml . | nindent 12 }}
+            {{- tpl (toYaml .) $ | nindent 12 }}
           {{- end }}
         - name: csi-upcloud-plugin
           image: {{ include "upcloud-csi.driverImage" . }}
@@ -93,7 +99,7 @@ spec:
             allowPrivilegeEscalation: true
           {{- with .Values.node.resources }}
           resources:
-            {{- toYaml . | nindent 12 }}
+            {{- tpl (toYaml .) $ | nindent 12 }}
           {{- end }}
           ports:
             - containerPort: 13071
