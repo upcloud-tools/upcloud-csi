@@ -1,0 +1,31 @@
+{{- if and .Values.metrics.enabled .Values.metrics.serviceMonitor.enabled }}
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: {{ include "upcloud-csi.fullname" . }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "upcloud-csi.labels" . | nindent 4 }}
+    {{- with .Values.metrics.serviceMonitor.additionalLabels }}
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
+spec:
+  endpoints:
+    - port: prov-metrics
+      interval: {{ .Values.metrics.serviceMonitor.interval }}
+    - port: att-metrics
+      interval: {{ .Values.metrics.serviceMonitor.interval }}
+    - port: res-metrics
+      interval: {{ .Values.metrics.serviceMonitor.interval }}
+    - port: snap-metrics
+      interval: {{ .Values.metrics.serviceMonitor.interval }}
+    - port: csi-metrics
+      interval: {{ .Values.metrics.serviceMonitor.interval }}
+  namespaceSelector:
+    matchNames:
+      - {{ .Release.Namespace }}
+  selector:
+    matchLabels:
+      {{- include "upcloud-csi.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: metrics
+{{- end }}

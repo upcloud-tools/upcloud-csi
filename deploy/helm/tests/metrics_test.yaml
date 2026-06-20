@@ -1,0 +1,171 @@
+suite: metrics
+tests:
+  - it: should create metrics Service by default
+    asserts:
+      - hasDocuments:
+          count: 1
+        template: service-metrics.yaml
+      - isKind:
+          of: Service
+        template: service-metrics.yaml
+
+  - it: should not create ServiceMonitor or PrometheusRule by default
+    asserts:
+      - hasDocuments:
+          count: 0
+        template: servicemonitor.yaml
+      - hasDocuments:
+          count: 0
+        template: prometheusrule.yaml
+
+  - it: should render http-endpoint args on all sidecars by default
+    template: controller-statefulset.yaml
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].args
+          content: "--http-endpoint=:8080"
+      - contains:
+          path: spec.template.spec.containers[1].args
+          content: "--http-endpoint=:8081"
+      - contains:
+          path: spec.template.spec.containers[2].args
+          content: "--http-endpoint=:8082"
+      - contains:
+          path: spec.template.spec.containers[3].args
+          content: "--http-endpoint=:8083"
+
+  - it: should render ports on all sidecars by default
+    template: controller-statefulset.yaml
+    asserts:
+      - equal:
+          path: spec.template.spec.containers[0].ports[0].containerPort
+          value: 8080
+      - equal:
+          path: spec.template.spec.containers[1].ports[0].containerPort
+          value: 8081
+      - equal:
+          path: spec.template.spec.containers[2].ports[0].containerPort
+          value: 8082
+      - equal:
+          path: spec.template.spec.containers[3].ports[0].containerPort
+          value: 8083
+
+  - it: should render metrics-address arg on driver container
+    template: controller-statefulset.yaml
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[4].args
+          content: "--metrics-address=tcp://0.0.0.0:8090"
+
+  - it: should render metrics port on driver container
+    template: controller-statefulset.yaml
+    asserts:
+      - equal:
+          path: spec.template.spec.containers[4].ports[1].containerPort
+          value: 8090
+      - equal:
+          path: spec.template.spec.containers[4].ports[1].name
+          value: csi-metrics
+
+  - it: should render metrics-address arg on node driver
+    template: node-daemonset.yaml
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[1].args
+          content: "--metrics-address=tcp://0.0.0.0:8090"
+
+  - it: should render metrics port on node driver
+    template: node-daemonset.yaml
+    asserts:
+      - equal:
+          path: spec.template.spec.containers[1].ports[1].containerPort
+          value: 8090
+
+  - it: should create ServiceMonitor when enabled
+    set:
+      metrics:
+        serviceMonitor:
+          enabled: true
+    template: servicemonitor.yaml
+    asserts:
+      - isKind:
+          of: ServiceMonitor
+      - equal:
+          path: spec.endpoints[0].port
+          value: prov-metrics
+      - equal:
+          path: spec.endpoints[0].interval
+          value: 30s
+      - equal:
+          path: spec.endpoints[3].port
+          value: snap-metrics
+
+  - it: should create PrometheusRule with rules when enabled
+    set:
+      metrics:
+        prometheusRule:
+          enabled: true
+          rules:
+            - alert: HighProvisioningErrors
+              expr: rate(csi_provisioner_errors_total[5m]) > 0
+              labels:
+                severity: warning
+    template: prometheusrule.yaml
+    asserts:
+      - isKind:
+          of: PrometheusRule
+      - equal:
+          path: spec.groups[0].name
+          value: upcloud-csi
+      - equal:
+          path: spec.groups[0].rules[0].alert
+          value: HighProvisioningErrors
+
+  - it: should omit everything when metrics disabled
+    set:
+      metrics:
+        enabled: false
+    asserts:
+      - hasDocuments:
+          count: 0
+        template: service-metrics.yaml
+      - hasDocuments:
+          count: 0
+        template: servicemonitor.yaml
+      - hasDocuments:
+          count: 0
+        template: prometheusrule.yaml
+
+  - it: should omit http-endpoint args when metrics disabled
+    set:
+      metrics:
+        enabled: false
+    template: controller-statefulset.yaml
+    asserts:
+      - notContains:
+          path: spec.template.spec.containers[0].args
+          content: "--http-endpoint"
+      - notContains:
+          path: spec.template.spec.containers[1].args
+          content: "--http-endpoint"
+      - notContains:
+          path: spec.template.spec.containers[2].args
+          content: "--http-endpoint"
+      - notContains:
+          path: spec.template.spec.containers[3].args
+          content: "--http-endpoint"
+
+  - it: should omit ports when metrics disabled
+    set:
+      metrics:
+        enabled: false
+    template: controller-statefulset.yaml
+    asserts:
+      - notExists:
+          path: spec.template.spec.containers[0].ports
+      - notExists:
+          path: spec.template.spec.containers[1].ports
+      - notExists:
+          path: spec.template.spec.containers[2].ports
+      - notExists:
+          path: spec.template.spec.containers[3].ports

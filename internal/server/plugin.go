@@ -43,7 +43,10 @@ func NewPluginServer(addr string, controllerServer csi.ControllerServer, nodeSer
 		log.Fatalf("currently only unix domain sockets are supported, have: %s", listen.Scheme)
 	}
 
-	srv := grpc.NewServer(grpc.UnaryInterceptor(logger.NewMiddleware(l)))
+	srv := grpc.NewServer(grpc.ChainUnaryInterceptor(
+		NewMetricsInterceptor(),
+		logger.NewMiddleware(l),
+	))
 
 	// both controller and node requires identity server
 	csi.RegisterIdentityServer(srv, identity)

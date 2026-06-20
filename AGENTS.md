@@ -8,3 +8,13 @@
 - **Security policy**: Defined in `SECURITY.md` at the repo root. Direct reporters to GitHub's Private vulnerability reporting tool.
 - **Code scanning**: Use `github/codeql-action` (latest v3.x, pinned by SHA) with `go` language matrix.
 - **Dependabot**: Config in `.github/dependabot.yml` tracks `gomod`, `github-actions`, and `docker` ecosystems daily.
+- **Versioning and changelogs**:
+  - Two separate changelogs, never mix: `/CHANGELOG.md` for app (Go code), `deploy/helm/CHANGELOG.md` for Helm chart (templates, values, schema)
+  - App version format `vX.Y.Z` — tracked in `deploy/helm/Chart.yaml` (`appVersion`) and root `CHANGELOG.md`
+  - Chart version format `X.Y.Z` — tracked in `deploy/helm/Chart.yaml` (`version`) and Helm `CHANGELOG.md`
+  - When Go code changes: bump `appVersion`, update root `CHANGELOG.md`
+  - When Helm template/values change: bump chart `version`, update Helm `CHANGELOG.md`
+  - `artifacthub.io/changes` in `Chart.yaml`: replace with the changes for the current version only, not cumulative across versions
+- **Helm chart conventions**:
+  - `# @schema` annotations inline on same line as value (Traefik style): `fieldName: value  # @schema type:[integer, null]`
+  - Run helm unit tests via `make helm-unittest`

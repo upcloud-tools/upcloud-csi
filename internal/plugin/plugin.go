@@ -25,11 +25,16 @@ func Run(c config.Config) error {
 		return err
 	}
 
+	metricsServer, err := server.NewMetricsServer(c.MetricsServerAddress, l)
+	if err != nil {
+		return err
+	}
+
 	pluginServer, err := newPluginServer(c, l)
 	if err != nil {
 		return err
 	}
-	return server.Run(pluginServer, healthServer)
+	return server.Run(pluginServer, healthServer, metricsServer)
 }
 
 func newPluginServer(c config.Config, l *logrus.Entry) (*server.PluginServer, error) {
@@ -90,9 +95,11 @@ func newControllerPluginServer(c config.Config, l *logrus.Entry) (*server.Plugin
 		return nil, err
 	}
 
-	autoConfigureZone(svc, &c)
+	apiReqs, apiDur := server.UpCloudMetrics()
+	instrumentedSvc := service.NewInstrumentedService(svc, apiReqs, apiDur)
+	autoConfigureZone(instrumentedSvc, &c)
 	l = l.WithField(logger.ZoneKey, c.Zone)
-	csiController, err := controller.NewController(svc, c.Zone, config.MaxVolumesPerNode, l, c.Labels...)
+	csiController, err := controller.NewController(instrumentedSvc, c.Zone, config.MaxVolumesPerNode, l, c.Labels...)
 	if err != nil {
 		return nil, err
 	}
@@ -109,9 +116,11 @@ func newMonolithPluginServer(c config.Config, l *logrus.Entry) (*server.PluginSe
 	if err != nil {
 		return nil, err
 	}
-	autoConfigureZone(svc, &c)
+	apiReqs, apiDur := server.UpCloudMetrics()
+	instrumentedSvc := service.NewInstrumentedService(svc, apiReqs, apiDur)
+	autoConfigureZone(instrumentedSvc, &c)
 	l = l.WithField(logger.NodeIDKey, c.NodeHost).WithField(logger.ZoneKey, c.Zone)
-	csiController, err := controller.NewController(svc, c.Zone, config.MaxVolumesPerNode, l, c.Labels...)
+	csiController, err := controller.NewController(instrumentedSvc, c.Zone, config.MaxVolumesPerNode, l, c.Labels...)
 	if err != nil {
 		return nil, err
 	}
@@ -127,7 +136,7 @@ func newMonolithPluginServer(c config.Config, l *logrus.Entry) (*server.PluginSe
 	return pluginServer, nil
 }
 
-func autoConfigureZone(svc *service.UpCloudService, c *config.Config) {
+func autoConfigureZone(svc service.Service, c *config.Config) {
 	if c.Zone == "" {
 		// if zone is not provided, try to use nodeHost to auto-configure zone
 		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
