@@ -83,8 +83,12 @@ spec:
             - "--v={{ .Values.snapshotValidationWebhook.logLevel | default .Values.logLevel }}"
             - "--tls-cert-file=/etc/snapshot-validation-webhook/certs/cert.pem"
             - "--tls-private-key-file=/etc/snapshot-validation-webhook/certs/key.pem"
+            - "--http-endpoint=:8080"
           ports:
             - containerPort: 443
+              protocol: TCP
+            - containerPort: 8080
+              name: metrics
               protocol: TCP
           volumeMounts:
             - name: webhook-certs
@@ -94,6 +98,20 @@ spec:
           resources:
             {{- toYaml . | nindent 12 }}
           {{- end }}
+          livenessProbe:
+            httpGet:
+              path: /metrics
+              port: 8080
+            initialDelaySeconds: 15
+            periodSeconds: 20
+            timeoutSeconds: 5
+          readinessProbe:
+            httpGet:
+              path: /metrics
+              port: 8080
+            initialDelaySeconds: 5
+            periodSeconds: 10
+            timeoutSeconds: 5
       volumes:
         - name: webhook-certs
           secret:

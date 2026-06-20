@@ -44,7 +44,27 @@ spec:
           args:
             - "--v={{ .Values.snapshotController.logLevel | default .Values.logLevel }}"
             - "--leader-election=true"
+            - "--http-endpoint=:8080"
           {{- with .Values.snapshotController.resources }}
           resources:
             {{- toYaml . | nindent 12 }}
           {{- end }}
+          ports:
+            - containerPort: 8080
+              name: metrics
+              protocol: TCP
+          livenessProbe:
+            httpGet:
+              path: /metrics
+              port: 8080
+            initialDelaySeconds: 15
+            periodSeconds: 20
+            timeoutSeconds: 5
+          readinessProbe:
+            httpGet:
+              path: /metrics
+              port: 8080
+            initialDelaySeconds: 5
+            periodSeconds: 10
+            timeoutSeconds: 5
+

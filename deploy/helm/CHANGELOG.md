@@ -1,5 +1,10 @@
 # Helm chart changelog
 
+## [1.2.1] - 2026-06-20
+
+### Added
+- Liveness and readiness probes for csi-upcloud-plugin driver, snapshot-controller, and snapshot-validation-webhook
+
 ## [1.2.0] - 2026-06-20
 
 ### Changed
