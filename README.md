@@ -36,21 +36,27 @@ Multistage Containerfile produces an Alpine-based image with only the packages r
 
 This repository uses the following security and supply-chain measures:
 
-| Practice | Implementation |
-|---|---|---|
-| **Security policy** | `SECURITY.md` directs reporters to GitHub's Private vulnerability reporting tool. |
-| **Vulnerability reporting** | Private vulnerability reporting enabled — reporters get an acknowledgment within 72 hours. |
-| **Code scanning (CodeQL)** | `github/codeql-action` analyzes Go code on every push/PR to `main` and weekly. |
-| **Dependabot alerts** | Dependabot monitors Go modules, GitHub Actions, and Docker dependencies daily; alerts enabled for vulnerable dependencies. |
-| **Secret scanning** | GitHub's built-in secret scanning alerts enabled at the repository level. |
-| **Branch protection** | `main` requires passing status checks (`golangci-lint`, `helm-lint`, `test`, CodeQL) and pull request review before merge. Admins can bypass. |
-| **Action pinning** | All GitHub Actions are pinned by commit SHA with a human-readable version comment. The repo enforces SHA pinning globally. |
-| **Static analysis** | `golangci-lint` with 50+ linters (`gosec`, `staticcheck`, `errcheck`, etc.) runs on every PR. |
-| **Container image** | Distroless-inspired Alpine runtime, multistage build, pinned base image versions. |
-| **Release integrity** | Helm chart validates that `appVersion` matches the git tag and that the container image exists before publishing. |
-| **Artifact Hub** | Helm chart metadata published to Artifact Hub for discoverability. |
+- **Security policy** — `SECURITY.md` directs reporters to GitHub's Private vulnerability reporting tool.
+- **Vulnerability reporting** — Private vulnerability reporting enabled; reporters get an acknowledgment within 72 hours.
+- **Code scanning (CodeQL)** — `github/codeql-action` analyzes Go code on every push/PR to `main` and weekly. Maintainability and Reliability scores are **Excellent** (0 findings).
+- **Dependabot alerts** — Monitors Go modules, GitHub Actions, and Docker dependencies daily with alerts for vulnerable dependencies.
+- **Secret scanning** — GitHub's built-in secret scanning alerts enabled at the repository level.
+- **Branch protection** — `main` requires passing status checks (`golangci-lint`, `helm-lint`, `test`, CodeQL) and pull request review before merge.
+- **Action pinning** — All GitHub Actions pinned by commit SHA with a human-readable version comment; enforced globally.
+- **Static analysis** — `golangci-lint` with 50+ linters (`gosec`, `staticcheck`, `errcheck`, etc.) runs on every PR.
+- **Container image** — Distroless-inspired Alpine runtime, multistage build, pinned base image versions.
+- **Release integrity** — Helm chart validates that `appVersion` matches the git tag and that the container image exists before publishing.
+- **Artifact Hub** — Helm chart metadata published to Artifact Hub for discoverability.
 
 ## Deployment
+
+> **UpCloud Kubernetes clusters** ship with the official UpCloud CSI driver pre-installed.
+> To replace it with this fork, remove the old installation first:
+
+```shell
+helm uninstall upcloud-csi --namespace kube-system
+kubectl delete crd -l app.kubernetes.io/name=upcloud-csi
+```
 
 ### Helm chart
 
