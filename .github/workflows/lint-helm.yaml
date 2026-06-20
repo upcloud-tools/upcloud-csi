@@ -1,6 +1,11 @@
 name: Lint Helm
 
 on:
+  push:
+    branches: ["main"]
+    paths:
+      - 'deploy/helm/**'
+      - '.github/workflows/lint-helm.yaml'
   pull_request:
 
 jobs:
