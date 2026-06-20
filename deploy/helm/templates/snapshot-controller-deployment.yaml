@@ -44,6 +44,10 @@ spec:
       affinity:
         {{- tpl (toYaml .) $ | nindent 8 }}
       {{- end }}
+      {{- with .Values.snapshotController.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
       containers:
         - name: snapshot-controller
           image: "{{ .Values.snapshotController.image.repository }}:{{ .Values.snapshotController.image.tag }}"

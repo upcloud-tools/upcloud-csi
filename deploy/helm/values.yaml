@@ -44,6 +44,9 @@ controller:
   # -- Log verbosity (inherits global logLevel when null).
   logLevel:
 
+  # -- Image pull secrets for controller pods.
+  imagePullSecrets: []
+
   # -- Driver container resources (controller).
   resources: {}
 
@@ -93,6 +96,9 @@ node:
   # -- Log verbosity (inherits global logLevel when null).
   logLevel:
 
+  # -- Image pull secrets for node pods.
+  imagePullSecrets: []
+
   sidecars:
     csiNodeDriverRegistrar:
       repository: registry.k8s.io/sig-storage/csi-node-driver-registrar
@@ -120,6 +126,9 @@ node:
 snapshotController:
   # -- Log verbosity (inherits global logLevel when null).
   logLevel:
+
+  # -- Image pull secrets for snapshot controller pods.
+  imagePullSecrets: []
 
   image:
     repository: registry.k8s.io/sig-storage/snapshot-controller
@@ -150,6 +159,9 @@ snapshotController:
 # for instructions on generating certificates.
 snapshotValidationWebhook:
   enabled: false
+
+  # -- Image pull secrets for webhook pods.
+  imagePullSecrets: []
 
   image:
     repository: registry.k8s.io/sig-storage/snapshot-validation-webhook

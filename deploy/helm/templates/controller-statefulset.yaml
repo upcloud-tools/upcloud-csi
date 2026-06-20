@@ -41,6 +41,10 @@ spec:
       affinity:
         {{- tpl (toYaml .) $ | nindent 8 }}
       {{- end }}
+      {{- with .Values.controller.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
       containers:
         - name: csi-provisioner
           image: "{{ .Values.controller.sidecars.csiProvisioner.repository }}:{{ .Values.controller.sidecars.csiProvisioner.tag }}"

@@ -138,6 +138,11 @@
           "type": "string",
           "default": ""
         },
+        "imagePullSecrets": {
+          "type": "array",
+          "default": [],
+          "items": { "$ref": "#/definitions/imagePullSecret" }
+        },
         "serviceAccountAnnotations": {
           "type": "object",
           "default": {},
@@ -246,6 +251,11 @@
           "type": "string",
           "default": ""
         },
+        "imagePullSecrets": {
+          "type": "array",
+          "default": [],
+          "items": { "$ref": "#/definitions/imagePullSecret" }
+        },
         "serviceAccountAnnotations": {
           "type": "object",
           "default": {},
@@ -291,7 +301,7 @@
         }
       }
     },
-    "snapshotController": {
+        "snapshotController": {
       "type": "object",
       "properties": {
         "logLevel": {
@@ -300,6 +310,11 @@
             { "type": "integer", "minimum": 0, "maximum": 10 }
           ],
           "default": null
+        },
+        "imagePullSecrets": {
+          "type": "array",
+          "default": [],
+          "items": { "$ref": "#/definitions/imagePullSecret" }
         },
         "image": { "$ref": "#/definitions/imageSpec" },
         "resources": {
@@ -399,6 +414,11 @@
         "enabled": {
           "type": "boolean",
           "default": false
+        },
+        "imagePullSecrets": {
+          "type": "array",
+          "default": [],
+          "items": { "$ref": "#/definitions/imagePullSecret" }
         },
         "image": { "$ref": "#/definitions/imageSpec" },
         "resources": {
@@ -537,6 +557,15 @@
     }
   },
   "definitions": {
+    "imagePullSecret": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string"
+        }
+      },
+      "required": ["name"]
+    },
     "sidecar": {
       "type": "object",
       "properties": {

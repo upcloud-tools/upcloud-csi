@@ -4,6 +4,7 @@
 
 ### Added
 - `extraObjects` support — deploy arbitrary Kubernetes resources with Go template support
+- `imagePullSecrets` per component for private registry authentication (controller, node, snapshotController, snapshotValidationWebhook)
 
 ## [1.3.0] - 2026-06-20
 

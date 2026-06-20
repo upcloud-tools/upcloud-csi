@@ -26,3 +26,4 @@ annotations:
       url: https://github.com/upcloud-tools/upcloud-csi/issues
   artifacthub.io/changes: |
     - "Add extraObjects support"
+    - "Add imagePullSecrets per component"

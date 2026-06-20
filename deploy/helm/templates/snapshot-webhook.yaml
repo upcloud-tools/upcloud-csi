@@ -82,6 +82,10 @@ spec:
       affinity:
         {{- tpl (toYaml .) $ | nindent 8 }}
       {{- end }}
+      {{- with .Values.snapshotValidationWebhook.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
       containers:
         - name: snapshot-validation-webhook
           image: "{{ .Values.snapshotValidationWebhook.image.repository }}:{{ .Values.snapshotValidationWebhook.image.tag }}"

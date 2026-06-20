@@ -40,6 +40,10 @@ spec:
       affinity:
         {{- tpl (toYaml .) $ | nindent 8 }}
       {{- end }}
+      {{- with .Values.node.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
       containers:
         - name: csi-node-driver-registrar
           image: "{{ .Values.node.sidecars.csiNodeDriverRegistrar.repository }}:{{ .Values.node.sidecars.csiNodeDriverRegistrar.tag }}"
