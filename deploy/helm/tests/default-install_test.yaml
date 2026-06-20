@@ -1,0 +1,140 @@
+suite: default install
+tests:
+  - it: should generate all default resources
+    asserts:
+      - isKind:
+          of: StatefulSet
+        template: controller-statefulset.yaml
+      - isKind:
+          of: DaemonSet
+        template: node-daemonset.yaml
+      - isKind:
+          of: ServiceAccount
+        template: serviceaccounts.yaml
+      - isKind:
+          of: CSIDriver
+        template: csidriver.yaml
+      - isKind:
+          of: ClusterRole
+        template: clusterroles.yaml
+      - isKind:
+          of: ClusterRoleBinding
+        template: clusterrolebindings.yaml
+      - isKind:
+          of: Role
+        template: roles.yaml
+      - isKind:
+          of: RoleBinding
+        template: rolebindings.yaml
+      - isKind:
+          of: VolumeSnapshotClass
+        template: volumesnapshotclass.yaml
+
+  - it: should NOT generate storage classes, PDB, secret, or webhook by default
+    asserts:
+      - hasDocuments:
+          count: 0
+        template: storageclasses.yaml
+      - hasDocuments:
+          count: 0
+        template: pdb.yaml
+      - hasDocuments:
+          count: 0
+        template: secret.yaml
+      - hasDocuments:
+          count: 0
+        template: snapshot-webhook.yaml
+
+  - it: should have correct controller StatefulSet name
+    template: controller-statefulset.yaml
+    asserts:
+      - equal:
+          path: metadata.name
+          value: RELEASE-NAME-upcloud-csi-controller
+      - equal:
+          path: spec.replicas
+          value: 1
+      - equal:
+          path: spec.template.spec.priorityClassName
+          value: system-cluster-critical
+
+  - it: should have correct node DaemonSet name
+    template: node-daemonset.yaml
+    asserts:
+      - equal:
+          path: metadata.name
+          value: RELEASE-NAME-upcloud-csi-node
+      - equal:
+          path: spec.template.spec.priorityClassName
+          value: system-node-critical
+
+  - it: should have correct CSIDriver
+    template: csidriver.yaml
+    asserts:
+      - equal:
+          path: metadata.name
+          value: storage.csi.upcloud.com
+      - equal:
+          path: spec.attachRequired
+          value: true
+      - equal:
+          path: spec.podInfoOnMount
+          value: true
+      - equal:
+          path: spec.fsGroupPolicy
+          value: File
+
+  - it: should have correct controller containers
+    template: controller-statefulset.yaml
+    asserts:
+      - equal:
+          path: spec.template.spec.containers[0].name
+          value: csi-provisioner
+      - equal:
+          path: spec.template.spec.containers[1].name
+          value: csi-attacher
+      - equal:
+          path: spec.template.spec.containers[2].name
+          value: csi-resizer
+      - equal:
+          path: spec.template.spec.containers[3].name
+          value: csi-snapshotter
+      - equal:
+          path: spec.template.spec.containers[4].name
+          value: csi-upcloud-plugin
+
+  - it: should have correct node containers
+    template: node-daemonset.yaml
+    asserts:
+      - equal:
+          path: spec.template.spec.containers[0].name
+          value: csi-node-driver-registrar
+      - equal:
+          path: spec.template.spec.containers[1].name
+          value: csi-upcloud-plugin
+
+  - it: should have VolumeSnapshotClass created by default
+    template: volumesnapshotclass.yaml
+    asserts:
+      - equal:
+          path: metadata.name
+          value: upcloud-csi-snapshotclass
+      - equal:
+          path: driver
+          value: storage.csi.upcloud.com
+      - equal:
+          path: deletionPolicy
+          value: Delete
+
+  - it: should have correct labels on resources
+    template: controller-statefulset.yaml
+    asserts:
+      - equal:
+          path: metadata.labels["app.kubernetes.io/name"]
+          value: upcloud-csi
+      - equal:
+          path: metadata.labels["app.kubernetes.io/instance"]
+          value: RELEASE-NAME
+      - equal:
+          path: metadata.labels["app.kubernetes.io/managed-by"]
+          value: Helm

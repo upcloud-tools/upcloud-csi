@@ -1,5 +1,17 @@
 # Helm chart changelog
 
+## [1.3.0] - 2026-06-20
+
+### Added
+- `commonLabels` applied to all resource metadata via `_helpers.tpl`
+- Per-component `podLabels` and `podAnnotations` for controller, node, snapshot-controller, and webhook
+- `serviceAccount.annotations` for controller and node service accounts
+- Helm unit tests for all templates with 60 assertions across 9 test suites
+- values.schema.json for Helm values validation
+
+### Changed
+- All `toYaml` renders of user-supplied values now wrapped with `tpl()` to support template expressions in values
+
 ## [1.2.1] - 2026-06-20
 
 ### Added

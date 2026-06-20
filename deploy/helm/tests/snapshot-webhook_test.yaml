@@ -1,0 +1,108 @@
+suite: snapshot validation webhook
+tests:
+  - it: should not render webhook by default
+    template: snapshot-webhook.yaml
+    asserts:
+      - hasDocuments:
+          count: 0
+
+  - it: should render all resources when enabled
+    set:
+      snapshotValidationWebhook:
+        enabled: true
+    template: snapshot-webhook.yaml
+    asserts:
+      - hasDocuments:
+          count: 3
+      - isKind:
+          of: ValidatingWebhookConfiguration
+        documentIndex: 0
+      - isKind:
+          of: Service
+        documentIndex: 1
+      - isKind:
+          of: Deployment
+        documentIndex: 2
+
+  - it: should have correct webhook configuration
+    set:
+      snapshotValidationWebhook:
+        enabled: true
+    template: snapshot-webhook.yaml
+    asserts:
+      - equal:
+          path: metadata.name
+          value: RELEASE-NAME-upcloud-csi-snapshot-validation-webhook
+        documentIndex: 0
+      - equal:
+          path: webhooks[0].failurePolicy
+          value: Ignore
+        documentIndex: 0
+      - equal:
+          path: webhooks[0].timeoutSeconds
+          value: 5
+        documentIndex: 0
+
+  - it: should have correct service configuration
+    set:
+      snapshotValidationWebhook:
+        enabled: true
+    template: snapshot-webhook.yaml
+    asserts:
+      - equal:
+          path: metadata.name
+          value: RELEASE-NAME-upcloud-csi-snapshot-validation-service
+        documentIndex: 1
+      - equal:
+          path: spec.ports[0].port
+          value: 443
+        documentIndex: 1
+
+  - it: should have correct deployment
+    set:
+      snapshotValidationWebhook:
+        enabled: true
+    template: snapshot-webhook.yaml
+    asserts:
+      - equal:
+          path: metadata.name
+          value: RELEASE-NAME-upcloud-csi-snapshot-validation-deployment
+        documentIndex: 2
+      - equal:
+          path: spec.replicas
+          value: 1
+        documentIndex: 2
+
+  - it: should have http-endpoint on the webhook container
+    set:
+      snapshotValidationWebhook:
+        enabled: true
+    template: snapshot-webhook.yaml
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].args
+          content: --http-endpoint=:8080
+        documentIndex: 2
+
+  - it: should have webhook certs volume mounted
+    set:
+      snapshotValidationWebhook:
+        enabled: true
+    template: snapshot-webhook.yaml
+    asserts:
+      - equal:
+          path: spec.template.spec.volumes[0].secret.secretName
+          value: snapshot-validation-secret
+        documentIndex: 2
+
+  - it: should support custom caBundle
+    set:
+      snapshotValidationWebhook:
+        enabled: true
+        caBundle: Y3VzdG9tLWNh
+    template: snapshot-webhook.yaml
+    asserts:
+      - equal:
+          path: webhooks[0].clientConfig.caBundle
+          value: Y3VzdG9tLWNh
+        documentIndex: 0

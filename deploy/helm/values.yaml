@@ -4,6 +4,9 @@ nameOverride: ""
 # -- Overrides the full name.
 fullnameOverride: ""
 
+# -- Common labels added to all resources.
+commonLabels: {}
+
 # -- Default log verbosity, overridable per component.
 logLevel: 5
 
@@ -69,7 +72,13 @@ controller:
   replicas: 1
   # -- ServiceAccount name (defaults to {fullname}-controller).
   serviceAccountName: ""
+  # -- Annotations for the controller service account.
+  serviceAccountAnnotations: {}
   priorityClassName: system-cluster-critical
+  # -- Extra labels for the controller pod template.
+  podLabels: {}
+  # -- Extra annotations for the controller pod template.
+  podAnnotations: {}
   nodeSelector: {}
   tolerations: []
   affinity: {}
@@ -96,7 +105,13 @@ node:
 
   # -- ServiceAccount name (defaults to {fullname}-node).
   serviceAccountName: ""
+  # -- Annotations for the node service account.
+  serviceAccountAnnotations: {}
   priorityClassName: system-node-critical
+  # -- Extra labels for the node pod template.
+  podLabels: {}
+  # -- Extra annotations for the node pod template.
+  podAnnotations: {}
   nodeSelector: {}
   tolerations: []
   affinity: {}
@@ -118,6 +133,10 @@ snapshotController:
   nodeSelector: {}
   tolerations: []
   affinity: {}
+  # -- Extra labels for the snapshot controller pod template.
+  podLabels: {}
+  # -- Extra annotations for the snapshot controller pod template.
+  podAnnotations: {}
 
   podDisruptionBudget:
     enabled: false
@@ -152,6 +171,10 @@ snapshotValidationWebhook:
   nodeSelector: {}
   tolerations: []
   affinity: {}
+  # -- Extra labels for the snapshot validation webhook pod template.
+  podLabels: {}
+  # -- Extra annotations for the snapshot validation webhook pod template.
+  podAnnotations: {}
 
 # StorageClasses managed by the chart.
 storageClasses:

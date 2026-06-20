@@ -1,0 +1,136 @@
+suite: tpl wrapping
+tests:
+  - it: should evaluate tpl expressions in controller nodeSelector
+    set:
+      controller:
+        nodeSelector:
+          "{{ .Values.topologyKey }}": worker
+      topologyKey: kubernetes.io/hostname
+    template: controller-statefulset.yaml
+    asserts:
+      - equal:
+          path: "spec.template.spec.nodeSelector['kubernetes.io/hostname']"
+          value: worker
+
+  - it: should evaluate tpl expressions in controller tolerations
+    set:
+      controller:
+        tolerations:
+          - key: "{{ .Values.tolerationKey }}"
+            operator: Equal
+            value: "{{ .Values.tolerationValue }}"
+            effect: NoSchedule
+      tolerationKey: node-role
+      tolerationValue: infra
+    template: controller-statefulset.yaml
+    asserts:
+      - contains:
+          path: spec.template.spec.tolerations
+          content:
+            key: node-role
+            operator: Equal
+            value: infra
+            effect: NoSchedule
+
+  - it: should evaluate tpl expressions in node nodeSelector
+    set:
+      node:
+        nodeSelector:
+          "{{ .Values.topologyKey }}": edge
+      topologyKey: node.kubernetes.io/instance-type
+    template: node-daemonset.yaml
+    asserts:
+      - equal:
+          path: "spec.template.spec.nodeSelector['node.kubernetes.io/instance-type']"
+          value: edge
+
+  - it: should evaluate tpl expressions in snapshot controller affinity
+    set:
+      snapshotController:
+        affinity:
+          nodeAffinity:
+            requiredDuringSchedulingIgnoredDuringExecution:
+              nodeSelectorTerms:
+                - matchExpressions:
+                    - key: "{{ .Values.affinityKey }}"
+                      operator: In
+                      values:
+                        - "{{ .Values.affinityValue }}"
+      affinityKey: topology.kubernetes.io/zone
+      affinityValue: eu-west-1
+    template: snapshot-controller-deployment.yaml
+    asserts:
+      - equal:
+          path: spec.template.spec.affinity.nodeAffinity.requiredDuringSchedulingIgnoredDuringExecution.nodeSelectorTerms[0].matchExpressions[0].key
+          value: topology.kubernetes.io/zone
+
+  - it: should evaluate tpl expressions in controller resources
+    set:
+      controller:
+        resources:
+          requests:
+            memory: "{{ .Values.memLimit }}"
+            cpu: "{{ .Values.cpuLimit }}"
+      memLimit: 128Mi
+      cpuLimit: 250m
+    template: controller-statefulset.yaml
+    asserts:
+      - equal:
+          path: spec.template.spec.containers[4].resources.requests.memory
+          value: 128Mi
+      - equal:
+          path: spec.template.spec.containers[4].resources.requests.cpu
+          value: 250m
+
+  - it: should evaluate tpl expressions in sidecar resources
+    set:
+      controller:
+        sidecars:
+          csiProvisioner:
+            resources:
+              requests:
+                memory: "{{ .Values.sidecarMem }}"
+      sidecarMem: 64Mi
+    template: controller-statefulset.yaml
+    asserts:
+      - equal:
+          path: spec.template.spec.containers[0].resources.requests.memory
+          value: 64Mi
+
+  - it: should evaluate tpl expressions in commonLabels
+    set:
+      commonLabels:
+        "{{ .Values.labelKey }}": "{{ .Values.labelValue }}"
+      labelKey: team
+      labelValue: platform
+    template: controller-statefulset.yaml
+    asserts:
+      - equal:
+          path: metadata.labels.team
+          value: platform
+
+  - it: should evaluate tpl expressions in podLabels
+    set:
+      controller:
+        podLabels:
+          "{{ .Values.labelKey }}": "{{ .Values.labelValue }}"
+      labelKey: custom-key
+      labelValue: custom-value
+    template: controller-statefulset.yaml
+    asserts:
+      - equal:
+          path: spec.template.metadata.labels.custom-key
+          value: custom-value
+
+  - it: should evaluate tpl expressions in podAnnotations
+    set:
+      controller:
+        podAnnotations:
+          "{{ .Values.annotationKey }}": "{{ .Values.annotationValue }}"
+      annotationKey: sidecar.istio.io/inject
+      annotationValue: "true"
+    template: controller-statefulset.yaml
+    asserts:
+      - equal:
+          path: "spec.template.metadata.annotations['sidecar.istio.io/inject']"
+          value: "true"

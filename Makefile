@@ -122,6 +122,11 @@ helm-release-notes:
 
 HELM_CHART_DIR = deploy/helm
 
+.PHONY: helm-unittest
+helm-unittest:
+	helm plugin install https://github.com/helm-unittest/helm-unittest.git 2>/dev/null || true
+	helm unittest $(HELM_CHART_DIR)
+
 .PHONY: helm-lint
 helm-lint:
 	helm lint $(HELM_CHART_DIR)

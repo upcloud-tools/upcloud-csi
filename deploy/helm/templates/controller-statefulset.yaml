@@ -18,22 +18,28 @@ spec:
         {{- include "upcloud-csi.selectorLabels" . | nindent 8 }}
         app: {{ include "upcloud-csi.fullname" . }}-controller
         role: csi-upcloud
+{{- with .Values.controller.podLabels }}
+{{ tpl (toYaml .) $ | indent 8 }}
+{{- end }}
       annotations:
         checksum/credentials: {{ include "upcloud-csi.credentialsChecksum" . | quote }}
+{{- with .Values.controller.podAnnotations }}
+{{ tpl (toYaml .) $ | indent 8 }}
+{{- end }}
     spec:
       priorityClassName: {{ .Values.controller.priorityClassName }}
       serviceAccountName: {{ .Values.controller.serviceAccountName | default (printf "%s-controller" (include "upcloud-csi.fullname" .)) }}
       {{- with .Values.controller.nodeSelector }}
       nodeSelector:
-        {{- toYaml . | nindent 8 }}
+        {{- tpl (toYaml .) $ | nindent 8 }}
       {{- end }}
       {{- with .Values.controller.tolerations }}
       tolerations:
-        {{- toYaml . | nindent 8 }}
+        {{- tpl (toYaml .) $ | nindent 8 }}
       {{- end }}
       {{- with .Values.controller.affinity }}
       affinity:
-        {{- toYaml . | nindent 8 }}
+        {{- tpl (toYaml .) $ | nindent 8 }}
       {{- end }}
       containers:
         - name: csi-provisioner
@@ -51,7 +57,7 @@ spec:
               mountPath: /var/lib/csi/sockets/pluginproxy/
           {{- with .Values.controller.sidecars.csiProvisioner.resources }}
           resources:
-            {{- toYaml . | nindent 12 }}
+            {{- tpl (toYaml .) $ | nindent 12 }}
           {{- end }}
         - name: csi-attacher
           image: "{{ .Values.controller.sidecars.csiAttacher.repository }}:{{ .Values.controller.sidecars.csiAttacher.tag }}"
@@ -68,7 +74,7 @@ spec:
               mountPath: /var/lib/csi/sockets/pluginproxy/
           {{- with .Values.controller.sidecars.csiAttacher.resources }}
           resources:
-            {{- toYaml . | nindent 12 }}
+            {{- tpl (toYaml .) $ | nindent 12 }}
           {{- end }}
         - name: csi-resizer
           image: "{{ .Values.controller.sidecars.csiResizer.repository }}:{{ .Values.controller.sidecars.csiResizer.tag }}"
@@ -86,7 +92,7 @@ spec:
               mountPath: /var/lib/csi/sockets/pluginproxy/
           {{- with .Values.controller.sidecars.csiResizer.resources }}
           resources:
-            {{- toYaml . | nindent 12 }}
+            {{- tpl (toYaml .) $ | nindent 12 }}
           {{- end }}
         - name: csi-snapshotter
           image: "{{ .Values.controller.sidecars.csiSnapshotter.repository }}:{{ .Values.controller.sidecars.csiSnapshotter.tag }}"
@@ -104,7 +110,7 @@ spec:
               mountPath: /var/lib/csi/sockets/pluginproxy/
           {{- with .Values.controller.sidecars.csiSnapshotter.resources }}
           resources:
-            {{- toYaml . | nindent 12 }}
+            {{- tpl (toYaml .) $ | nindent 12 }}
           {{- end }}
         - name: csi-upcloud-plugin
           image: {{ include "upcloud-csi.driverImage" . }}
@@ -116,7 +122,7 @@ spec:
             - "--address=tcp://0.0.0.0:13071"
           env:
             - name: CSI_ENDPOINT
-              value: unix:///var/lib/csi/sockets/pluginproxy/csi.sock
+              value: "unix:///var/lib/csi/sockets/pluginproxy/csi.sock"
             - name: UPCLOUD_USERNAME
               valueFrom:
                 secretKeyRef:
@@ -133,7 +139,7 @@ spec:
                   fieldPath: spec.nodeName
           {{- with .Values.controller.resources }}
           resources:
-            {{- toYaml . | nindent 12 }}
+            {{- tpl (toYaml .) $ | nindent 12 }}
           {{- end }}
           ports:
             - containerPort: 13071
