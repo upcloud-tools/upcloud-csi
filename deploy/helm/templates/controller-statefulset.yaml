@@ -135,6 +135,10 @@ spec:
           resources:
             {{- toYaml . | nindent 12 }}
           {{- end }}
+          ports:
+            - containerPort: 13071
+              name: health
+              protocol: TCP
           livenessProbe:
             httpGet:
               path: /health
