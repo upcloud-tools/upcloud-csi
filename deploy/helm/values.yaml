@@ -12,7 +12,7 @@ logLevel: 5
 
 # Credentials for UpCloud API access.
 # Reference an existing secret, or have the chart create one.
-credentials:
+credentials:  # @schema additionalProperties: false
   createSecret: false
   # -- Name of the secret (created or referenced).
   secretName: upcloud
@@ -25,24 +25,27 @@ credentials:
   # -- UpCloud password (required when createSecret is true).
   password: ""
 
-csiDriver:
+csiDriver:  # @schema additionalProperties: false
   # -- Name of the CSIDriver resource.
   name: storage.csi.upcloud.com
   attachRequired: true
   podInfoOnMount: true
-  # -- fsGroupPolicy for the CSI driver (File, None, or ReadWriteOnceWithFSType).
-  fsGroupPolicy: File
+  # -- fsGroupPolicy for the CSI driver
+  fsGroupPolicy: File  # @schema enum:["File","None","ReadWriteOnceWithFSType"]
 
 # -- Driver container image (shared by controller and node).
-image:
+image:  # @schema additionalProperties: false
   repository: ghcr.io/upcloud-tools/upcloud-csi
   tag: ""
   pullPolicy: IfNotPresent
 
 # Controller StatefulSet settings.
-controller:
+controller:  # @schema additionalProperties: false
   # -- Log verbosity (inherits global logLevel when null).
-  logLevel:
+  logLevel:  # @schema type:[integer, null]; minimum:0; maximum:10
+
+  # -- Image pull secrets for controller pods.
+  imagePullSecrets: []
 
   # -- Driver container resources (controller).
   resources: {}
@@ -69,7 +72,7 @@ controller:
       pullPolicy: IfNotPresent
       resources: {}
 
-  replicas: 1
+  replicas: 1  # @schema minimum:0
   # -- ServiceAccount name (defaults to {fullname}-controller).
   serviceAccountName: ""
   # -- Annotations for the controller service account.
@@ -82,16 +85,55 @@ controller:
   nodeSelector: {}
   tolerations: []
   affinity: {}
+  updateStrategy: {}
+  # -- Minimum ready seconds for the controller StatefulSet.
+  minReadySeconds:
+  # -- Revision history limit for the controller StatefulSet.
+  revisionHistoryLimit:
+  # -- Termination grace period for controller pods.
+  terminationGracePeriodSeconds:  # @schema type:[integer, null]
+  # -- Lifecycle hooks for controller pods.
+  lifecycle: {}
+  # -- Topology spread constraints for controller pods.
+  topologySpreadConstraints: []
+  # -- Runtime class name for controller pods.
+  runtimeClassName: ""
+  # -- DNS policy for controller pods.
+  dnsPolicy: ""
+  # -- DNS config for controller pods.
+  dnsConfig: {}
+  # -- Host aliases for controller pods.
+  hostAliases: []
+  # -- Init containers for controller pods.
+  initContainers: []
+  # -- Additional volumes for controller pods.
+  additionalVolumes: []
+  # -- Additional volume mounts for the controller driver container.
+  additionalVolumeMounts: []
+  # -- Container security context for all controller containers.
+  securityContext:  # @schema additionalProperties: false
+    allowPrivilegeEscalation: false
+    capabilities:
+      drop: ["ALL"]
+    readOnlyRootFilesystem: true
+  # -- Pod-level security context for controller pods.
+  podSecurityContext:  # @schema additionalProperties: false
+    runAsNonRoot: true
+    seccompProfile:
+      type: RuntimeDefault
 
-  podDisruptionBudget:
+  podDisruptionBudget:  # @schema additionalProperties: false
     enabled: false
-    maxUnavailable:
-    minAvailable:
+    maxUnavailable:  # @schema type:[string, integer, null]
+    minAvailable:  # @schema type:[string, integer, null]
 
 # Node DaemonSet settings.
-node:
+node:  # @schema additionalProperties: false
   # -- Log verbosity (inherits global logLevel when null).
-  logLevel:
+  logLevel:  # @schema type:[integer, null]; minimum:0; maximum:10
+
+  # -- Image pull secrets for node pods.
+  imagePullSecrets: []
 
   sidecars:
     csiNodeDriverRegistrar:
@@ -115,11 +157,50 @@ node:
   nodeSelector: {}
   tolerations: []
   affinity: {}
+  updateStrategy: {}
+  # -- Minimum ready seconds for the node DaemonSet.
+  minReadySeconds:
+  # -- Revision history limit for the node DaemonSet.
+  revisionHistoryLimit:
+  # -- Termination grace period for node pods.
+  terminationGracePeriodSeconds:  # @schema type:[integer, null]
+  # -- Lifecycle hooks for node pods.
+  lifecycle: {}
+  # -- Topology spread constraints for node pods.
+  topologySpreadConstraints: []
+  # -- Runtime class name for node pods.
+  runtimeClassName: ""
+  # -- DNS policy for node pods.
+  dnsPolicy: ""
+  # -- DNS config for node pods.
+  dnsConfig: {}
+  # -- Host aliases for node pods.
+  hostAliases: []
+  # -- Init containers for node pods.
+  initContainers: []
+  # -- Additional volumes for node pods.
+  additionalVolumes: []
+  # -- Additional volume mounts for the node driver container.
+  additionalVolumeMounts: []
+  # -- Container security context for all node containers.
+  securityContext:  # @schema additionalProperties: false
+    privileged: true
+    capabilities:
+      add: ["SYS_ADMIN"]
+      drop: ["ALL"]
+    allowPrivilegeEscalation: true
+  # -- Pod-level security context for node pods.
+  podSecurityContext:  # @schema additionalProperties: false
+    seccompProfile:
+      type: RuntimeDefault
 
 # Snapshot controller Deployment settings.
-snapshotController:
+snapshotController:  # @schema additionalProperties: false
   # -- Log verbosity (inherits global logLevel when null).
-  logLevel:
+  logLevel:  # @schema type:[integer, null]; minimum:0; maximum:10
+
+  # -- Image pull secrets for snapshot controller pods.
+  imagePullSecrets: []
 
   image:
     repository: registry.k8s.io/sig-storage/snapshot-controller
@@ -127,29 +208,58 @@ snapshotController:
     pullPolicy: IfNotPresent
   resources: {}
 
-  replicas: 2
-  minReadySeconds: 15
+  replicas: 2  # @schema minimum:0
+  minReadySeconds: 15  # @schema minimum:0
+  # -- Revision history limit for the snapshot controller Deployment.
+  revisionHistoryLimit:
   priorityClassName: system-cluster-critical
   nodeSelector: {}
   tolerations: []
   affinity: {}
+  updateStrategy: {}
+  # -- Termination grace period for snapshot controller pods.
+  terminationGracePeriodSeconds:  # @schema type:[integer, null]
+  # -- Lifecycle hooks for snapshot controller pods.
+  lifecycle: {}
+  # -- Topology spread constraints for snapshot controller pods.
+  topologySpreadConstraints: []
+  # -- Init containers for snapshot controller pods.
+  initContainers: []
+  # -- Additional volumes for snapshot controller pods.
+  additionalVolumes: []
+  # -- Additional volume mounts for the snapshot controller container.
+  additionalVolumeMounts: []
+  # -- Container security context for the snapshot controller container.
+  securityContext:  # @schema additionalProperties: false
+    allowPrivilegeEscalation: false
+    capabilities:
+      drop: ["ALL"]
+    readOnlyRootFilesystem: true
+  # -- Pod-level security context for snapshot controller pods.
+  podSecurityContext:  # @schema additionalProperties: false
+    runAsNonRoot: true
+    seccompProfile:
+      type: RuntimeDefault
   # -- Extra labels for the snapshot controller pod template.
   podLabels: {}
   # -- Extra annotations for the snapshot controller pod template.
   podAnnotations: {}
 
-  podDisruptionBudget:
+  podDisruptionBudget:  # @schema additionalProperties: false
     enabled: false
-    maxUnavailable:
-    minAvailable:
+    maxUnavailable:  # @schema type:[string, integer, null]
+    minAvailable:  # @schema type:[string, integer, null]
 
 # Snapshot validation webhook settings. (Beta, not yet recommended to use in production)
 # The webhook requires a TLS secret to be created before enabling:
 #   kubectl create secret generic snapshot-validation-secret --from-file=cert.pem --from-file=key.pem
 # See https://github.com/kubernetes-csi/external-snapshotter/tree/master/deploy/kubernetes/webhook-example
 # for instructions on generating certificates.
-snapshotValidationWebhook:
+snapshotValidationWebhook:  # @schema additionalProperties: false
   enabled: false
+
+  # -- Image pull secrets for webhook pods.
+  imagePullSecrets: []
 
   image:
     repository: registry.k8s.io/sig-storage/snapshot-validation-webhook
@@ -165,19 +275,47 @@ snapshotValidationWebhook:
   caBundle: ""
 
   # -- Admission webhook timeout in seconds.
-  timeoutSeconds: 5
+  timeoutSeconds: 5  # @schema minimum:1
 
-  replicas: 1
+  replicas: 1  # @schema minimum:0
+  # -- Minimum ready seconds for the webhook Deployment.
+  minReadySeconds:
+  # -- Revision history limit for the webhook Deployment.
+  revisionHistoryLimit:
   nodeSelector: {}
   tolerations: []
   affinity: {}
+  updateStrategy: {}
+  # -- Termination grace period for webhook pods.
+  terminationGracePeriodSeconds:  # @schema type:[integer, null]
+  # -- Lifecycle hooks for webhook pods.
+  lifecycle: {}
+  # -- Topology spread constraints for webhook pods.
+  topologySpreadConstraints: []
+  # -- Init containers for webhook pods.
+  initContainers: []
+  # -- Additional volumes for webhook pods.
+  additionalVolumes: []
+  # -- Additional volume mounts for the webhook container.
+  additionalVolumeMounts: []
+  # -- Container security context for the webhook container.
+  securityContext:  # @schema additionalProperties: false
+    allowPrivilegeEscalation: false
+    capabilities:
+      drop: ["ALL"]
+    readOnlyRootFilesystem: true
+  # -- Pod-level security context for webhook pods.
+  podSecurityContext:  # @schema additionalProperties: false
+    runAsNonRoot: true
+    seccompProfile:
+      type: RuntimeDefault
   # -- Extra labels for the snapshot validation webhook pod template.
   podLabels: {}
   # -- Extra annotations for the snapshot validation webhook pod template.
   podAnnotations: {}
 
 # StorageClasses managed by the chart.
-storageClasses:
+storageClasses:  # @schema additionalProperties: false
   enabled: false
   classes:
     - name: upcloud-block-storage-maxiops
@@ -197,7 +335,11 @@ storageClasses:
       allowVolumeExpansion: true
 
 # VolumeSnapshotClass settings.
-volumeSnapshotClass:
+volumeSnapshotClass:  # @schema additionalProperties: false
   enabled: true
   name: upcloud-csi-snapshotclass
   deletionPolicy: Delete
+
+# -- Extra Kubernetes objects to deploy as part of this release.
+# Supports Go template expressions.
+extraObjects: []

@@ -1,0 +1,272 @@
+suite: pod spec fields
+tests:
+  - it: should not render optional fields by default
+    template: controller-statefulset.yaml
+    asserts:
+      - notExists:
+          path: spec.updateStrategy
+      - notExists:
+          path: spec.minReadySeconds
+      - notExists:
+          path: spec.revisionHistoryLimit
+      - notExists:
+          path: spec.template.spec.terminationGracePeriodSeconds
+      - notExists:
+          path: spec.template.spec.topologySpreadConstraints
+      - notExists:
+          path: spec.template.spec.runtimeClassName
+      - notExists:
+          path: spec.template.spec.dnsPolicy
+      - notExists:
+          path: spec.template.spec.dnsConfig
+      - notExists:
+          path: spec.template.spec.hostAliases
+      - notExists:
+          path: spec.template.spec.initContainers
+
+  - it: should render updateStrategy on controller when set
+    set:
+      controller:
+        updateStrategy:
+          type: RollingUpdate
+          rollingUpdate:
+            maxSurge: 1
+            maxUnavailable: 0
+    template: controller-statefulset.yaml
+    asserts:
+      - equal:
+          path: spec.updateStrategy.type
+          value: RollingUpdate
+      - equal:
+          path: spec.updateStrategy.rollingUpdate.maxSurge
+          value: 1
+      - equal:
+          path: spec.updateStrategy.rollingUpdate.maxUnavailable
+          value: 0
+
+  - it: should render updateStrategy on node when set
+    set:
+      node:
+        updateStrategy:
+          type: RollingUpdate
+          rollingUpdate:
+            maxUnavailable: 1
+    template: node-daemonset.yaml
+    asserts:
+      - equal:
+          path: spec.updateStrategy.type
+          value: RollingUpdate
+      - equal:
+          path: spec.updateStrategy.rollingUpdate.maxUnavailable
+          value: 1
+
+  - it: should render updateStrategy on snapshot controller overriding defaults
+    set:
+      snapshotController:
+        updateStrategy:
+          type: Recreate
+    template: snapshot-controller-deployment.yaml
+    asserts:
+      - equal:
+          path: spec.strategy.type
+          value: Recreate
+
+  - it: should use default updateStrategy on snapshot controller when not set
+    template: snapshot-controller-deployment.yaml
+    asserts:
+      - equal:
+          path: spec.strategy.type
+          value: RollingUpdate
+      - equal:
+          path: spec.strategy.rollingUpdate.maxSurge
+          value: 0
+      - equal:
+          path: spec.strategy.rollingUpdate.maxUnavailable
+          value: 1
+
+  - it: should render updateStrategy on webhook when set
+    set:
+      snapshotValidationWebhook:
+        enabled: true
+        updateStrategy:
+          type: Recreate
+    template: snapshot-webhook.yaml
+    asserts:
+      - documentIndex: 2
+        equal:
+          path: spec.strategy.type
+          value: Recreate
+
+  - it: should render terminationGracePeriodSeconds on controller
+    set:
+      controller:
+        terminationGracePeriodSeconds: 60
+    template: controller-statefulset.yaml
+    asserts:
+      - equal:
+          path: spec.template.spec.terminationGracePeriodSeconds
+          value: 60
+
+  - it: should render terminationGracePeriodSeconds on node
+    set:
+      node:
+        terminationGracePeriodSeconds: 30
+    template: node-daemonset.yaml
+    asserts:
+      - equal:
+          path: spec.template.spec.terminationGracePeriodSeconds
+          value: 30
+
+  - it: should render lifecycle hooks on controller
+    set:
+      controller:
+        lifecycle:
+          preStop:
+            exec:
+              command: ["/bin/sh", "-c", "sleep 10"]
+    template: controller-statefulset.yaml
+    asserts:
+      - equal:
+          path: spec.template.spec.containers[4].lifecycle.preStop.exec.command[0]
+          value: /bin/sh
+
+  - it: should render topologySpreadConstraints on controller
+    set:
+      controller:
+        topologySpreadConstraints:
+          - maxSkew: 1
+            topologyKey: kubernetes.io/hostname
+            whenUnsatisfiable: DoNotSchedule
+    template: controller-statefulset.yaml
+    asserts:
+      - equal:
+          path: spec.template.spec.topologySpreadConstraints[0].maxSkew
+          value: 1
+      - equal:
+          path: spec.template.spec.topologySpreadConstraints[0].topologyKey
+          value: kubernetes.io/hostname
+
+  - it: should render runtimeClassName on controller
+    set:
+      controller:
+        runtimeClassName: kata-containers
+    template: controller-statefulset.yaml
+    asserts:
+      - equal:
+          path: spec.template.spec.runtimeClassName
+          value: kata-containers
+
+  - it: should render dnsPolicy on controller
+    set:
+      controller:
+        dnsPolicy: ClusterFirstWithHostNet
+    template: controller-statefulset.yaml
+    asserts:
+      - equal:
+          path: spec.template.spec.dnsPolicy
+          value: ClusterFirstWithHostNet
+
+  - it: should render dnsConfig on controller
+    set:
+      controller:
+        dnsConfig:
+          nameservers:
+            - 8.8.8.8
+    template: controller-statefulset.yaml
+    asserts:
+      - equal:
+          path: spec.template.spec.dnsConfig.nameservers[0]
+          value: 8.8.8.8
+
+  - it: should render hostAliases on controller
+    set:
+      controller:
+        hostAliases:
+          - ip: 127.0.0.1
+            hostnames:
+              - localhost
+    template: controller-statefulset.yaml
+    asserts:
+      - equal:
+          path: spec.template.spec.hostAliases[0].ip
+          value: 127.0.0.1
+
+  - it: should render initContainers on controller
+    set:
+      controller:
+        initContainers:
+          - name: init-sysctl
+            image: busybox:latest
+            command: ["sysctl", "-w", "vm.overcommit_memory=1"]
+    template: controller-statefulset.yaml
+    asserts:
+      - equal:
+          path: spec.template.spec.initContainers[0].name
+          value: init-sysctl
+      - equal:
+          path: spec.template.spec.initContainers[0].image
+          value: busybox:latest
+
+  - it: should render additionalVolumes and additionalVolumeMounts on controller
+    set:
+      controller:
+        additionalVolumes:
+          - name: custom-config
+            configMap:
+              name: my-config
+        additionalVolumeMounts:
+          - name: custom-config
+            mountPath: /etc/config
+            readOnly: true
+    template: controller-statefulset.yaml
+    asserts:
+      - exists:
+          path: spec.template.spec.volumes
+      - equal:
+          path: spec.template.spec.volumes[1].name
+          value: custom-config
+      - equal:
+          path: spec.template.spec.containers[4].volumeMounts[1].name
+          value: custom-config
+
+  - it: should render minReadySeconds on controller when set
+    set:
+      controller:
+        minReadySeconds: 10
+    template: controller-statefulset.yaml
+    asserts:
+      - equal:
+          path: spec.minReadySeconds
+          value: 10
+
+  - it: should render minReadySeconds on node when set
+    set:
+      node:
+        minReadySeconds: 5
+    template: node-daemonset.yaml
+    asserts:
+      - equal:
+          path: spec.minReadySeconds
+          value: 5
+
+  - it: should render revisionHistoryLimit on controller when set
+    set:
+      controller:
+        revisionHistoryLimit: 5
+    template: controller-statefulset.yaml
+    asserts:
+      - equal:
+          path: spec.revisionHistoryLimit
+          value: 5
+
+  - it: should render tpl expressions in updateStrategy
+    set:
+      controller:
+        updateStrategy:
+          type: "{{ .Values.strategyType }}"
+      strategyType: Recreate
+    template: controller-statefulset.yaml
+    asserts:
+      - equal:
+          path: spec.updateStrategy.type
+          value: Recreate

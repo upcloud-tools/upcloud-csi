@@ -8,11 +8,19 @@ metadata:
 spec:
   replicas: {{ .Values.snapshotController.replicas }}
   minReadySeconds: {{ .Values.snapshotController.minReadySeconds }}
+  {{- if .Values.snapshotController.revisionHistoryLimit }}
+  revisionHistoryLimit: {{ .Values.snapshotController.revisionHistoryLimit }}
+  {{- end }}
+  {{- with .Values.snapshotController.updateStrategy }}
+  strategy:
+    {{- tpl (toYaml .) $ | nindent 4 }}
+  {{- else }}
   strategy:
     rollingUpdate:
       maxSurge: 0
       maxUnavailable: 1
     type: RollingUpdate
+  {{- end }}
   selector:
     matchLabels:
       {{- include "upcloud-csi.selectorLabels" . | nindent 6 }}
@@ -44,6 +52,25 @@ spec:
       affinity:
         {{- tpl (toYaml .) $ | nindent 8 }}
       {{- end }}
+      {{- with .Values.snapshotController.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.snapshotController.podSecurityContext }}
+      securityContext:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- if .Values.snapshotController.terminationGracePeriodSeconds }}
+      terminationGracePeriodSeconds: {{ .Values.snapshotController.terminationGracePeriodSeconds }}
+      {{- end }}
+      {{- with .Values.snapshotController.topologySpreadConstraints }}
+      topologySpreadConstraints:
+        {{- tpl (toYaml .) $ | nindent 8 }}
+      {{- end }}
+      {{- with .Values.snapshotController.initContainers }}
+      initContainers:
+        {{- tpl (toYaml .) $ | nindent 8 }}
+      {{- end }}
       containers:
         - name: snapshot-controller
           image: "{{ .Values.snapshotController.image.repository }}:{{ .Values.snapshotController.image.tag }}"
@@ -52,6 +79,10 @@ spec:
             - "--v={{ .Values.snapshotController.logLevel | default .Values.logLevel }}"
             - "--leader-election=true"
             - "--http-endpoint=:8080"
+          {{- with .Values.snapshotController.securityContext }}
+          securityContext:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
           {{- with .Values.snapshotController.resources }}
           resources:
             {{- tpl (toYaml .) $ | nindent 12 }}
@@ -74,4 +105,16 @@ spec:
             initialDelaySeconds: 5
             periodSeconds: 10
             timeoutSeconds: 5
+          {{- with .Values.snapshotController.lifecycle }}
+          lifecycle:
+            {{- tpl (toYaml .) $ | nindent 12 }}
+          {{- end }}
+      {{- with .Values.snapshotController.additionalVolumeMounts }}
+          volumeMounts:
+            {{- tpl (toYaml .) $ | nindent 12 }}
+      {{- end }}
+      {{- with .Values.snapshotController.additionalVolumes }}
+      volumes:
+        {{- tpl (toYaml .) $ | nindent 8 }}
+      {{- end }}
 

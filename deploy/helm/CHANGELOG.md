@@ -1,5 +1,13 @@
 # Helm chart changelog
 
+## [1.4.0] - 2026-06-20
+
+### Added
+- `extraObjects` support — deploy arbitrary Kubernetes resources with Go template support
+- `imagePullSecrets` per component for private registry authentication (controller, node, snapshotController, snapshotValidationWebhook)
+- Configurable `updateStrategy`, `terminationGracePeriodSeconds`, `lifecycle`, `topologySpreadConstraints`, `runtimeClassName`, `dnsPolicy`/`dnsConfig`, `hostAliases`, `initContainers`, `additionalVolumes`/`additionalVolumeMounts`, `minReadySeconds`, and `revisionHistoryLimit` per component
+- `securityContext` and `podSecurityContext` per component with secure defaults — controller/snapshot/webhook drop all capabilities with read-only rootfs and runAsNonRoot; node keeps privileged defaults with pod-level seccomp
+
 ## [1.3.0] - 2026-06-20
 
 ### Added

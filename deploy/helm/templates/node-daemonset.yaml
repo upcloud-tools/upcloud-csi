@@ -6,6 +6,16 @@ metadata:
   labels:
     {{- include "upcloud-csi.labels" . | nindent 4 }}
 spec:
+  {{- if .Values.node.minReadySeconds }}
+  minReadySeconds: {{ .Values.node.minReadySeconds }}
+  {{- end }}
+  {{- if .Values.node.revisionHistoryLimit }}
+  revisionHistoryLimit: {{ .Values.node.revisionHistoryLimit }}
+  {{- end }}
+  {{- with .Values.node.updateStrategy }}
+  updateStrategy:
+    {{- tpl (toYaml .) $ | nindent 4 }}
+  {{- end }}
   selector:
     matchLabels:
       {{- include "upcloud-csi.selectorLabels" . | nindent 6 }}
@@ -40,6 +50,39 @@ spec:
       affinity:
         {{- tpl (toYaml .) $ | nindent 8 }}
       {{- end }}
+      {{- with .Values.node.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.node.podSecurityContext }}
+      securityContext:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- if .Values.node.terminationGracePeriodSeconds }}
+      terminationGracePeriodSeconds: {{ .Values.node.terminationGracePeriodSeconds }}
+      {{- end }}
+      {{- with .Values.node.topologySpreadConstraints }}
+      topologySpreadConstraints:
+        {{- tpl (toYaml .) $ | nindent 8 }}
+      {{- end }}
+      {{- with .Values.node.runtimeClassName }}
+      runtimeClassName: {{ . | quote }}
+      {{- end }}
+      {{- with .Values.node.dnsPolicy }}
+      dnsPolicy: {{ . | quote }}
+      {{- end }}
+      {{- with .Values.node.dnsConfig }}
+      dnsConfig:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.node.hostAliases }}
+      hostAliases:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.node.initContainers }}
+      initContainers:
+        {{- tpl (toYaml .) $ | nindent 8 }}
+      {{- end }}
       containers:
         - name: csi-node-driver-registrar
           image: "{{ .Values.node.sidecars.csiNodeDriverRegistrar.repository }}:{{ .Values.node.sidecars.csiNodeDriverRegistrar.tag }}"
@@ -57,6 +100,10 @@ spec:
               valueFrom:
                 fieldRef:
                   fieldPath: spec.nodeName
+          {{- with .Values.node.securityContext }}
+          securityContext:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
           volumeMounts:
             - name: plugin-dir
               mountPath: /csi/
@@ -91,12 +138,10 @@ spec:
               valueFrom:
                 fieldRef:
                   fieldPath: spec.nodeName
+          {{- with .Values.node.securityContext }}
           securityContext:
-            privileged: true
-            capabilities:
-              add: ["SYS_ADMIN"]
-              drop: ["ALL"]
-            allowPrivilegeEscalation: true
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
           {{- with .Values.node.resources }}
           resources:
             {{- tpl (toYaml .) $ | nindent 12 }}
@@ -127,6 +172,13 @@ spec:
               mountPropagation: "Bidirectional"
             - name: device-dir
               mountPath: /dev
+            {{- with .Values.node.additionalVolumeMounts }}
+            {{- tpl (toYaml .) $ | nindent 12 }}
+            {{- end }}
+          {{- with .Values.node.lifecycle }}
+          lifecycle:
+            {{- tpl (toYaml .) $ | nindent 12 }}
+          {{- end }}
       volumes:
         - name: registration-dir
           hostPath:
@@ -143,3 +195,6 @@ spec:
         - name: device-dir
           hostPath:
             path: /dev
+        {{- with .Values.node.additionalVolumes }}
+        {{- tpl (toYaml .) $ | nindent 8 }}
+        {{- end }}
