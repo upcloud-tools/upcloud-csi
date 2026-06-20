@@ -510,6 +510,13 @@
         }
       }
     },
+    "extraObjects": {
+      "type": "array",
+      "default": [],
+      "items": {
+        "type": "object"
+      }
+    },
     "volumeSnapshotClass": {
       "type": "object",
       "properties": {

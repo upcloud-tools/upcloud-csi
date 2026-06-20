@@ -1,5 +1,10 @@
 # Helm chart changelog
 
+## [1.4.0] - 2026-06-20
+
+### Added
+- `extraObjects` support — deploy arbitrary Kubernetes resources with Go template support
+
 ## [1.3.0] - 2026-06-20
 
 ### Added

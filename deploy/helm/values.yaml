@@ -201,3 +201,7 @@ volumeSnapshotClass:
   enabled: true
   name: upcloud-csi-snapshotclass
   deletionPolicy: Delete
+
+# -- Extra Kubernetes objects to deploy as part of this release.
+# Supports Go template expressions.
+extraObjects: []
