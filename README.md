@@ -37,10 +37,14 @@ Multistage Containerfile produces an Alpine-based image with only the packages r
 This repository uses the following security and supply-chain measures:
 
 | Practice | Implementation |
-|---|---|
-| **Branch protection** | `main` requires passing status checks (`golangci-lint`, `helm-lint`, `test`) and pull request review before merge. Admins can bypass. |
+|---|---|---|
+| **Security policy** | `SECURITY.md` directs reporters to GitHub's Private vulnerability reporting tool. |
+| **Vulnerability reporting** | Private vulnerability reporting enabled — reporters get an acknowledgment within 72 hours. |
+| **Code scanning (CodeQL)** | `github/codeql-action` analyzes Go code on every push/PR to `main` and weekly. |
+| **Dependabot alerts** | Dependabot monitors Go modules, GitHub Actions, and Docker dependencies daily; alerts enabled for vulnerable dependencies. |
+| **Secret scanning** | GitHub's built-in secret scanning alerts enabled at the repository level. |
+| **Branch protection** | `main` requires passing status checks (`golangci-lint`, `helm-lint`, `test`, CodeQL) and pull request review before merge. Admins can bypass. |
 | **Action pinning** | All GitHub Actions are pinned by commit SHA with a human-readable version comment. The repo enforces SHA pinning globally. |
-| **Dependency updates** | Dependabot monitors Go modules, GitHub Actions, and Docker dependencies daily. |
 | **Static analysis** | `golangci-lint` with 50+ linters (`gosec`, `staticcheck`, `errcheck`, etc.) runs on every PR. |
 | **Container image** | Distroless-inspired Alpine runtime, multistage build, pinned base image versions. |
 | **Release integrity** | Helm chart validates that `appVersion` matches the git tag and that the container image exists before publishing. |
