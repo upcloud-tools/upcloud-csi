@@ -186,6 +186,90 @@
           "type": "object",
           "default": {}
         },
+        "updateStrategy": {
+          "type": "object",
+          "default": {}
+        },
+        "minReadySeconds": {
+          "oneOf": [
+            { "type": "null" },
+            { "type": "integer", "minimum": 0 }
+          ],
+          "default": null
+        },
+        "revisionHistoryLimit": {
+          "oneOf": [
+            { "type": "null" },
+            { "type": "integer", "minimum": 0 }
+          ],
+          "default": null
+        },
+        "terminationGracePeriodSeconds": {
+          "oneOf": [
+            { "type": "null" },
+            { "type": "integer", "minimum": 0 }
+          ],
+          "default": null
+        },
+        "lifecycle": {
+          "type": "object",
+          "default": {}
+        },
+        "topologySpreadConstraints": {
+          "type": "array",
+          "default": [],
+          "items": {
+            "type": "object"
+          }
+        },
+        "runtimeClassName": {
+          "type": "string",
+          "default": ""
+        },
+        "dnsPolicy": {
+          "type": "string",
+          "default": ""
+        },
+        "dnsConfig": {
+          "type": "object",
+          "default": {}
+        },
+        "hostAliases": {
+          "type": "array",
+          "default": [],
+          "items": {
+            "type": "object"
+          }
+        },
+        "initContainers": {
+          "type": "array",
+          "default": [],
+          "items": {
+            "type": "object"
+          }
+        },
+        "additionalVolumes": {
+          "type": "array",
+          "default": [],
+          "items": {
+            "type": "object"
+          }
+        },
+        "additionalVolumeMounts": {
+          "type": "array",
+          "default": [],
+          "items": {
+            "type": "object"
+          }
+        },
+        "securityContext": {
+          "type": "object",
+          "default": {}
+        },
+        "podSecurityContext": {
+          "type": "object",
+          "default": {}
+        },
         "podDisruptionBudget": {
           "type": "object",
           "properties": {
@@ -298,10 +382,94 @@
         "affinity": {
           "type": "object",
           "default": {}
+        },
+        "updateStrategy": {
+          "type": "object",
+          "default": {}
+        },
+        "minReadySeconds": {
+          "oneOf": [
+            { "type": "null" },
+            { "type": "integer", "minimum": 0 }
+          ],
+          "default": null
+        },
+        "revisionHistoryLimit": {
+          "oneOf": [
+            { "type": "null" },
+            { "type": "integer", "minimum": 0 }
+          ],
+          "default": null
+        },
+        "terminationGracePeriodSeconds": {
+          "oneOf": [
+            { "type": "null" },
+            { "type": "integer", "minimum": 0 }
+          ],
+          "default": null
+        },
+        "lifecycle": {
+          "type": "object",
+          "default": {}
+        },
+        "topologySpreadConstraints": {
+          "type": "array",
+          "default": [],
+          "items": {
+            "type": "object"
+          }
+        },
+        "runtimeClassName": {
+          "type": "string",
+          "default": ""
+        },
+        "dnsPolicy": {
+          "type": "string",
+          "default": ""
+        },
+        "dnsConfig": {
+          "type": "object",
+          "default": {}
+        },
+        "hostAliases": {
+          "type": "array",
+          "default": [],
+          "items": {
+            "type": "object"
+          }
+        },
+        "initContainers": {
+          "type": "array",
+          "default": [],
+          "items": {
+            "type": "object"
+          }
+        },
+        "additionalVolumes": {
+          "type": "array",
+          "default": [],
+          "items": {
+            "type": "object"
+          }
+        },
+        "additionalVolumeMounts": {
+          "type": "array",
+          "default": [],
+          "items": {
+            "type": "object"
+          }
+        },
+        "securityContext": {
+          "type": "object",
+          "default": {}
+        },
+        "podSecurityContext": {
+          "type": "object",
+          "default": {}
         }
       }
     },
-        "snapshotController": {
+    "snapshotController": {
       "type": "object",
       "properties": {
         "logLevel": {
@@ -364,6 +532,64 @@
           }
         },
         "affinity": {
+          "type": "object",
+          "default": {}
+        },
+        "updateStrategy": {
+          "type": "object",
+          "default": {}
+        },
+        "revisionHistoryLimit": {
+          "oneOf": [
+            { "type": "null" },
+            { "type": "integer", "minimum": 0 }
+          ],
+          "default": null
+        },
+        "terminationGracePeriodSeconds": {
+          "oneOf": [
+            { "type": "null" },
+            { "type": "integer", "minimum": 0 }
+          ],
+          "default": null
+        },
+        "lifecycle": {
+          "type": "object",
+          "default": {}
+        },
+        "topologySpreadConstraints": {
+          "type": "array",
+          "default": [],
+          "items": {
+            "type": "object"
+          }
+        },
+        "initContainers": {
+          "type": "array",
+          "default": [],
+          "items": {
+            "type": "object"
+          }
+        },
+        "additionalVolumes": {
+          "type": "array",
+          "default": [],
+          "items": {
+            "type": "object"
+          }
+        },
+        "additionalVolumeMounts": {
+          "type": "array",
+          "default": [],
+          "items": {
+            "type": "object"
+          }
+        },
+        "securityContext": {
+          "type": "object",
+          "default": {}
+        },
+        "podSecurityContext": {
           "type": "object",
           "default": {}
         },
@@ -473,6 +699,71 @@
           }
         },
         "affinity": {
+          "type": "object",
+          "default": {}
+        },
+        "updateStrategy": {
+          "type": "object",
+          "default": {}
+        },
+        "minReadySeconds": {
+          "oneOf": [
+            { "type": "null" },
+            { "type": "integer", "minimum": 0 }
+          ],
+          "default": null
+        },
+        "revisionHistoryLimit": {
+          "oneOf": [
+            { "type": "null" },
+            { "type": "integer", "minimum": 0 }
+          ],
+          "default": null
+        },
+        "terminationGracePeriodSeconds": {
+          "oneOf": [
+            { "type": "null" },
+            { "type": "integer", "minimum": 0 }
+          ],
+          "default": null
+        },
+        "lifecycle": {
+          "type": "object",
+          "default": {}
+        },
+        "topologySpreadConstraints": {
+          "type": "array",
+          "default": [],
+          "items": {
+            "type": "object"
+          }
+        },
+        "initContainers": {
+          "type": "array",
+          "default": [],
+          "items": {
+            "type": "object"
+          }
+        },
+        "additionalVolumes": {
+          "type": "array",
+          "default": [],
+          "items": {
+            "type": "object"
+          }
+        },
+        "additionalVolumeMounts": {
+          "type": "array",
+          "default": [],
+          "items": {
+            "type": "object"
+          }
+        },
+        "securityContext": {
+          "type": "object",
+          "default": {}
+        },
+        "podSecurityContext": {
           "type": "object",
           "default": {}
         },

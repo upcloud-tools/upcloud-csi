@@ -27,3 +27,4 @@ annotations:
   artifacthub.io/changes: |
     - "Add extraObjects support"
     - "Add imagePullSecrets per component"
+    - "Make updateStrategy, lifecycle, topology, and other pod spec fields configurable"
