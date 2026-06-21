@@ -355,6 +355,11 @@ metrics:  # @schema additionalProperties: false
     # -- Prometheus alerting rules.
     rules: []
 
+# -- Network policies for restricting pod communication.
+networkPolicy:  # @schema additionalProperties: false
+  # -- Enable NetworkPolicy resources.
+  enabled: false
+
 # -- Extra Kubernetes objects to deploy as part of this release.
 # Supports Go template expressions.
 extraObjects: []

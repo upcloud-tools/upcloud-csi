@@ -75,3 +75,38 @@ func (c *Client) isPodRunning(ctx context.Context, podName, namespace string) wa
 func (c *Client) WaitForPod(ctx context.Context, podName, namespace string) error {
 	return wait.PollImmediate(time.Second, 5*time.Minute, c.isPodRunning(ctx, podName, namespace))
 }
+
+func (c *Client) CreateStandalonePod(ctx context.Context, podName string) (*v1.Pod, error) {
+	req := &v1.Pod{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: podName,
+		},
+		Spec: v1.PodSpec{
+			RestartPolicy: v1.RestartPolicyNever,
+			Containers: []v1.Container{
+				{
+					Name:    "main",
+					Image:   "busybox",
+					Command: []string{shellPath},
+					Args:    []string{"-c", "sleep 3600"},
+				},
+			},
+		},
+	}
+
+	return c.k8s.CoreV1().Pods(c.ns).Create(ctx, req, metav1.CreateOptions{})
+}
+
+func (c *Client) GetPodIP(ctx context.Context, podName, namespace string) (string, error) {
+	pod, err := c.k8s.CoreV1().Pods(namespace).Get(ctx, podName, metav1.GetOptions{})
+	if err != nil {
+		return "", err
+	}
+	return pod.Status.PodIP, nil
+}
+
+func (c *Client) ListPods(ctx context.Context, namespace string, labelSelector string) (*v1.PodList, error) {
+	return c.k8s.CoreV1().Pods(namespace).List(ctx, metav1.ListOptions{
+		LabelSelector: labelSelector,
+	})
+}

@@ -873,6 +873,15 @@
         }
       }
     },
+    "networkPolicy": {
+      "type": "object",
+      "properties": {
+        "enabled": {
+          "type": "boolean",
+          "default": false
+        }
+      }
+    },
     "extraObjects": {
       "type": "array",
       "default": [],
