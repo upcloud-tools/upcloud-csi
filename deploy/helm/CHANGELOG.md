@@ -1,5 +1,11 @@
 # Helm chart changelog
 
+## [1.5.1] - 2026-06-20
+
+### Changed
+- App version bumped to `v2.6.1`
+- Containerfile optimized — smaller runtime image
+
 ## [1.5.0] - 2026-06-20
 
 ### Changed

@@ -21,6 +21,10 @@ Full-featured Helm chart, published as an OCI artifact to `ghcr.io/upcloud-tools
 - Node DaemonSet with node-driver-registrar
 - Snapshot controller (2 replicas, leader election) and optional validation webhook
 - StorageClasses for all three UpCloud tiers: `maxiops`, `standard`, `hdd`
+- `securityContext` and `podSecurityContext` per component with secure defaults
+- `metrics` block — ClusterIP metrics Service, optional ServiceMonitor and PrometheusRule for prometheus-operator
+- `extraObjects` — deploy arbitrary Kubernetes resources with Go template support
+- Configurable pod spec fields
 - PodDisruptionBudget support for controller and snapshot-controller
 - Credential checksum annotation for automatic pod rollout on secret changes
 
@@ -54,7 +58,6 @@ This repository uses the following security and supply-chain measures:
 - **Branch protection** — `main` requires passing status checks (`golangci-lint`, `helm-lint`, `test`, CodeQL) and pull request review before merge.
 - **Action pinning** — All GitHub Actions pinned by commit SHA with a human-readable version comment; enforced globally.
 - **Static analysis** — `golangci-lint` with 50+ linters (`gosec`, `staticcheck`, `errcheck`, etc.) runs on every PR.
-- **Container image** — Distroless-inspired Alpine runtime, multistage build, pinned base image versions.
 - **Container scanning (Trivy)** — `aquasecurity/trivy-action` scans the built image for OS and application CVEs before push to GHCR; scheduled weekly rescan catches newly discovered vulnerabilities. Go module dependencies also scanned on every push/PR.
 - **Release integrity** — Helm chart validates that `appVersion` matches the git tag and that the container image exists before publishing.
 - **Artifact Hub** — Helm chart metadata published to Artifact Hub for discoverability.
@@ -85,28 +88,19 @@ kubectl delete crd volumesnapshotclasses.snapshot.storage.k8s.io \
                    volumesnapshots.snapshot.storage.k8s.io
 ```
 
-Or keep the existing CRDs and install with `--skip-crds`:
+Or keep the existing CRDs and install with `--skip-crds` (not recommended).
 
 ### Helm chart (install/upgrade)
 
-If the `upcloud` secret already exists in the namespace, omit the credentials (default behavior):
+UpCloud Kubernetes clusters ship with an `upcloud` secret in `kube-system` by default. If the secret exists, just install:
 
 ```shell
 helm upgrade --install upcloud-csi oci://ghcr.io/upcloud-tools/charts/upcloud-csi \
-  --namespace kube-system --version 1.2.0
+  --namespace kube-system --version 1.5.1
 ```
 
-Or specify credentials to create the secret (prepend with a space to avoid saving to shell history):
-
-```shell
-helm upgrade --install upcloud-csi oci://ghcr.io/upcloud-tools/charts/upcloud-csi \
-  --namespace kube-system --version 1.2.0 \
-  --set credentials.createSecret=true \
-  --set credentials.username=YOUR_USERNAME \
-  --set credentials.password=YOUR_PASSWORD
-```
-
-By default, StorageClasses are **disabled**. Enable them with `--set storageClasses.enabled=true` if you want the chart to manage them.
+To have the chart create the secret instead, set `credentials.createSecret=true` and provide the credentials.
+By default, StorageClasses are **disabled**. Enable them with `--set storageClasses.enabled=true`.
 
 All values have sensible defaults. See [values.yaml](deploy/helm/values.yaml) for the full reference.
 
@@ -114,7 +108,7 @@ To customize, create a values file and pass it with `--values`:
 
 ```shell
 helm upgrade --install upcloud-csi oci://ghcr.io/upcloud-tools/charts/upcloud-csi \
-  --namespace kube-system --version 1.2.0 --values values.yaml
+  --namespace kube-system --version 1.5.1 --values values.yaml
 ```
 
 ## Credits
