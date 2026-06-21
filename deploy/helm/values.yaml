@@ -118,7 +118,6 @@ controller:  # @schema additionalProperties: false
     readOnlyRootFilesystem: true
   # -- Pod-level security context for controller pods.
   podSecurityContext:  # @schema additionalProperties: false
-    runAsNonRoot: true
     seccompProfile:
       type: RuntimeDefault
 
@@ -237,7 +236,6 @@ snapshotController:  # @schema additionalProperties: false
     readOnlyRootFilesystem: true
   # -- Pod-level security context for snapshot controller pods.
   podSecurityContext:  # @schema additionalProperties: false
-    runAsNonRoot: true
     seccompProfile:
       type: RuntimeDefault
   # -- Extra labels for the snapshot controller pod template.
@@ -306,7 +304,6 @@ snapshotValidationWebhook:  # @schema additionalProperties: false
     readOnlyRootFilesystem: true
   # -- Pod-level security context for webhook pods.
   podSecurityContext:  # @schema additionalProperties: false
-    runAsNonRoot: true
     seccompProfile:
       type: RuntimeDefault
   # -- Extra labels for the snapshot validation webhook pod template.
