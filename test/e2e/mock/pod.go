@@ -61,8 +61,8 @@ func (c *Client) DeletePod(ctx context.Context, podName, namespace string) error
 	return c.k8s.CoreV1().Pods(namespace).Delete(ctx, podName, metav1.DeleteOptions{})
 }
 
-func (c *Client) isPodRunning(ctx context.Context, podName, namespace string) wait.ConditionFunc {
-	return func() (bool, error) {
+func (c *Client) isPodRunning(podName, namespace string) wait.ConditionWithContextFunc {
+	return func(ctx context.Context) (bool, error) {
 		pod, err := c.k8s.CoreV1().Pods(namespace).Get(ctx, podName, metav1.GetOptions{})
 		if err != nil {
 			return false, err
@@ -73,7 +73,7 @@ func (c *Client) isPodRunning(ctx context.Context, podName, namespace string) wa
 }
 
 func (c *Client) WaitForPod(ctx context.Context, podName, namespace string) error {
-	return wait.PollImmediate(time.Second, 5*time.Minute, c.isPodRunning(ctx, podName, namespace))
+	return wait.PollUntilContextTimeout(ctx, time.Second, 5*time.Minute, true, c.isPodRunning(podName, namespace))
 }
 
 func (c *Client) CreateStandalonePod(ctx context.Context, podName string) (*v1.Pod, error) {

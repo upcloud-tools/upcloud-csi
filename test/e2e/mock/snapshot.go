@@ -54,7 +54,7 @@ func (c *Client) CreateVolumeSnapshot(ctx context.Context, name, namespace, snap
 	obj.SetNamespace(namespace)
 	obj.SetLabels(map[string]string{"csi-test": c.testRunID})
 
-	source := map[string]interface{}{
+	source := map[string]any{
 		"persistentVolumeClaimName": pvcName,
 	}
 	if err := unstructured.SetNestedMap(obj.Object, source, "spec", "source"); err != nil {
@@ -68,7 +68,7 @@ func (c *Client) CreateVolumeSnapshot(ctx context.Context, name, namespace, snap
 }
 
 func (c *Client) WaitForVolumeSnapshotReady(ctx context.Context, name, namespace string) error {
-	return wait.PollImmediate(2*time.Second, 3*time.Minute, func() (bool, error) {
+	return wait.PollUntilContextTimeout(ctx, 2*time.Second, 3*time.Minute, true, func(ctx context.Context) (bool, error) {
 		vs, err := c.dynamic.Resource(snapshotGVR).Namespace(namespace).Get(ctx, name, metav1.GetOptions{})
 		if err != nil {
 			if errors.IsNotFound(err) {
@@ -89,7 +89,7 @@ func (c *Client) WaitForVolumeSnapshotReady(ctx context.Context, name, namespace
 	})
 }
 
-func (c *Client) GetVolumeSnapshotStatus(ctx context.Context, name, namespace string) (map[string]interface{}, error) {
+func (c *Client) GetVolumeSnapshotStatus(ctx context.Context, name, namespace string) (map[string]any, error) {
 	vs, err := c.dynamic.Resource(snapshotGVR).Namespace(namespace).Get(ctx, name, metav1.GetOptions{})
 	if err != nil {
 		return nil, err
