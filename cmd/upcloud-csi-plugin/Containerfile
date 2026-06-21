@@ -19,17 +19,16 @@ FROM alpine:3.23
 LABEL org.opencontainers.image.source=https://github.com/upcloud-tools/upcloud-csi \
       org.opencontainers.image.description="UpCloud CSI Driver"
 
-RUN apk add ca-certificates \
+RUN apk add --no-cache \
+    ca-certificates \
     cloud-utils-growpart \
     e2fsprogs \
-    eudev \
-    findmnt \
-    xfsprogs \
-    xfsprogs-extra \
-    blkid \
     e2fsprogs-extra \
+    eudev \
+    parted \
     util-linux \
-    parted
+    xfsprogs \
+    xfsprogs-extra
 
 COPY --from=build /workspace/upcloud-csi-plugin /bin/
 
