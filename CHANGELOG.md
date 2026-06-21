@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.7.0] - 2026-06-21
+
+### Added
+- ci: cosign keyless image signing in release workflow via GitHub OIDC
+
 ## [2.6.1] - 2026-06-21
 
 ### Changed

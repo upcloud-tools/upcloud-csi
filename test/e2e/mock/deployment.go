@@ -39,8 +39,8 @@ func (c *Client) CreateDeployment(ctx context.Context, pvc *v1.PersistentVolumeC
 					NodeSelector: map[string]string{"kubernetes.io/os": "linux"},
 					Containers: []v1.Container{
 						{
-							Name:    "main",
-							Image:   "busybox",
+							Name:    "main",    //nolint:goconst // test pod container name
+							Image:   "busybox", //nolint:goconst // test pod image
 							Command: []string{shellPath},
 							Args:    []string{"-c", command},
 							VolumeMounts: []v1.VolumeMount{

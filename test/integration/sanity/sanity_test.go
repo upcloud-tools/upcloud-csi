@@ -39,7 +39,7 @@ func TestDriverSanity(t *testing.T) {
 	}()
 
 	// wait server to start
-	for i := 0; i < 5; i++ {
+	for i := range 5 {
 		t.Logf("waiting plugin server to create socket %s (%d)", socket, i)
 		if _, err := os.Stat(socket); err == nil {
 			break

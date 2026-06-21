@@ -1,0 +1,127 @@
+suite: network policy
+tests:
+  - it: should not render network policies by default
+    asserts:
+      - hasDocuments:
+          count: 0
+        template: networkpolicy.yaml
+
+  - it: should render all network policies when enabled
+    set:
+      networkPolicy:
+        enabled: true
+    template: networkpolicy.yaml
+    asserts:
+      - hasDocuments:
+          count: 3
+      - documentIndex: 0
+        equal:
+          path: metadata.name
+          value: RELEASE-NAME-upcloud-csi-controller
+      - documentIndex: 1
+        equal:
+          path: metadata.name
+          value: RELEASE-NAME-upcloud-csi-node
+      - documentIndex: 2
+        equal:
+          path: metadata.name
+          value: RELEASE-NAME-upcloud-csi-snapshot-controller
+
+  - it: should render webhook network policy when webhook enabled
+    set:
+      networkPolicy:
+        enabled: true
+      snapshotValidationWebhook:
+        enabled: true
+    template: networkpolicy.yaml
+    documentIndex: 3
+    asserts:
+      - equal:
+          path: metadata.name
+          value: RELEASE-NAME-upcloud-csi-snapshot-validation
+
+  - it: should render controller ingress on health and metrics ports
+    set:
+      networkPolicy:
+        enabled: true
+      metrics:
+        enabled: true
+    template: networkpolicy.yaml
+    documentIndex: 0
+    asserts:
+      - equal:
+          path: spec.ingress[0].ports[0].port
+          value: 13071
+      - equal:
+          path: spec.ingress[0].ports[0].protocol
+          value: TCP
+      - equal:
+          path: spec.ingress[0].ports[1].port
+          value: 8090
+      - equal:
+          path: spec.ingress[0].ports[2].port
+          value: 8080
+      - equal:
+          path: spec.ingress[0].ports[3].port
+          value: 8081
+      - equal:
+          path: spec.ingress[0].ports[4].port
+          value: 8082
+      - equal:
+          path: spec.ingress[0].ports[5].port
+          value: 8083
+
+  - it: should render controller ingress on health port only when metrics disabled
+    set:
+      networkPolicy:
+        enabled: true
+      metrics:
+        enabled: false
+    template: networkpolicy.yaml
+    documentIndex: 0
+    asserts:
+      - equal:
+          path: spec.ingress[0].ports[0].port
+          value: 13071
+      - notExists:
+          path: spec.ingress[0].ports[1]
+
+  - it: should render node ingress and egress rules
+    set:
+      networkPolicy:
+        enabled: true
+    template: networkpolicy.yaml
+    documentIndex: 1
+    asserts:
+      - equal:
+          path: spec.ingress[0].ports[0].port
+          value: 13071
+      - equal:
+          path: spec.ingress[0].ports[0].protocol
+          value: TCP
+      - contains:
+          path: spec.policyTypes
+          content: Egress
+      - equal:
+          path: spec.egress[0].ports[0].port
+          value: 53
+      - equal:
+          path: spec.egress[0].ports[0].protocol
+          value: UDP
+
+  - it: should render snapshot controller egress rules
+    set:
+      networkPolicy:
+        enabled: true
+    template: networkpolicy.yaml
+    documentIndex: 2
+    asserts:
+      - contains:
+          path: spec.policyTypes
+          content: Egress
+      - equal:
+          path: spec.egress[1].ports[0].port
+          value: 443
+      - equal:
+          path: spec.egress[1].ports[1].port
+          value: 6443

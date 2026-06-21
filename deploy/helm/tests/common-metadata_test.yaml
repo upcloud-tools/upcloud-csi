@@ -138,7 +138,7 @@ tests:
 
   - it: should apply serviceAccountAnnotations to node SA
     set:
-      controller:
+      node:
         serviceAccountAnnotations:
           eks.amazonaws.com/role-arn: arn:aws:iam::456:role/node
     template: serviceaccounts.yaml
@@ -146,7 +146,7 @@ tests:
       - equal:
           path: "metadata.annotations['eks.amazonaws.com/role-arn']"
           value: arn:aws:iam::456:role/node
-        documentIndex: 0
+        documentIndex: 1
 
   - it: should not have SA annotations by default
     template: serviceaccounts.yaml

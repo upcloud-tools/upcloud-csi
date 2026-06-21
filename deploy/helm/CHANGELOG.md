@@ -1,10 +1,23 @@
 # Helm chart changelog
 
+## [1.6.0] - 2026-06-21
+
+### Changed
+- App version bumped to `v2.7.0`
+
+### Added
+- `networkPolicy` block with opt-in NetworkPolicy resources for controller, node, snapshot-controller, and webhook
+- E2E test for NetworkPolicy ingress enforcement — verifies blocked ports are unreachable
+- Enhanced `NOTES.txt` with runtime credential secret check, Prometheus metrics notice, and NetworkPolicy notice
+
 ## [1.5.1] - 2026-06-20
 
 ### Changed
 - App version bumped to `v2.6.1`
 - Containerfile optimized — smaller runtime image
+
+### Added
+- `networkPolicy` block with opt-in NetworkPolicy resources for controller, node, snapshot-controller, and webhook
 
 ### Fixed
 - Remove `runAsNonRoot` from controller, snapshot-controller, and webhook `podSecurityContext` defaults — CSI sidecar images run as root and cannot be launched with this constraint

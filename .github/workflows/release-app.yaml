@@ -12,6 +12,10 @@ permissions:
 jobs:
   release-app:
     runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+      packages: write
+      id-token: write
 
     steps:
       - name: Checkout repository
@@ -70,6 +74,18 @@ jobs:
           buildah tag ghcr.io/${{ github.repository }}:${{ github.sha }} ghcr.io/${{ github.repository }}:latest
           buildah push ghcr.io/${{ github.repository }}:${{ github.ref_name }}
           buildah push ghcr.io/${{ github.repository }}:latest
+
+      - name: Setup Cosign
+        uses: sigstore/cosign-installer@6f9f17788090df1f26f669e9d70d6ae9567deba6 # v4.1.2
+
+      - name: Setup ORAS
+        uses: oras-project/setup-oras@38de303aac69abb66f3e6255b7198bff35f323e3 # v2.0.0
+
+      - name: Sign the container image
+        run: |
+          IMAGE="ghcr.io/${{ github.repository }}:${{ github.ref_name }}"
+          DIGEST=$(oras resolve "$IMAGE")
+          cosign sign --yes "ghcr.io/${{ github.repository }}@${DIGEST}"
 
       - name: Get release notes
         run: make release-notes > .release_notes

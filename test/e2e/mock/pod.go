@@ -27,8 +27,8 @@ func (c *Client) CreatePod(ctx context.Context, podName, pvcName string) (*v1.Po
 			RestartPolicy: v1.RestartPolicyNever,
 			Containers: []v1.Container{
 				{
-					Name:    "main",
-					Image:   "busybox",
+					Name:    "main",    //nolint:goconst // test pod container name
+					Image:   "busybox", //nolint:goconst // test pod image
 					Command: []string{shellPath},
 					Args:    []string{"-c", "echo 'hello world' >> ./temp; sleep 1000"},
 					VolumeMounts: []v1.VolumeMount{
@@ -61,8 +61,8 @@ func (c *Client) DeletePod(ctx context.Context, podName, namespace string) error
 	return c.k8s.CoreV1().Pods(namespace).Delete(ctx, podName, metav1.DeleteOptions{})
 }
 
-func (c *Client) isPodRunning(ctx context.Context, podName, namespace string) wait.ConditionFunc {
-	return func() (bool, error) {
+func (c *Client) isPodRunning(podName, namespace string) wait.ConditionWithContextFunc {
+	return func(ctx context.Context) (bool, error) {
 		pod, err := c.k8s.CoreV1().Pods(namespace).Get(ctx, podName, metav1.GetOptions{})
 		if err != nil {
 			return false, err
@@ -73,5 +73,40 @@ func (c *Client) isPodRunning(ctx context.Context, podName, namespace string) wa
 }
 
 func (c *Client) WaitForPod(ctx context.Context, podName, namespace string) error {
-	return wait.PollImmediate(time.Second, 5*time.Minute, c.isPodRunning(ctx, podName, namespace))
+	return wait.PollUntilContextTimeout(ctx, time.Second, 5*time.Minute, true, c.isPodRunning(podName, namespace))
+}
+
+func (c *Client) CreateStandalonePod(ctx context.Context, podName string) (*v1.Pod, error) {
+	req := &v1.Pod{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: podName,
+		},
+		Spec: v1.PodSpec{
+			RestartPolicy: v1.RestartPolicyNever,
+			Containers: []v1.Container{
+				{
+					Name:    "main",
+					Image:   "busybox",
+					Command: []string{shellPath},
+					Args:    []string{"-c", "sleep 3600"},
+				},
+			},
+		},
+	}
+
+	return c.k8s.CoreV1().Pods(c.ns).Create(ctx, req, metav1.CreateOptions{})
+}
+
+func (c *Client) GetPodIP(ctx context.Context, podName, namespace string) (string, error) {
+	pod, err := c.k8s.CoreV1().Pods(namespace).Get(ctx, podName, metav1.GetOptions{})
+	if err != nil {
+		return "", err
+	}
+	return pod.Status.PodIP, nil
+}
+
+func (c *Client) ListPods(ctx context.Context, namespace, labelSelector string) (*v1.PodList, error) {
+	return c.k8s.CoreV1().Pods(namespace).List(ctx, metav1.ListOptions{
+		LabelSelector: labelSelector,
+	})
 }

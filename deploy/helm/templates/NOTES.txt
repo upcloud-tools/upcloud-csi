@@ -5,11 +5,25 @@ UpCloud CSI driver has been installed.
    kubectl --namespace {{ .Release.Namespace }} get pods -l app.kubernetes.io/name={{ include "upcloud-csi.name" . }}
 
 {{- if not .Values.credentials.createSecret }}
-2. Create a secret with your UpCloud credentials (if not already present):
+{{- $secret := lookup "v1" "Secret" .Release.Namespace (include "upcloud-csi.credentialsSecret" .) }}
+{{- if not $secret }}
 
-   kubectl --namespace {{ .Release.Namespace }} create secret generic {{ include "upcloud-csi.credentialsSecret" . }} \
-     --from-literal={{ .Values.credentials.usernameKey }}=YOUR_USERNAME \
-     --from-literal={{ .Values.credentials.passwordKey }}=YOUR_PASSWORD
+  [WARNING] Credential secret "{{ include "upcloud-csi.credentialsSecret" . }}" not found.
+  Create it with:
+
+    kubectl --namespace {{ .Release.Namespace }} create secret generic {{ include "upcloud-csi.credentialsSecret" . }} \
+      --from-literal={{ .Values.credentials.usernameKey }}=YOUR_USERNAME \
+      --from-literal={{ .Values.credentials.passwordKey }}=YOUR_PASSWORD
+
+{{- else }}
+
+2. Credential secret "{{ include "upcloud-csi.credentialsSecret" . }}" found.
+
+{{- end }}
+{{- else }}
+
+2. A credential secret will be created by the chart.
+
 {{- end }}
 
 3. Create a PVC to test the driver:
@@ -42,7 +56,44 @@ UpCloud CSI driver has been installed.
    EOF
 
 {{- if .Values.snapshotValidationWebhook.enabled }}
-5. The snapshot validation webhook is enabled.
+
+5. Snapshot validation webhook is enabled (beta).
+
+{{- /* TODO: uncomment when webhook TLS auto-creation is supported
+{{- $tlsSecret := lookup "v1" "Secret" .Release.Namespace .Values.snapshotValidationWebhook.tlsSecretName }}
+{{- if not $tlsSecret }}
+
+  [WARNING] TLS secret "{{ .Values.snapshotValidationWebhook.tlsSecretName }}" not found.
+  The snapshot validation webhook requires a TLS secret to function.
+  Generate certificates and create the secret:
+
+    kubectl --namespace {{ .Release.Namespace }} create secret generic {{ .Values.snapshotValidationWebhook.tlsSecretName }} \
+      --from-file=cert.pem=/path/to/cert.pem \
+      --from-file=key.pem=/path/to/key.pem
+
+{{- end }}
+*/ -}}
 {{- end }}
 
+{{- if .Values.metrics.enabled }}
+
+Prometheus metrics are available:
+  - Driver:   :8090/metrics (csi_plugin_operations_total, upcloud_api_requests_total, go_*, process_*)
+  - Sidecars: :8080 (provisioner), :8081 (attacher), :8082 (resizer), :8083 (snapshotter)
+  - Service:  {{ include "upcloud-csi.fullname" . }}-metrics (ClusterIP)
+
+To enable Prometheus Operator scraping, set:
+  --set metrics.serviceMonitor.enabled=true
+
+To add alerting rules, set:
+  --set metrics.prometheusRule.enabled=true --set metrics.prometheusRule.rules='[ ... ]'
+
+{{- end }}
+{{- if .Values.networkPolicy.enabled }}
+
+NetworkPolicy is enabled. The controller allows ingress on ports 13071 (health) and 8090 (metrics).
+Other ports are blocked by default. Controller sidecar metrics (8080-8083) are allowed when
+metrics are enabled.
+
+{{- end }}
 Visit https://github.com/upcloud-tools/upcloud-csi for more information.

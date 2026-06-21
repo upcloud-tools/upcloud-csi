@@ -36,7 +36,7 @@ jobs:
           echo "${{ secrets.KUBE_CONFIG }}" | base64 -d > ~/.kube/config
 
       - name: Deploy CSI driver via Helm
-        run: make helm-upgrade HELM_OPTS="--install --set image.repository=${{ env.REGISTRY }}/${{ env.TEST_IMAGE }} --set image.tag=${{ github.sha }}"
+        run: make deploy-test HELM_OPTS="--set image.repository=${{ env.REGISTRY }}/${{ env.TEST_IMAGE }} --set image.tag=${{ github.sha }}"
 
   e2e:
     runs-on: ubuntu-24.04
@@ -44,7 +44,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        test-case: [SNAPSHOT, RESIZE_EXT4, RESIZE_XFS, LIST, CREATEDELETE, PERSISTENCE]
+        test-case: [SNAPSHOT, RESIZE_EXT4, RESIZE_XFS, LIST, CREATEDELETE, PERSISTENCE, NETPOL]
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
 
@@ -59,4 +59,4 @@ jobs:
 
       - name: Run ${{ matrix.test-case }} e2e test
         id: test
-        run: make test-e2e ${{ matrix.test-case }}=y
+        run: make test-e2e-ci ${{ matrix.test-case }}=y

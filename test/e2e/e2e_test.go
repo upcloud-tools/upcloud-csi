@@ -28,4 +28,8 @@ var _ = Describe("", func() {
 		testruns.TestCreateAndRestoreSnapshot()
 		log.Println("Snapshot Passed")
 	})
+	It("NetworkPolicy Enforcement", func() {
+		testruns.TestNetworkPolicyEnforcement()
+		log.Println("NetworkPolicy Passed")
+	})
 })

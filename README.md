@@ -59,6 +59,7 @@ This repository uses the following security and supply-chain measures:
 - **Action pinning** — All GitHub Actions pinned by commit SHA with a human-readable version comment; enforced globally.
 - **Static analysis** — `golangci-lint` with 50+ linters (`gosec`, `staticcheck`, `errcheck`, etc.) runs on every PR.
 - **Container scanning (Trivy)** — `aquasecurity/trivy-action` scans the built image for OS and application CVEs before push to GHCR; scheduled weekly rescan catches newly discovered vulnerabilities. Go module dependencies also scanned on every push/PR.
+- **Container signing (Cosign)** — Release images are signed via keyless `cosign sign` using GitHub OIDC.
 - **Release integrity** — Helm chart validates that `appVersion` matches the git tag and that the container image exists before publishing.
 - **Artifact Hub** — Helm chart metadata published to Artifact Hub for discoverability.
 
@@ -110,6 +111,14 @@ To customize, create a values file and pass it with `--values`:
 helm upgrade --install upcloud-csi oci://ghcr.io/upcloud-tools/charts/upcloud-csi \
   --namespace kube-system --version 1.5.1 --values values.yaml
 ```
+
+Verify container image signature:
+
+  ```shell
+  cosign verify ghcr.io/upcloud-tools/upcloud-csi:[IMAGE_VERSION] \
+    --certificate-oidc-issuer https://token.actions.githubusercontent.com \
+    --certificate-identity-regexp https://github.com/upcloud-tools/upcloud-csi/.github/workflows/release-app.yaml@refs/tags/[IMAGE_VERSION]
+  ```
 
 ## Credits
 

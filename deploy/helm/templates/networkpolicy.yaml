@@ -1,0 +1,154 @@
+{{- if .Values.networkPolicy.enabled }}
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: {{ include "upcloud-csi.fullname" . }}-controller
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "upcloud-csi.labels" . | nindent 4 }}
+spec:
+  podSelector:
+    matchLabels:
+      {{- include "upcloud-csi.selectorLabels" . | nindent 6 }}
+      app: {{ include "upcloud-csi.fullname" . }}-controller
+  policyTypes:
+    - Ingress
+    - Egress
+  ingress:
+    - ports:
+        - port: 13071
+          protocol: TCP
+        {{- if .Values.metrics.enabled }}
+        - port: 8090
+          protocol: TCP
+        - port: 8080
+          protocol: TCP
+        - port: 8081
+          protocol: TCP
+        - port: 8082
+          protocol: TCP
+        - port: 8083
+          protocol: TCP
+        {{- end }}
+  egress:
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: kube-system
+          podSelector:
+            matchLabels:
+              app.kubernetes.io/name: coredns
+      ports:
+        - port: 53
+          protocol: UDP
+        - port: 53
+          protocol: TCP
+    - to:
+        - ipBlock:
+            cidr: 0.0.0.0/0
+      ports:
+        - port: 443
+          protocol: TCP
+        - port: 6443
+          protocol: TCP
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: {{ include "upcloud-csi.fullname" . }}-node
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "upcloud-csi.labels" . | nindent 4 }}
+spec:
+  podSelector:
+    matchLabels:
+      {{- include "upcloud-csi.selectorLabels" . | nindent 6 }}
+      app: {{ include "upcloud-csi.fullname" . }}-node
+  policyTypes:
+    - Ingress
+    - Egress
+  ingress:
+    - ports:
+        - port: 13071
+          protocol: TCP
+        {{- if .Values.metrics.enabled }}
+        - port: 8090
+          protocol: TCP
+        {{- end }}
+  egress:
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: kube-system
+          podSelector:
+            matchLabels:
+              app.kubernetes.io/name: coredns
+      ports:
+        - port: 53
+          protocol: UDP
+        - port: 53
+          protocol: TCP
+    - to:
+        - ipBlock:
+            cidr: 0.0.0.0/0
+      ports:
+        - port: 443
+          protocol: TCP
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: {{ include "upcloud-csi.fullname" . }}-snapshot-controller
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "upcloud-csi.labels" . | nindent 4 }}
+spec:
+  podSelector:
+    matchLabels:
+      {{- include "upcloud-csi.selectorLabels" . | nindent 6 }}
+      app: {{ include "upcloud-csi.fullname" . }}-snapshot-controller
+  policyTypes:
+    - Egress
+  egress:
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: kube-system
+          podSelector:
+            matchLabels:
+              app.kubernetes.io/name: coredns
+      ports:
+        - port: 53
+          protocol: UDP
+        - port: 53
+          protocol: TCP
+    - to:
+        - ipBlock:
+            cidr: 0.0.0.0/0
+      ports:
+        - port: 443
+          protocol: TCP
+        - port: 6443
+          protocol: TCP
+{{- if .Values.snapshotValidationWebhook.enabled }}
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: {{ include "upcloud-csi.fullname" . }}-snapshot-validation
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "upcloud-csi.labels" . | nindent 4 }}
+spec:
+  podSelector:
+    matchLabels:
+      {{- include "upcloud-csi.selectorLabels" . | nindent 6 }}
+      app: {{ include "upcloud-csi.fullname" . }}-snapshot-validation
+  policyTypes:
+    - Ingress
+  ingress:
+    - ports:
+        - port: 443
+          protocol: TCP
+{{- end }}
+{{- end }}

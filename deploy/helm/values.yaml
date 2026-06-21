@@ -275,6 +275,9 @@ snapshotValidationWebhook:  # @schema additionalProperties: false
   # -- Admission webhook timeout in seconds.
   timeoutSeconds: 5  # @schema minimum:1
 
+  # -- Webhook failure policy. Ignore admits if webhook is down, Fail rejects.
+  failurePolicy: Ignore  # @schema enum:["Ignore","Fail"]
+
   replicas: 1  # @schema minimum:0
   # -- Minimum ready seconds for the webhook Deployment.
   minReadySeconds:
@@ -355,6 +358,12 @@ metrics:  # @schema additionalProperties: false
     # -- Prometheus alerting rules.
     rules: []
 
+# -- Network policies for restricting pod communication.
+networkPolicy:
+  # -- Enable NetworkPolicy resources.
+  enabled: false
+
 # -- Extra Kubernetes objects to deploy as part of this release.
-# Supports Go template expressions.
+# Supports Go template expressions. Chart labels are not auto-applied;
+# use {{ include "upcloud-csi.labels" . }} explicitly if needed.
 extraObjects: []

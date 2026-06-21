@@ -46,6 +46,7 @@ func (c *Client) CreatePVCWithSC(ctx context.Context, name, storageClassName str
 
 func (c *Client) CreatePVCFromSnapshot(ctx context.Context, name, snapshotName string) (*v1.PersistentVolumeClaim, error) {
 	apiGroup := snapshotAPIGroup
+	storageClassName := getMaxIOPSStorageClass()
 	pvc := v1.PersistentVolumeClaim{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: name,
@@ -59,7 +60,7 @@ func (c *Client) CreatePVCFromSnapshot(ctx context.Context, name, snapshotName s
 					v1.ResourceStorage: resource.MustParse("10Gi"),
 				},
 			},
-			StorageClassName: stringPTR(getMaxIOPSStorageClass()),
+			StorageClassName: &storageClassName,
 			DataSource: &v1.TypedLocalObjectReference{
 				APIGroup: &apiGroup,
 				Kind:     "VolumeSnapshot",
@@ -69,8 +70,6 @@ func (c *Client) CreatePVCFromSnapshot(ctx context.Context, name, snapshotName s
 	}
 	return c.k8s.CoreV1().PersistentVolumeClaims(c.ns).Create(ctx, &pvc, metav1.CreateOptions{})
 }
-
-func stringPTR(s string) *string { return &s }
 
 func (c *Client) DeletePVC(ctx context.Context, pvcName, namespace string) error {
 	return c.k8s.CoreV1().PersistentVolumeClaims(namespace).Delete(ctx, pvcName, metav1.DeleteOptions{})
@@ -91,8 +90,8 @@ func (c *Client) ListVolumes(ctx context.Context) (*v1.PersistentVolumeList, err
 	return c.k8s.CoreV1().PersistentVolumes().List(ctx, metav1.ListOptions{})
 }
 
-func (c *Client) isPVCRunning(ctx context.Context, pvcName, namespace string) wait.ConditionFunc {
-	return func() (bool, error) {
+func (c *Client) isPVCRunning(pvcName, namespace string) wait.ConditionWithContextFunc {
+	return func(ctx context.Context) (bool, error) {
 		pvc, err := c.k8s.CoreV1().PersistentVolumeClaims(namespace).Get(ctx, pvcName, metav1.GetOptions{})
 		if err != nil {
 			return false, err
@@ -103,15 +102,15 @@ func (c *Client) isPVCRunning(ctx context.Context, pvcName, namespace string) wa
 }
 
 func (c *Client) WaitForPVC(ctx context.Context, pvcName, namespace string) error {
-	return wait.PollImmediate(time.Second, time.Minute, c.isPVCRunning(ctx, pvcName, namespace))
+	return wait.PollUntilContextTimeout(ctx, time.Second, time.Minute, true, c.isPVCRunning(pvcName, namespace))
 }
 
 func (c *Client) WaitForPVCWithTimeout(ctx context.Context, pvcName, namespace string, timeout time.Duration) error {
-	return wait.PollImmediate(2*time.Second, timeout, c.isPVCRunning(ctx, pvcName, namespace))
+	return wait.PollUntilContextTimeout(ctx, 2*time.Second, timeout, true, c.isPVCRunning(pvcName, namespace))
 }
 
 func (c *Client) WaitForPVCCapacity(ctx context.Context, pvcName, namespace string, expectedSize resource.Quantity) error {
-	return wait.PollImmediate(2*time.Second, 5*time.Minute, func() (bool, error) {
+	return wait.PollUntilContextTimeout(ctx, 2*time.Second, 5*time.Minute, true, func(ctx context.Context) (bool, error) {
 		pvc, err := c.k8s.CoreV1().PersistentVolumeClaims(namespace).Get(ctx, pvcName, metav1.GetOptions{})
 		if err != nil {
 			return false, err
@@ -138,9 +137,4 @@ func (c *Client) WaitForPVCCapacity(ctx context.Context, pvcName, namespace stri
 
 func getMaxIOPSStorageClass() string {
 	return "upcloud-block-storage-maxiops-test"
-}
-
-//nolint:unused // Will be used in future additional tests for HDD disks
-func getHDDStorageClass() string {
-	return "upcloud-block-storage-hdd"
 }
