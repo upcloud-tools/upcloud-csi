@@ -22,5 +22,5 @@
 ## Testing
 
 - Run helm unit tests via `make helm-unittest`
-- Run e2e tests locally via `make test-e2e-verbose` with shortcut flags (`NETPOL=y`, `SNAPSHOT=y`, etc.) — never use custom `kubectl` commands when a make target exists
+- Run e2e tests locally via `make test-e2e-local` with shortcut flags (`NETPOL=y`, `SNAPSHOT=y`, etc.) — deploys with netpol enabled, then runs tests. Never use custom `kubectl` commands when a make target exists.
 - **Test cluster**: Kubeconfig at `~/.kube/gh-csi-test-cluster_kubeconfig.yaml` — use `kubectl --kubeconfig ~/.kube/gh-csi-test-cluster_kubeconfig.yaml` or `export KUBECONFIG=~/.kube/gh-csi-test-cluster_kubeconfig.yaml`

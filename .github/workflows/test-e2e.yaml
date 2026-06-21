@@ -36,7 +36,7 @@ jobs:
           echo "${{ secrets.KUBE_CONFIG }}" | base64 -d > ~/.kube/config
 
       - name: Deploy CSI driver via Helm
-        run: make helm-deploy HELM_OPTS="--set image.repository=${{ env.REGISTRY }}/${{ env.TEST_IMAGE }} --set image.tag=${{ github.sha }}"
+        run: make deploy-test HELM_OPTS="--set image.repository=${{ env.REGISTRY }}/${{ env.TEST_IMAGE }} --set image.tag=${{ github.sha }}"
 
   e2e:
     runs-on: ubuntu-24.04
@@ -59,4 +59,4 @@ jobs:
 
       - name: Run ${{ matrix.test-case }} e2e test
         id: test
-        run: make test-e2e ${{ matrix.test-case }}=y
+        run: make test-e2e-ci ${{ matrix.test-case }}=y
