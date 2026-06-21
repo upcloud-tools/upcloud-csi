@@ -47,8 +47,8 @@ type Config struct {
 	Labels          []string
 	FilesystemTypes []string
 
-	PluginServerAddress string
-	HealtServerAddress  string
+	PluginServerAddress  string
+	HealtServerAddress   string
 	MetricsServerAddress string
 
 	Filesystem filesystem.Filesystem
