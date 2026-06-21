@@ -5,6 +5,7 @@
 ### Added
 - `networkPolicy` block with opt-in NetworkPolicy resources for controller, node, snapshot-controller, and webhook
 - E2E test for NetworkPolicy ingress enforcement — verifies blocked ports are unreachable
+- Enhanced `NOTES.txt` with runtime credential secret check, Prometheus metrics notice, and NetworkPolicy notice
 
 ## [1.5.1] - 2026-06-20
 
