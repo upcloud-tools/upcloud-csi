@@ -2,6 +2,9 @@
 
 ## [1.6.0] - 2026-06-21
 
+### Changed
+- App version bumped to `v2.7.0`
+
 ### Added
 - `networkPolicy` block with opt-in NetworkPolicy resources for controller, node, snapshot-controller, and webhook
 - E2E test for NetworkPolicy ingress enforcement — verifies blocked ports are unreachable
