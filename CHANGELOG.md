@@ -6,6 +6,7 @@ All notable changes to this project will be documented in this file.
 
 ### Added
 - ci: cosign keyless image signing in release workflow via GitHub OIDC
+- ci: add CHANGELOG.md to build.yaml paths as a more reliable way to trigger a release
 
 ## [2.6.1] - 2026-06-21
 
