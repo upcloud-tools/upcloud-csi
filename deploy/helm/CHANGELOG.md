@@ -1,5 +1,14 @@
 # Helm chart changelog
 
+## [1.5.1] - 2026-06-20
+
+### Changed
+- App version bumped to `v2.6.1`
+- Containerfile optimized — smaller runtime image
+
+### Fixed
+- Remove `runAsNonRoot` from controller, snapshot-controller, and webhook `podSecurityContext` defaults — CSI sidecar images run as root and cannot be launched with this constraint
+
 ## [1.5.0] - 2026-06-20
 
 ### Changed

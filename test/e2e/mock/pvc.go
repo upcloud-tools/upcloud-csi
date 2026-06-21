@@ -27,7 +27,7 @@ func (c *Client) CreatePVCWithSC(ctx context.Context, name, storageClassName str
 			AccessModes: []v1.PersistentVolumeAccessMode{
 				v1.PersistentVolumeAccessMode("ReadWriteOnce"),
 			},
-			Resources: v1.ResourceRequirements{
+			Resources: v1.VolumeResourceRequirements{
 				Requests: v1.ResourceList{
 					v1.ResourceStorage: resource.MustParse("10Gi"),
 				},
@@ -54,7 +54,7 @@ func (c *Client) CreatePVCFromSnapshot(ctx context.Context, name, snapshotName s
 			AccessModes: []v1.PersistentVolumeAccessMode{
 				v1.PersistentVolumeAccessMode("ReadWriteOnce"),
 			},
-			Resources: v1.ResourceRequirements{
+			Resources: v1.VolumeResourceRequirements{
 				Requests: v1.ResourceList{
 					v1.ResourceStorage: resource.MustParse("10Gi"),
 				},

@@ -4,11 +4,10 @@ tests:
     template: controller-statefulset.yaml
     asserts:
       - equal:
-          path: spec.template.spec.securityContext.runAsNonRoot
-          value: true
-      - equal:
           path: spec.template.spec.securityContext.seccompProfile.type
           value: RuntimeDefault
+      - notExists:
+          path: spec.template.spec.securityContext.runAsNonRoot
 
   - it: should render default container securityContext on all controller containers
     template: controller-statefulset.yaml
@@ -67,11 +66,10 @@ tests:
     template: snapshot-controller-deployment.yaml
     asserts:
       - equal:
-          path: spec.template.spec.securityContext.runAsNonRoot
-          value: true
-      - equal:
           path: spec.template.spec.securityContext.seccompProfile.type
           value: RuntimeDefault
+      - notExists:
+          path: spec.template.spec.securityContext.runAsNonRoot
 
   - it: should render default container securityContext on snapshot controller
     template: snapshot-controller-deployment.yaml
@@ -94,11 +92,10 @@ tests:
     documentIndex: 2
     asserts:
       - equal:
-          path: spec.template.spec.securityContext.runAsNonRoot
-          value: true
-      - equal:
           path: spec.template.spec.securityContext.seccompProfile.type
           value: RuntimeDefault
+      - notExists:
+          path: spec.template.spec.securityContext.runAsNonRoot
 
   - it: should render default container securityContext on webhook
     set:

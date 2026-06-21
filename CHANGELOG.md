@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.6.1] - 2026-06-21
+
+### Changed
+- build: optimize Containerfile — `--no-cache` on apk, remove redundant packages, Go 1.26 dependency consistency
+- docs: update README
+
 ## [2.6.0] - 2026-06-20
 
 ### Added
