@@ -27,8 +27,8 @@ func (c *Client) CreatePod(ctx context.Context, podName, pvcName string) (*v1.Po
 			RestartPolicy: v1.RestartPolicyNever,
 			Containers: []v1.Container{
 				{
-					Name:    "main",
-					Image:   "busybox",
+					Name:    "main",    //nolint:goconst // test pod container name
+					Image:   "busybox", //nolint:goconst // test pod image
 					Command: []string{shellPath},
 					Args:    []string{"-c", "echo 'hello world' >> ./temp; sleep 1000"},
 					VolumeMounts: []v1.VolumeMount{
@@ -105,7 +105,7 @@ func (c *Client) GetPodIP(ctx context.Context, podName, namespace string) (strin
 	return pod.Status.PodIP, nil
 }
 
-func (c *Client) ListPods(ctx context.Context, namespace string, labelSelector string) (*v1.PodList, error) {
+func (c *Client) ListPods(ctx context.Context, namespace, labelSelector string) (*v1.PodList, error) {
 	return c.k8s.CoreV1().Pods(namespace).List(ctx, metav1.ListOptions{
 		LabelSelector: labelSelector,
 	})
