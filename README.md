@@ -1,6 +1,6 @@
 # UpCloud CSI Driver
 ![Build](https://github.com/upcloud-tools/upcloud-csi/actions/workflows/release-app.yaml/badge.svg)
-![Go Lint](https://github.com/upcloud-tools/upcloud-csi/actions/workflows/lint-golint.yaml/badge.svg)
+![Go Lint](https://github.com/upcloud-tools/upcloud-csi/actions/workflows/lint-golang.yaml/badge.svg)
 ![Helm Lint](https://github.com/upcloud-tools/upcloud-csi/actions/workflows/lint-helm.yaml/badge.svg)
 ![Tests](https://github.com/upcloud-tools/upcloud-csi/actions/workflows/test.yaml/badge.svg)
 
