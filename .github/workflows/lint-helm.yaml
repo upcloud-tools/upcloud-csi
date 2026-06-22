@@ -43,7 +43,7 @@ jobs:
 
       - if: steps.filter.outputs.helm == 'true'
         name: Run kubeconform
-        uses: aardbol/k8s-lint@4ac6a6ad40152ad8478533d7e4d4d3c210f68eca # v5.0.0
+        uses: aardbol/k8s-lint@4676a66f5a37b93f2cf75ecbe498d770b9d7d2ce # v5.1.0
         with:
           manifests: deploy/helm/
           lintType: kubeconform
