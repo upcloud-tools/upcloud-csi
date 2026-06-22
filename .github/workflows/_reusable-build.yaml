@@ -13,6 +13,9 @@ on:
         required: true
         type: string
 
+env:
+  REGISTRY: ghcr.io
+
 jobs:
   build:
     runs-on: ubuntu-24.04
@@ -28,7 +31,7 @@ jobs:
       - name: Log in to GHCR
         uses: docker/login-action@650006c6eb7dba73a995cc03b0b2d7f5ca915bee # v4.2.0
         with:
-          registry: ghcr.io
+          registry: ${{ env.REGISTRY }}
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
@@ -48,7 +51,7 @@ jobs:
         with:
           image: ${{ steps.build-image.outputs.image }}
           tags: ${{ inputs.tags }}
-          registry: ghcr.io
+          registry: ${{ env.REGISTRY }}
 
       - name: Build summary
         run: |

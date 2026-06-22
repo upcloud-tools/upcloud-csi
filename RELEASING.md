@@ -1,21 +1,32 @@
 # Releasing
 
-1. Merge all changes to `main`
-2. Update CHANGELOG.md
-   - Rename `## [Unreleased]` to the new version, e.g. `## [2.1.0] - 2026-06-16`
-   - Add a new empty `## [Unreleased]` section above it
-   - Update the version compare links at the bottom of the page
-3. Commit the changelog update
-4. Tag the commit with the version, e.g. `v2.1.0`
-   ```bash
-   git tag v2.1.0
-   ```
-5. Push the tag to GitHub
-   ```bash
-   git push origin v2.1.0
-   ```
-   This triggers two GitHub Actions workflows:
-   - **Release** — creates a draft GitHub Release with changelog as release notes
-   - **Build and push container image** — builds the multistage container image and pushes to GHCR
-6. Verify the [release notes](https://github.com/upcloud-tools/upcloud-csi/releases)
-7. Publish the drafted release
+Both app and Helm chart releases are triggered automatically by pushing to `main`.
+
+### App release
+
+Bumping `appVersion` in `deploy/helm/Chart.yaml` triggers the **Build and Release** workflow:
+
+1. Bump `appVersion` in `deploy/helm/Chart.yaml`
+2. Add the release entry to root `CHANGELOG.md`
+3. Push/merge to `main`
+
+The workflow automatically:
+- Builds the container image (commit SHA tag)
+- Copies it to the version tag and `latest` via `oras copy` (server-side, zero transfer)
+- Signs the image with cosign keyless signing
+- Extracts release notes from `CHANGELOG.md`
+- Creates a **draft** GitHub release
+- Tags the commit and pushes the tag
+
+4. Verify the [release notes](https://github.com/upcloud-tools/upcloud-csi/releases)
+5. Publish the draft
+
+### Helm chart release
+
+Bumping `version` in `deploy/helm/Chart.yaml` triggers the **Release Helm chart** workflow:
+
+1. Update `version` in `deploy/helm/Chart.yaml`
+2. Update `deploy/helm/CHANGELOG.md` and the `artifacthub.io/changes` annotation
+3. Push/merge to `main`
+
+The workflow automatically packages the chart, pushes it to the OCI registry, pushes Artifact Hub metadata, and creates a `helm-v<version>` GitHub release.

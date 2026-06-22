@@ -96,24 +96,5 @@ $ csc -e unix:///tmp/csi.sock controller get-capabilities
 
 ## Releasing
 
-### App release
-
-1. Update `appVersion` in `deploy/helm/Chart.yaml` to the new version.
-   Optionally bump `version` as well.
-2. Add a changelog entry to root `CHANGELOG.md` under the new version header.
-3. Tag and push — CI validates the Chart versions were bumped and matches `appVersion` to the tag.
-   ```shell
-   git tag v2.6.0
-   git push origin v2.6.0
-   ```
-
-### Helm chart release
-
-The chart is released automatically on every push to `main` that changes `deploy/helm/Chart.yaml`.
-No manual tagging is needed.
-
-1. Update `version` in `deploy/helm/Chart.yaml`.
-2. Update `deploy/helm/CHANGELOG.md` and the `artifacthub.io/changes` annotation in `Chart.yaml`.
-3. Merge the PR to `main` — CI packages the chart, pushes it to the OCI registry,
-   pushes Artifact Hub metadata, and creates a `helm-v<version>` GitHub release.
+See [RELEASING.md](RELEASING.md).
 
