@@ -11,16 +11,15 @@ spec:
   {{- if .Values.snapshotController.revisionHistoryLimit }}
   revisionHistoryLimit: {{ .Values.snapshotController.revisionHistoryLimit }}
   {{- end }}
-  {{- with .Values.snapshotController.updateStrategy }}
   strategy:
+    {{- with .Values.snapshotController.updateStrategy }}
     {{- tpl (toYaml .) $ | nindent 4 }}
-  {{- else }}
-  strategy:
+    {{- else }}
     rollingUpdate:
       maxSurge: 0
       maxUnavailable: 1
     type: RollingUpdate
-  {{- end }}
+    {{- end }}
   selector:
     matchLabels:
       {{- include "upcloud-csi.selectorLabels" . | nindent 6 }}
