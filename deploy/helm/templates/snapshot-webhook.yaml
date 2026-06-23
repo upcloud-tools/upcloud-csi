@@ -39,7 +39,7 @@ spec:
     app: {{ include "upcloud-csi.fullname" . }}-snapshot-validation
   ports:
     - port: 443
-      targetPort: 443
+      targetPort: 8443
       protocol: TCP
 
 ---
@@ -119,16 +119,13 @@ spec:
             - "--v={{ .Values.snapshotValidationWebhook.logLevel | default .Values.logLevel }}"
             - "--tls-cert-file=/etc/snapshot-validation-webhook/certs/cert.pem"
             - "--tls-private-key-file=/etc/snapshot-validation-webhook/certs/key.pem"
-            - "--http-endpoint=:8080"
+            - "--port=8443"
           {{- with .Values.snapshotValidationWebhook.securityContext }}
           securityContext:
             {{- toYaml . | nindent 12 }}
           {{- end }}
           ports:
-            - containerPort: 443
-              protocol: TCP
-            - containerPort: 8080
-              name: metrics
+            - containerPort: 8443
               protocol: TCP
           volumeMounts:
             - name: webhook-certs
@@ -142,16 +139,13 @@ spec:
             {{- tpl (toYaml .) $ | nindent 12 }}
           {{- end }}
           livenessProbe:
-            httpGet:
-              path: /metrics
-              port: 8080
+            tcpSocket:
+              port: 8443
             initialDelaySeconds: 15
             periodSeconds: 20
-            timeoutSeconds: 5
           readinessProbe:
-            httpGet:
-              path: /metrics
-              port: 8080
+            tcpSocket:
+              port: 8443
             initialDelaySeconds: 5
             periodSeconds: 10
             timeoutSeconds: 5

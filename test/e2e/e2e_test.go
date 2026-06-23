@@ -32,4 +32,8 @@ var _ = Describe("", func() {
 		testruns.TestNetworkPolicyEnforcement()
 		log.Println("NetworkPolicy Passed")
 	})
+	It("Snapshot Validation Webhook", func() {
+		testruns.TestSnapshotValidationWebhook()
+		log.Println("Webhook Passed")
+	})
 })

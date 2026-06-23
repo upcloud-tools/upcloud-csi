@@ -259,7 +259,7 @@ snapshotValidationWebhook:  # @schema additionalProperties: false
 
   image:
     repository: registry.k8s.io/sig-storage/snapshot-validation-webhook
-    tag: v8.6.0
+    tag: v8.1.1
     pullPolicy: IfNotPresent
   resources: {}
 
@@ -311,6 +311,11 @@ snapshotValidationWebhook:  # @schema additionalProperties: false
   podLabels: {}
   # -- Extra annotations for the snapshot validation webhook pod template.
   podAnnotations: {}
+
+  podDisruptionBudget:  # @schema additionalProperties: false
+    enabled: false
+    maxUnavailable:  # @schema type:[string, integer, null]
+    minAvailable:  # @schema type:[string, integer, null]
 
 # StorageClasses managed by the chart.
 storageClasses:  # @schema additionalProperties: false

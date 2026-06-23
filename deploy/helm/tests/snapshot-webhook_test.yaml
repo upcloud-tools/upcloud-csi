@@ -73,15 +73,19 @@ tests:
           value: 1
         documentIndex: 2
 
-  - it: should have http-endpoint on the webhook container
+  - it: should have correct probes on the webhook container
     set:
       snapshotValidationWebhook:
         enabled: true
     template: snapshot-webhook.yaml
     asserts:
-      - contains:
-          path: spec.template.spec.containers[0].args
-          content: --http-endpoint=:8080
+      - equal:
+          path: spec.template.spec.containers[0].livenessProbe.tcpSocket.port
+          value: 8443
+        documentIndex: 2
+      - equal:
+          path: spec.template.spec.containers[0].readinessProbe.tcpSocket.port
+          value: 8443
         documentIndex: 2
 
   - it: should have webhook certs volume mounted

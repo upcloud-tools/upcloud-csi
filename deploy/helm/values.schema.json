@@ -777,6 +777,31 @@
           "additionalProperties": {
             "type": "string"
           }
+        },
+        "podDisruptionBudget": {
+          "type": "object",
+          "properties": {
+            "enabled": {
+              "type": "boolean",
+              "default": false
+            },
+            "maxUnavailable": {
+              "oneOf": [
+                { "type": "null" },
+                { "type": "string" },
+                { "type": "integer" }
+              ],
+              "default": null
+            },
+            "minAvailable": {
+              "oneOf": [
+                { "type": "null" },
+                { "type": "string" },
+                { "type": "integer" }
+              ],
+              "default": null
+            }
+          }
         }
       }
     },

@@ -48,6 +48,28 @@ tests:
       - isNull:
           path: spec.maxUnavailable
 
+  - it: should render webhook PDB when enabled
+    set:
+      snapshotValidationWebhook:
+        enabled: true
+        podDisruptionBudget:
+          enabled: true
+          maxUnavailable: 1
+    template: pdb.yaml
+    asserts:
+      - hasDocuments:
+          count: 1
+      - isKind:
+          of: PodDisruptionBudget
+      - equal:
+          path: metadata.name
+          value: RELEASE-NAME-upcloud-csi-snapshot-validation
+      - equal:
+          path: spec.maxUnavailable
+          value: 1
+      - isNull:
+          path: spec.minAvailable
+
   - it: should render both PDBs when both enabled
     set:
       controller:

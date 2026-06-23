@@ -40,3 +40,25 @@ spec:
       {{- include "upcloud-csi.selectorLabels" . | nindent 6 }}
       app: {{ include "upcloud-csi.fullname" . }}-snapshot-controller
 {{- end }}
+
+{{- if .Values.snapshotValidationWebhook.podDisruptionBudget.enabled }}
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: {{ include "upcloud-csi.fullname" . }}-snapshot-validation
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "upcloud-csi.labels" . | nindent 4 }}
+spec:
+  {{- with .Values.snapshotValidationWebhook.podDisruptionBudget.maxUnavailable }}
+  maxUnavailable: {{ . }}
+  {{- end }}
+  {{- with .Values.snapshotValidationWebhook.podDisruptionBudget.minAvailable }}
+  minAvailable: {{ . }}
+  {{- end }}
+  selector:
+    matchLabels:
+      {{- include "upcloud-csi.selectorLabels" . | nindent 6 }}
+      app: {{ include "upcloud-csi.fullname" . }}-snapshot-validation
+{{- end }}

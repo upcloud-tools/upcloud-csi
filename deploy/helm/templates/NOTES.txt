@@ -64,7 +64,6 @@ UpCloud CSI driver has been installed.
 
 5. Snapshot validation webhook is enabled (beta).
 
-{{- /* TODO: uncomment when webhook TLS auto-creation is supported
 {{- $tlsSecret := lookup "v1" "Secret" .Release.Namespace .Values.snapshotValidationWebhook.tlsSecretName }}
 {{- if not $tlsSecret }}
 
@@ -77,7 +76,6 @@ UpCloud CSI driver has been installed.
       --from-file=key.pem=/path/to/key.pem
 
 {{- end }}
-*/ -}}
 {{- end }}
 
 {{- if .Values.metrics.enabled }}

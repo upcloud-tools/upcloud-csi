@@ -18,6 +18,14 @@ type Client struct {
 	testRunID string
 }
 
+func (c *Client) K8s() kubernetes.Interface {
+	return c.k8s
+}
+
+func (c *Client) Dynamic() dynamic.Interface {
+	return c.dynamic
+}
+
 func (c *Client) CreatePod(ctx context.Context, podName, pvcName string) (*v1.Pod, error) {
 	req := &v1.Pod{
 		ObjectMeta: metav1.ObjectMeta{
