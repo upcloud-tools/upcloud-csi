@@ -5,6 +5,10 @@ metadata:
   name: {{ include "upcloud-csi.fullname" . }}-snapshot-validation-webhook
   labels:
     {{- include "upcloud-csi.labels" . | nindent 4 }}
+  {{- if .Values.snapshotValidationWebhook.certManager.enabled }}
+  annotations:
+    cert-manager.io/inject-ca-from: {{ .Release.Namespace }}/{{ include "upcloud-csi.fullname" . }}-snapshot-validation
+  {{- end }}
 webhooks:
   - name: validation-webhook.snapshot.storage.k8s.io
     clientConfig:
@@ -12,8 +16,10 @@ webhooks:
         name: {{ include "upcloud-csi.fullname" . }}-snapshot-validation-service
         namespace: {{ .Release.Namespace }}
         path: /volumesnapshot
+      {{- if not .Values.snapshotValidationWebhook.certManager.enabled }}
       {{- if .Values.snapshotValidationWebhook.caBundle }}
       caBundle: {{ .Values.snapshotValidationWebhook.caBundle }}
+      {{- end }}
       {{- end }}
     rules:
       - apiGroups: ["snapshot.storage.k8s.io"]
@@ -160,4 +166,25 @@ spec:
         {{- with .Values.snapshotValidationWebhook.additionalVolumes }}
         {{- tpl (toYaml .) $ | nindent 8 }}
         {{- end }}
+
+{{- if .Values.snapshotValidationWebhook.certManager.enabled }}
+{{- if not .Values.snapshotValidationWebhook.certManager.issuerName }}
+{{- fail "certManager.issuerName is required when certManager.enabled is true" }}
+{{- end }}
+---
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: {{ include "upcloud-csi.fullname" . }}-snapshot-validation
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "upcloud-csi.labels" . | nindent 4 }}
+spec:
+  secretName: {{ .Values.snapshotValidationWebhook.tlsSecretName }}
+  dnsNames:
+    - {{ include "upcloud-csi.fullname" . }}-snapshot-validation-service.{{ .Release.Namespace }}.svc
+  issuerRef:
+    name: {{ .Values.snapshotValidationWebhook.certManager.issuerName }}
+    kind: {{ .Values.snapshotValidationWebhook.certManager.issuerKind }}
+{{- end }}
 {{- end }}

@@ -270,6 +270,15 @@ snapshotValidationWebhook:  # @schema additionalProperties: false
   # Useful for validating webhook TLS when using a custom CA, like with a self-signed certificate.
   caBundle: ""
 
+  # Use cert-manager to auto-provision TLS certificates instead of creating them manually.
+  # Requires cert-manager (https://cert-manager.io) to be installed in the cluster.
+  certManager:  # @schema additionalProperties: false
+    enabled: false
+    # -- Name of an existing Issuer or ClusterIssuer. Required when certManager is enabled.
+    issuerName: ""  # @schema type:string
+    # -- Kind of the issuer. Must be Issuer or ClusterIssuer.
+    issuerKind: Issuer  # @schema enum:["Issuer","ClusterIssuer"]
+
   # -- Admission webhook timeout in seconds.
   timeoutSeconds: 5  # @schema minimum:1
 

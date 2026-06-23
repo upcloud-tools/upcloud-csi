@@ -3,11 +3,14 @@
 ## [1.8.0] - 2026-06-23
 
 ### Added
+- `snapshotValidationWebhook.certManager` — auto-provision TLS via cert-manager with self-signed Issuer or existing issuer
 - E2E test for snapshot validation webhook — verifies admission control accepts valid VolumeSnapshotClasses and rejects invalid ones
 - `snapshotValidationWebhook.podDisruptionBudget` with PDB template for HA deployments
 
 ### Changed
-- `NOTES.txt` now shows a warning when webhook TLS secret is missing
+- `snapshot-webhook.yaml`: switched to port 8443 (unprivileged), tcpSocket probes, removed `--http-endpoint` flag
+- `NOTES.txt` now shows a warning when webhook TLS secret is missing and suggests cert-manager
+- Webhook image updated to `v8.1.1` (latest available snapshot-validation-webhook tag)
 - `snapshot-controller-deployment.yaml`: fixed duplicate `strategy` key in template source
 
 ## [1.7.0] - 2026-06-22

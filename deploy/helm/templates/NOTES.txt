@@ -64,6 +64,12 @@ UpCloud CSI driver has been installed.
 
 5. Snapshot validation webhook is enabled (beta).
 
+{{- if .Values.snapshotValidationWebhook.certManager.enabled }}
+
+  TLS is managed by cert-manager. The certificate is auto-provisioned and rotated.
+
+{{- else }}
+
 {{- $tlsSecret := lookup "v1" "Secret" .Release.Namespace .Values.snapshotValidationWebhook.tlsSecretName }}
 {{- if not $tlsSecret }}
 
@@ -75,6 +81,10 @@ UpCloud CSI driver has been installed.
       --from-file=cert.pem=/path/to/cert.pem \
       --from-file=key.pem=/path/to/key.pem
 
+  Or enable cert-manager for automatic TLS provisioning:
+    --set snapshotValidationWebhook.certManager.enabled=true
+
+{{- end }}
 {{- end }}
 {{- end }}
 

@@ -25,4 +25,5 @@ annotations:
     - name: Support
       url: https://github.com/upcloud-tools/upcloud-csi/issues
   artifacthub.io/changes: |
+    - "Auto-provision TLS certificates via cert-manager for snapshot validation webhook"
     - "Add snapshot validation webhook PDB and e2e test"

@@ -110,3 +110,66 @@ tests:
           path: webhooks[0].clientConfig.caBundle
           value: Y3VzdG9tLWNh
         documentIndex: 0
+
+  - it: certManager should fail when enabled but no issuerName
+    set:
+      snapshotValidationWebhook:
+        enabled: true
+        certManager:
+          enabled: true
+          issuerName: ""
+    template: snapshot-webhook.yaml
+    asserts:
+      - failedTemplate:
+          errorMessage: certManager.issuerName is required when certManager.enabled is true
+
+  - it: certManager should render Certificate when enabled with issuerName
+    set:
+      snapshotValidationWebhook:
+        enabled: true
+        certManager:
+          enabled: true
+          issuerName: my-issuer
+    template: snapshot-webhook.yaml
+    asserts:
+      - hasDocuments:
+          count: 4
+      - isKind:
+          of: Certificate
+        documentIndex: 3
+      - equal:
+          path: spec.secretName
+          value: snapshot-validation-secret
+        documentIndex: 3
+      - equal:
+          path: spec.issuerRef.name
+          value: my-issuer
+        documentIndex: 3
+
+  - it: certManager should set annotation on webhook config
+    set:
+      snapshotValidationWebhook:
+        enabled: true
+        certManager:
+          enabled: true
+          issuerName: my-issuer
+    template: snapshot-webhook.yaml
+    asserts:
+      - equal:
+          path: metadata.annotations["cert-manager.io/inject-ca-from"]
+          value: NAMESPACE/RELEASE-NAME-upcloud-csi-snapshot-validation
+        documentIndex: 0
+
+  - it: certManager should skip caBundle in webhook config
+    set:
+      snapshotValidationWebhook:
+        enabled: true
+        certManager:
+          enabled: true
+          issuerName: my-issuer
+        caBundle: Y3VzdG9tLWNh
+    template: snapshot-webhook.yaml
+    asserts:
+      - isNull:
+          path: webhooks[0].clientConfig.caBundle
+        documentIndex: 0
