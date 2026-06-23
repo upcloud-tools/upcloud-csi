@@ -34,19 +34,11 @@
           "type": "string",
           "default": "upcloud"
         },
-        "usernameKey": {
+        "tokenKey": {
           "type": "string",
-          "default": "username"
+          "default": "token"
         },
-        "passwordKey": {
-          "type": "string",
-          "default": "password"
-        },
-        "username": {
-          "type": "string",
-          "default": ""
-        },
-        "password": {
+        "token": {
           "type": "string",
           "default": ""
         }

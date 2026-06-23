@@ -16,14 +16,10 @@ credentials:  # @schema additionalProperties: false
   createSecret: false
   # -- Name of the secret (created or referenced).
   secretName: upcloud
-  # -- Key within the secret that holds the UpCloud username.
-  usernameKey: username
-  # -- Key within the secret that holds the UpCloud password.
-  passwordKey: password
-  # -- UpCloud username (required when createSecret is true).
-  username: ""
-  # -- UpCloud password (required when createSecret is true).
-  password: ""
+  # -- Key within the secret that holds the UpCloud API token.
+  tokenKey: token  # @schema type:string
+  # -- UpCloud API token (required when createSecret is true).
+  token: ""
 
 csiDriver:  # @schema additionalProperties: false
   # -- Name of the CSIDriver resource.
@@ -41,6 +37,8 @@ image:  # @schema additionalProperties: false
 
 # Controller StatefulSet settings.
 controller:  # @schema additionalProperties: false
+  # -- UpCloud zone (e.g. de-fra1). Auto-detected from node hostname if empty.
+  zone: ""  # @schema type:string
   # -- Log verbosity (inherits global logLevel when null).
   logLevel:  # @schema type:[integer, null]; minimum:0; maximum:10
 

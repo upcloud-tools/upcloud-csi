@@ -9,11 +9,16 @@ UpCloud CSI driver has been installed.
 {{- if not $secret }}
 
   [WARNING] Credential secret "{{ include "upcloud-csi.credentialsSecret" . }}" not found.
-  Create it with:
+  Create it with a token (preferred) or username and password:
 
     kubectl --namespace {{ .Release.Namespace }} create secret generic {{ include "upcloud-csi.credentialsSecret" . }} \
-      --from-literal={{ .Values.credentials.usernameKey }}=YOUR_USERNAME \
-      --from-literal={{ .Values.credentials.passwordKey }}=YOUR_PASSWORD
+      --from-literal={{ .Values.credentials.tokenKey }}=YOUR_TOKEN
+
+  Or with an API username and password:
+
+    kubectl --namespace {{ .Release.Namespace }} create secret generic {{ include "upcloud-csi.credentialsSecret" . }} \
+      --from-literal=username=YOUR_USERNAME \
+      --from-literal=password=YOUR_PASSWORD
 
 {{- else }}
 
@@ -22,7 +27,7 @@ UpCloud CSI driver has been installed.
 {{- end }}
 {{- else }}
 
-2. A credential secret will be created by the chart.
+2. A credential secret with the API token will be created by the chart.
 
 {{- end }}
 

@@ -1,5 +1,20 @@
 # Helm chart changelog
 
+## [1.7.0] - 2026-06-22
+
+### Added
+- `UPCLOUD_TOKEN` env var in controller and node pods — reads the token key from the credentials secret for Bearer token auth
+- `controller.zone` value — passes `--zone` to the driver for explicit zone configuration
+- `credentials.token` value — used when `createSecret=true` to create a secret with the API token
+
+### Changed
+- `UPCLOUD_USERNAME` and `UPCLOUD_PASSWORD` env vars use `optional: true`
+- `credentials.tokenKey` value configures which secret key holds the UpCloud API token
+- `NOTES.txt` now suggests token-based secret as the preferred option
+
+### Removed
+- `credentials.username` and `credentials.password` removed. When `createSecret=true`, only a token secret creation is supported. The chart will still use username + password from an existing secret by default.
+
 ## [1.6.0] - 2026-06-21
 
 ### Changed

@@ -214,6 +214,9 @@ spec:
             - "--endpoint=$(CSI_ENDPOINT)"
             - "--nodehost=$(NODE_ID)"
             - "--mode=monolith"
+            {{- with .Values.controller.zone }}
+            - "--zone={{ . }}"
+            {{- end }}
             - "--address=tcp://0.0.0.0:13071"
             {{- if .Values.metrics.enabled }}
             - "--metrics-address=tcp://0.0.0.0:8090"
@@ -225,12 +228,20 @@ spec:
               valueFrom:
                 secretKeyRef:
                   name: {{ include "upcloud-csi.credentialsSecret" . }}
-                  key: {{ .Values.credentials.usernameKey }}
+                  key: username
+                  optional: true
             - name: UPCLOUD_PASSWORD
               valueFrom:
                 secretKeyRef:
                   name: {{ include "upcloud-csi.credentialsSecret" . }}
-                  key: {{ .Values.credentials.passwordKey }}
+                  key: password
+                  optional: true
+            - name: UPCLOUD_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "upcloud-csi.credentialsSecret" . }}
+                  key: {{ .Values.credentials.tokenKey }}
+                  optional: true
             - name: NODE_ID
               valueFrom:
                 fieldRef:
