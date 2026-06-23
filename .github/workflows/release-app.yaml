@@ -15,23 +15,13 @@ env:
   REGISTRY: ghcr.io
 
 jobs:
-  build-image:
-    uses: ./.github/workflows/_reusable-build.yaml
-    with:
-      tags: ${{ github.sha }}
-    secrets: inherit
-
-  release:
-    needs: build-image
+  detect:
     runs-on: ubuntu-24.04
-    permissions:
-      contents: write
-      packages: write
-      id-token: write
-
+    outputs:
+      skip: ${{ steps.detect.outputs.skip }}
+      app_version: ${{ steps.detect.outputs.app_version }}
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         with:
           fetch-depth: 0
 
@@ -61,12 +51,32 @@ jobs:
 
           echo "skip=false" >> "$GITHUB_OUTPUT"
 
+  build-image:
+    needs: detect
+    if: ${{ needs.detect.outputs.skip == 'false' }}
+    uses: ./.github/workflows/_reusable-build.yaml
+    with:
+      tags: ${{ github.sha }}
+    secrets: inherit
+
+  release:
+    needs: [detect, build-image]
+    if: ${{ needs.detect.outputs.skip == 'false' }}
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+      packages: write
+      id-token: write
+
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          fetch-depth: 0
+
       - name: Setup ORAS
-        if: steps.detect.outputs.skip == 'false'
         uses: oras-project/setup-oras@38de303aac69abb66f3e6255b7198bff35f323e3 # v2.0.0
 
       - name: Log in to GHCR
-        if: steps.detect.outputs.skip == 'false'
         uses: docker/login-action@650006c6eb7dba73a995cc03b0b2d7f5ca915bee # v4.2.0
         with:
           registry: ${{ env.REGISTRY }}
@@ -74,43 +84,37 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Tag release
-        if: steps.detect.outputs.skip == 'false'
         run: |
           SRC="${{ env.REGISTRY }}/${{ github.repository }}:${{ github.sha }}"
-          DST="${{ env.REGISTRY }}/${{ github.repository }}:${{ steps.detect.outputs.app_version }}"
+          DST="${{ env.REGISTRY }}/${{ github.repository }}:${{ needs.detect.outputs.app_version }}"
           LATEST="${{ env.REGISTRY }}/${{ github.repository }}:latest"
           oras copy "$SRC" "$DST"
           oras copy "$SRC" "$LATEST"
 
       - name: Setup Cosign
-        if: steps.detect.outputs.skip == 'false'
         uses: sigstore/cosign-installer@6f9f17788090df1f26f669e9d70d6ae9567deba6 # v4.1.2
 
       - name: Sign the container image
-        if: steps.detect.outputs.skip == 'false'
         run: |
-          IMAGE="${{ env.REGISTRY }}/${{ github.repository }}:${{ steps.detect.outputs.app_version }}"
+          IMAGE="${{ env.REGISTRY }}/${{ github.repository }}:${{ needs.detect.outputs.app_version }}"
           DIGEST=$(oras resolve "$IMAGE")
           cosign sign --yes "${{ env.REGISTRY }}/${{ github.repository }}@${DIGEST}"
 
       - name: Get release notes
-        if: steps.detect.outputs.skip == 'false'
-        run: make release-notes TAG="${{ steps.detect.outputs.app_version }}" > .release_notes
+        run: make release-notes TAG="${{ needs.detect.outputs.app_version }}" > .release_notes
 
       - name: Create release
-        if: steps.detect.outputs.skip == 'false'
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          gh release create "${{ steps.detect.outputs.app_version }}" \
+          gh release create "${{ needs.detect.outputs.app_version }}" \
             --notes-file .release_notes \
-            --title "${{ steps.detect.outputs.app_version }}" \
+            --title "${{ needs.detect.outputs.app_version }}" \
             --draft
 
       - name: Create git tag
-        if: steps.detect.outputs.skip == 'false'
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git tag "${{ steps.detect.outputs.app_version }}"
-          git push origin "${{ steps.detect.outputs.app_version }}"
+          git tag "${{ needs.detect.outputs.app_version }}"
+          git push origin "${{ needs.detect.outputs.app_version }}"
