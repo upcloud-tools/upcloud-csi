@@ -35,6 +35,11 @@ func NewClient(namespace string) (*Client, error) {
 		return nil, err
 	}
 
+	// E2e tests run concurrently (9 parallel matrix jobs). The default client-go rate limiter (10 QPS / 20 burst) is easily exhausted.
+	// Increase limits to match the concurrency.
+	config.QPS = 50
+	config.Burst = 100
+
 	k8s, err := kubernetes.NewForConfig(config)
 	if err != nil {
 		return nil, err
