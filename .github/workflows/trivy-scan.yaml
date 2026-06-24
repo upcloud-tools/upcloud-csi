@@ -9,6 +9,7 @@ on:
       - go.sum
       - cmd/upcloud-csi-plugin/Containerfile
       - '.github/workflows/trivy-scan.yaml'
+      - '.trivyignore.yaml'
   pull_request:
   schedule:
     - cron: '5 5 * * 2'
@@ -58,6 +59,7 @@ jobs:
           output: 'trivy-fs-results.sarif'
           severity: 'CRITICAL,HIGH'
           ignore-unfixed: true
+          trivyignores: '.trivyignore.yaml'
 
       - if: steps.filter.outputs.source == 'true' || github.event_name != 'pull_request'
         name: Upload filesystem scan results to GitHub Security tab
