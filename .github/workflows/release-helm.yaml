@@ -17,15 +17,16 @@ env:
   CHART_OCI_REPO: ${{ github.repository_owner }}/charts
 
 jobs:
-  release-helm:
+  detect:
     runs-on: ubuntu-24.04
-
+    outputs:
+      skip: ${{ steps.check.outputs.skip_release }}
+      chart_version: ${{ steps.check.outputs.chart_version }}
+      app_version_bumped: ${{ steps.check.outputs.app_version_bumped }}
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
-
-      - name: Setup ORAS
-        uses: oras-project/setup-oras@38de303aac69abb66f3e6255b7198bff35f323e3 # v2.0.0
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          fetch-depth: 0
 
       - name: Check version bump
         id: check
@@ -41,15 +42,35 @@ jobs:
             exit 0
           fi
 
-          is_prerelease="false"
-          if [[ "$chart_version" == *-* ]]; then
-            is_prerelease="true"
-          fi
-          echo "is_prerelease=$is_prerelease" >> "$GITHUB_OUTPUT"
           echo "skip_release=false" >> "$GITHUB_OUTPUT"
 
+          prev_app=$(git show HEAD~1:deploy/helm/Chart.yaml | yq .appVersion)
+          curr_app=$(yq .appVersion deploy/helm/Chart.yaml)
+          if [ "$prev_app" != "$curr_app" ]; then
+            echo "app_version_bumped=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "app_version_bumped=false" >> "$GITHUB_OUTPUT"
+          fi
+
+  # The E2E tests are run when the chart version is bumped, but will be skipped if the appVersion
+  # has been bumped as well. The release-app action will then run the E2E tests instead.
+  e2e:
+    needs: detect
+    if: ${{ needs.detect.outputs.skip == 'false' && needs.detect.outputs.app_version_bumped == 'false' }}
+    uses: ./.github/workflows/_reusable-e2e.yaml
+    secrets: inherit
+
+  release-helm:
+    needs: [detect, e2e]
+    if: ${{ needs.detect.outputs.skip == 'false' }}
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+
+      - name: Setup ORAS
+        uses: oras-project/setup-oras@38de303aac69abb66f3e6255b7198bff35f323e3 # v2.0.0
+
       - name: Log in to GHCR
-        if: steps.check.outputs.skip_release == 'false'
         uses: docker/login-action@650006c6eb7dba73a995cc03b0b2d7f5ca915bee # v4.2.0
         with:
           registry: ${{ env.REGISTRY }}
@@ -57,22 +78,18 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Get release notes
-        if: steps.check.outputs.skip_release == 'false'
         run: make helm-release-notes > .release_notes
 
       - name: Package chart
-        if: steps.check.outputs.skip_release == 'false'
         run: |
           mkdir -p dist
           helm package ${{ env.CHART_DIR }} --destination dist
 
       - name: Push chart to GHCR OCI
-        if: steps.check.outputs.skip_release == 'false'
         run: |
           helm push dist/*.tgz oci://${{ env.REGISTRY }}/${{ env.CHART_OCI_REPO }}
 
       - name: Push Artifact Hub metadata
-        if: steps.check.outputs.skip_release == 'false'
         run: |
           chart_name=$(yq .name "$CHART_DIR/Chart.yaml")
           oras push ${{ env.REGISTRY }}/${{ env.CHART_OCI_REPO }}/${chart_name}:artifacthub.io \
@@ -80,12 +97,15 @@ jobs:
             artifacthub-repo.yml:application/vnd.cncf.artifacthub.repository-metadata.layer.v1.yaml
 
       - name: Create release
-        if: steps.check.outputs.skip_release == 'false'
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          gh release create "helm-v${{ steps.check.outputs.chart_version }}" \
+          is_prerelease="false"
+          if [[ "${{ needs.detect.outputs.chart_version }}" == *-* ]]; then
+            is_prerelease="true"
+          fi
+          gh release create "helm-v${{ needs.detect.outputs.chart_version }}" \
             dist/*.tgz \
             --notes-file .release_notes \
-            --title "helm-v${{ steps.check.outputs.chart_version }}" \
-            ${{ steps.check.outputs.is_prerelease == 'true' && '--prerelease' || '' }}
+            --title "helm-v${{ needs.detect.outputs.chart_version }}" \
+            $([[ "$is_prerelease" == "true" ]] && echo "--prerelease")

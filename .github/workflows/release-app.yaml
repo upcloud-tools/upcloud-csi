@@ -59,8 +59,16 @@ jobs:
       tags: ${{ github.sha }}
     secrets: inherit
 
+  e2e:
+    needs: build-image
+    if: ${{ needs.detect.outputs.skip == 'false' }}
+    uses: ./.github/workflows/_reusable-e2e.yaml
+    with:
+      image_tag: ${{ github.sha }}
+    secrets: inherit
+
   release:
-    needs: [detect, build-image]
+    needs: [detect, build-image, e2e]
     if: ${{ needs.detect.outputs.skip == 'false' }}
     runs-on: ubuntu-24.04
     permissions:
