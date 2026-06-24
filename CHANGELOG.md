@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.8.1] - 2026-06-24
+
+### Fixed
+- ci(e2e): increase client-go rate limiter to 50 QPS / 100 burst — concurrent matrix jobs exhausted the default (10/20)
+- ci(release): use `gh release view` instead of `git HEAD~1` to support multi-commit pushes
+- test: remove hardcoded `tokensecret` and `de-fra1` from webhook test — broke in CI where defaults differ
+- ci(k8s-lint): add `--ignore-missing-schemas` flag to kubeconform for CRD resources
+
 ## [2.8.0] - 2026-06-24
 
 ### Fixed
