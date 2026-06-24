@@ -40,6 +40,7 @@ jobs:
               - go.sum
               - 'cmd/upcloud-csi-plugin/Containerfile'
               - '.github/workflows/trivy-scan.yaml'
+              - '.trivyignore.yaml'
 
       - if: steps.filter.outputs.source == 'true' || github.event_name != 'pull_request'
         name: Log in to GHCR
