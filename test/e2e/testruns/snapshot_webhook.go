@@ -28,7 +28,7 @@ import (
 
 const webhookTLSSecretName = "snapshot-validation-secret"
 
-var snapshotClassGVR = schema.GroupVersionResource{
+var snapshotClassGVR = schema.GroupVersionResource{ //nolint:gochecknoglobals // immutable schema constant
 	Group:    "snapshot.storage.k8s.io",
 	Version:  "v1",
 	Resource: "volumesnapshotclasses",
@@ -83,7 +83,7 @@ func TestSnapshotValidationWebhook() {
 	_, err = client.Dynamic().Resource(snapshotClassGVR).Create(ctx, invalidClass, metav1.CreateOptions{})
 	gomega.Expect(err).To(gomega.HaveOccurred())
 
-	client.Dynamic().Resource(snapshotClassGVR).Delete(ctx, validClassName, metav1.DeleteOptions{})
+	_ = client.Dynamic().Resource(snapshotClassGVR).Delete(ctx, validClassName, metav1.DeleteOptions{})
 
 	disableWebhook()
 }
@@ -127,16 +127,16 @@ func createTLSSecret(ctx context.Context, client *mock.Client, certPEM, keyPEM s
 			"key.pem":  keyPEM,
 		},
 	}
-	client.K8s().CoreV1().Secrets("kube-system").Delete(ctx, webhookTLSSecretName, metav1.DeleteOptions{})
+	_ = client.K8s().CoreV1().Secrets("kube-system").Delete(ctx, webhookTLSSecretName, metav1.DeleteOptions{})
 	_, err := client.K8s().CoreV1().Secrets("kube-system").Create(ctx, secret, metav1.CreateOptions{})
 	gomega.Expect(err).NotTo(gomega.HaveOccurred())
 }
 
 func enableWebhook(caBundle string) {
-	os.Chdir("../..")
-	defer os.Chdir("test/e2e")
+	_ = os.Chdir("../..")
+	defer func() { _ = os.Chdir("test/e2e") }()
 
-	cmd := exec.Command("helm", "upgrade", "--install", "upcloud-csi", "deploy/helm",
+	cmd := exec.Command("helm", "upgrade", "--install", "upcloud-csi", "deploy/helm", //nolint:gosec,noctx // helm args controlled by test
 		"--namespace", "kube-system",
 		"--set", "snapshotValidationWebhook.enabled=true",
 		"--set", fmt.Sprintf("snapshotValidationWebhook.caBundle=%s", caBundle),
@@ -151,14 +151,14 @@ func enableWebhook(caBundle string) {
 	err := cmd.Run()
 	gomega.Expect(err).NotTo(gomega.HaveOccurred())
 
-	os.Chdir("test/e2e")
+	_ = os.Chdir("test/e2e")
 }
 
 func disableWebhook() {
-	os.Chdir("../..")
-	defer os.Chdir("test/e2e")
+	_ = os.Chdir("../..")
+	defer func() { _ = os.Chdir("test/e2e") }()
 
-	cmd := exec.Command("helm", "upgrade", "--install", "upcloud-csi", "deploy/helm",
+	cmd := exec.Command("helm", "upgrade", "--install", "upcloud-csi", "deploy/helm", //nolint:noctx // helm run in test context
 		"--namespace", "kube-system",
 		"--set", "snapshotValidationWebhook.enabled=false",
 		"--set", "networkPolicy.enabled=true",
