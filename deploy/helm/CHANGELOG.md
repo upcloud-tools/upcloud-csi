@@ -1,5 +1,10 @@
 # Helm chart changelog
 
+## [1.9.0] - 2026-06-24
+
+### Changed
+- Update app version to `v2.8.0`
+
 ## [1.8.0] - 2026-06-23
 
 ### Added

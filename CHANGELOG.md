@@ -2,6 +2,21 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.8.0] - 2026-06-24
+
+### Fixed
+- controller: ControllerExpandVolume now returns NodeExpansionRequired: true for unattached volumes, ensuring the filesystem is resized on next mount
+
+### Changed
+- ci: narrow test.yaml paths, add types: [go] to pre-commit test hook
+- ci: fix trivy upload-sarif category conflict
+- `pre-commit-config.yaml`: add `types: [go]` to test hook so `make test` only runs on Go file changes
+- docs: added doc comments to upcloud_service.go
+
+### Security
+- deps: bump golang.org/x/net v0.51.0 → v0.56.0 (HTTP/2 DoS, Punycode)
+- deps: bump github.com/onsi/ginkgo/v2 v2.27.2 → v2.32.0
+
 ## [2.7.0] - 2026-06-21
 
 ### Added

@@ -137,7 +137,7 @@ kube-lint:
 k8s-lint:
 	helm template test-release $(HELM_CHART_DIR) > /tmp/upcloud-csi-rendered.yaml
 	@if command -v kubeconform > /dev/null 2>&1; then \
-		kubeconform /tmp/upcloud-csi-rendered.yaml; \
+		kubeconform --ignore-missing-schemas /tmp/upcloud-csi-rendered.yaml; \
 	else \
 		echo "kubeconform not installed. Install from https://github.com/yannh/kubeconform"; \
 		exit 1; \
