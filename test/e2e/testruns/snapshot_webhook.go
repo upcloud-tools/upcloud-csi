@@ -140,9 +140,6 @@ func enableWebhook(caBundle string) {
 		"--namespace", "kube-system",
 		"--set", "snapshotValidationWebhook.enabled=true",
 		"--set", fmt.Sprintf("snapshotValidationWebhook.caBundle=%s", caBundle),
-		"--set", "networkPolicy.enabled=true",
-		"--set", "credentials.secretName=tokensecret",
-		"--set-string", "controller.zone=de-fra1",
 		"--wait",
 		"--timeout", "180s",
 	)
@@ -161,9 +158,6 @@ func disableWebhook() {
 	cmd := exec.Command("helm", "upgrade", "--install", "upcloud-csi", "deploy/helm", //nolint:noctx // helm run in test context
 		"--namespace", "kube-system",
 		"--set", "snapshotValidationWebhook.enabled=false",
-		"--set", "networkPolicy.enabled=true",
-		"--set", "credentials.secretName=tokensecret",
-		"--set-string", "controller.zone=de-fra1",
 		"--wait",
 		"--timeout", "180s",
 	)
