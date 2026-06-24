@@ -32,7 +32,8 @@ type upCloudClient interface {
 type UpCloudService struct {
 	client upCloudClient
 
-	// nodeSync holds per node mutex lock so that only one detach/attach operation can run simultaneously towards the node.
+	// nodeSync provides per-node mutual exclusion for attach/detach operations. Entries are never evicted; this is intentional. The map is bounded by
+	// cluster node count (~160 bytes/node), and safe eviction would require reference counting or TTL logic disproportionate to the memory saved.
 	nodeSync sync.Map
 }
 
