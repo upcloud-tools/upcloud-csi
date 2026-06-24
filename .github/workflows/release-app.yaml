@@ -39,16 +39,6 @@ jobs:
             exit 0
           fi
 
-          if [ "${{ github.event_name }}" != "workflow_dispatch" ]; then
-            prev_app=$(git show HEAD~1:deploy/helm/Chart.yaml | yq .appVersion)
-            if [ "$prev_app" = "$app_version" ]; then
-              echo "appVersion unchanged ($app_version). Skipping."
-              echo "skip=true" >> "$GITHUB_OUTPUT"
-              exit 0
-            fi
-            echo "appVersion bumped: $prev_app -> $app_version"
-          fi
-
           echo "skip=false" >> "$GITHUB_OUTPUT"
 
   build-image:

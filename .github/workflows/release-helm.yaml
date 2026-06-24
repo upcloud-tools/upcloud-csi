@@ -34,6 +34,7 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           chart_version=$(yq .version "$CHART_DIR/Chart.yaml")
+          app_version=$(yq .appVersion deploy/helm/Chart.yaml)
           echo "chart_version=$chart_version" >> "$GITHUB_OUTPUT"
 
           if gh release view "helm-v$chart_version" > /dev/null 2>&1; then
@@ -44,12 +45,11 @@ jobs:
 
           echo "skip_release=false" >> "$GITHUB_OUTPUT"
 
-          prev_app=$(git show HEAD~1:deploy/helm/Chart.yaml | yq .appVersion)
-          curr_app=$(yq .appVersion deploy/helm/Chart.yaml)
-          if [ "$prev_app" != "$curr_app" ]; then
-            echo "app_version_bumped=true" >> "$GITHUB_OUTPUT"
+          if gh release view "$app_version" > /dev/null 2>&1; then
+            echo "app_version_bumped=false"
           else
-            echo "app_version_bumped=false" >> "$GITHUB_OUTPUT"
+            echo "Release $app_version has changed. Leaving E2E tests to release-app action."
+            echo "app_version_bumped=true"
           fi
 
   # The E2E tests are run when the chart version is bumped, but will be skipped if the appVersion
