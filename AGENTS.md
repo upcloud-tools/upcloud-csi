@@ -22,6 +22,15 @@
 - Test: `make test` runs `go vet ./... && go test -race ./...`
 - Lint: `golangci-lint` with config in `.golangci.yml`. Run via `cd test/e2e && golangci-lint run --timeout=2m ./testruns/` or pre-commit.
 
+### Doc Comments
+
+- First line: // FuncName does X. — single sentence, period at end
+- If the first sentence is long enough to wrap, additional behavior detail goes on the next line (no blank // line)
+- Returns is always on its own line at the end, never inline:
+    // Returns ErrNotFound if no matching volume exists.
+- Error sentinels are referenced by their exported name (ErrStorageNotFound, not "not found")
+- No leading colon or hanging indent — just //  followed by text
+
 ## Helm chart
 
 - `# @schema` annotations inline on same line as value: `fieldName: value  # @schema type:[integer, null]`
