@@ -637,7 +637,7 @@ func (c *Controller) ControllerExpandVolume(ctx context.Context, req *csi.Contro
 	}
 
 	return &csi.ControllerExpandVolumeResponse{
-		CapacityBytes:         resizeGigaBytes * giB,
+		CapacityBytes: resizeGigaBytes * giB,
 		// NodeExpansionRequired: true signals Kubernetes to call NodeExpandVolume on the next stage/publish to resize the filesystem on the node side.
 		NodeExpansionRequired: true,
 	}, nil

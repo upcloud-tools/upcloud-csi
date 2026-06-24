@@ -37,10 +37,14 @@ type UpCloudService struct {
 	nodeSync sync.Map
 }
 
+// NewUpCloudService wraps an UpCloud API client into the Service interface.
 func NewUpCloudService(svc upCloudClient) *UpCloudService {
 	return &UpCloudService{client: svc}
 }
 
+// NewUpCloudServiceFromCredentials creates a Service from raw API credentials.
+// Token takes precedence over username/password. If token is set, username and password may be empty.
+// Returns an error if all three are empty.
 func NewUpCloudServiceFromCredentials(username, password, token string, c ...client.ConfigFn) (*UpCloudService, error) {
 	if username == "" && password == "" && token == "" {
 		return nil, errors.New("UpCloud API credentials missing, define either username and password or token.")
@@ -64,23 +68,26 @@ func NewUpCloudServiceFromCredentials(username, password, token string, c ...cli
 	), nil
 }
 
+// GetStorageByUUID returns storage details for the given UUID.
+// Returns ErrStorageNotFound if no storage matches.
 func (u *UpCloudService) GetStorageByUUID(ctx context.Context, storageUUID string) (*upcloud.StorageDetails, error) {
-	gsr := &request.GetStoragesRequest{}
-	storages, err := u.client.GetStorages(ctx, gsr)
+	sd, err := u.client.GetStorageDetails(ctx, &request.GetStorageDetailsRequest{UUID: storageUUID})
 	if err != nil {
+		var problem *upcloud.Problem
+		if errors.As(err, &problem) && problem.Status == 404 {
+			return nil, ErrStorageNotFound
+		}
 		return nil, err
 	}
-	for _, s := range storages.Storages {
-		if s.UUID == storageUUID {
-			return u.client.GetStorageDetails(ctx, &request.GetStorageDetailsRequest{UUID: s.UUID})
-		}
-	}
-	return nil, ErrStorageNotFound
+	return sd, nil
 }
 
+// GetStorageByName returns all volumes whose Title matches storageName. The result is filtered to private normal-type storages on the API side.
 func (u *UpCloudService) GetStorageByName(ctx context.Context, storageName string) ([]*upcloud.StorageDetails, error) {
-	gsr := &request.GetStoragesRequest{}
-	storages, err := u.client.GetStorages(ctx, gsr)
+	storages, err := u.client.GetStorages(ctx, &request.GetStoragesRequest{
+		Access: upcloud.StorageAccessPrivate,
+		Type:   upcloud.StorageTypeNormal,
+	})
 	if err != nil {
 		return nil, err
 	}
@@ -94,6 +101,7 @@ func (u *UpCloudService) GetStorageByName(ctx context.Context, storageName strin
 	return volumes, nil
 }
 
+// CreateStorage provisions a new volume and waits for it to reach the online state.
 func (u *UpCloudService) CreateStorage(ctx context.Context, csr *request.CreateStorageRequest) (*upcloud.StorageDetails, error) {
 	s, err := u.client.CreateStorage(ctx, csr)
 	if err != nil {
@@ -102,6 +110,8 @@ func (u *UpCloudService) CreateStorage(ctx context.Context, csr *request.CreateS
 	return u.waitForStorageOnline(ctx, s.Storage.UUID)
 }
 
+// CloneStorage creates a clone of an existing volume, optionally applying labels, and waits for the clone to reach the online state.
+// Returns an error if the clone fails or the online state is not reached within the timeout.
 func (u *UpCloudService) CloneStorage(ctx context.Context, r *request.CloneStorageRequest, label ...upcloud.Label) (*upcloud.StorageDetails, error) {
 	s, err := u.client.CloneStorage(ctx, r)
 	if err != nil {
@@ -124,6 +134,8 @@ func (u *UpCloudService) CloneStorage(ctx context.Context, r *request.CloneStora
 	return s, err
 }
 
+// DeleteStorage removes a volume identified by its UUID.
+// Returns ErrStorageNotFound if the volume does not exist.
 func (u *UpCloudService) DeleteStorage(ctx context.Context, storageUUID string) error {
 	var err error
 	volume, err := u.GetStorageByUUID(ctx, storageUUID)
@@ -138,6 +150,8 @@ func (u *UpCloudService) DeleteStorage(ctx context.Context, storageUUID string) 
 	return nil
 }
 
+// AttachStorage attaches a volume to a server. Operations are serialized per server UUID to respect the UpCloud API constraint that
+// only one attach or detach can run against a server at a time. Waits for the server to be online before and after the attach.
 func (u *UpCloudService) AttachStorage(ctx context.Context, storageUUID, serverUUID string) error {
 	// Lock attach operation per node because node can only attach single storage at the time.
 	m, _ := u.nodeSync.LoadOrStore(serverUUID, &sync.Mutex{})
@@ -166,6 +180,8 @@ func (u *UpCloudService) AttachStorage(ctx context.Context, storageUUID, serverU
 	return fmt.Errorf("storage device not found after attaching to server")
 }
 
+// DetachStorage detaches a volume from a server. Operations are serialized per server UUID (same mutex as AttachStorage).
+// Returns ErrServerStorageNotFound if the storage is not attached to the server.
 func (u *UpCloudService) DetachStorage(ctx context.Context, storageUUID, serverUUID string) error {
 	// Lock detach operation per node because node can only detach single storage at the time.
 	m, _ := u.nodeSync.LoadOrStore(serverUUID, &sync.Mutex{})
@@ -203,8 +219,13 @@ func (u *UpCloudService) DetachStorage(ctx context.Context, storageUUID, serverU
 	return ErrServerStorageNotFound
 }
 
+// ListStorage returns all normal-type private volumes in the given zone. The API request is filtered by access and type to reduce
+// the result set; client-side zone filtering handles the final selection.
 func (u *UpCloudService) ListStorage(ctx context.Context, zone string) ([]upcloud.Storage, error) {
-	storages, err := u.client.GetStorages(ctx, &request.GetStoragesRequest{Access: upcloud.StorageAccessPrivate})
+	storages, err := u.client.GetStorages(ctx, &request.GetStoragesRequest{
+		Access: upcloud.StorageAccessPrivate,
+		Type:   upcloud.StorageTypeNormal,
+	})
 	if err != nil {
 		return nil, err
 	}
@@ -217,6 +238,8 @@ func (u *UpCloudService) ListStorage(ctx context.Context, zone string) ([]upclou
 	return zoneStorage, nil
 }
 
+// GetServerByHostname looks up a server by its hostname. Returns
+// ErrServerNotFound if no server matches.
 func (u *UpCloudService) GetServerByHostname(ctx context.Context, hostname string) (*upcloud.ServerDetails, error) {
 	servers, err := u.client.GetServers(ctx)
 	if err != nil {
@@ -234,6 +257,8 @@ func (u *UpCloudService) GetServerByHostname(ctx context.Context, hostname strin
 	return nil, ErrServerNotFound
 }
 
+// ResizeStorage expands a volume to a new size and resizes the filesystem on the cloud side via ResizeStorageFilesystem. Requires the volume to be attached
+// to a server. If deleteBackup is true, the backup created during resize is removed after a successful operation.
 func (u *UpCloudService) ResizeStorage(ctx context.Context, uuid string, newSize int, deleteBackup bool) (*upcloud.StorageDetails, error) {
 	storage, err := u.client.ModifyStorage(ctx, &request.ModifyStorageRequest{
 		UUID: uuid,
@@ -261,6 +286,8 @@ func (u *UpCloudService) ResizeStorage(ctx context.Context, uuid string, newSize
 	return u.waitForStorageOnline(ctx, storage.Storage.UUID)
 }
 
+// ResizeBlockDevice expands a volume to a new size without touching the filesystem.
+// Suitable for unattached volumes or block devices — the filesystem resize is deferred to NodeExpandVolume on the next mount.
 func (u *UpCloudService) ResizeBlockDevice(ctx context.Context, uuid string, newSize int) (*upcloud.StorageDetails, error) {
 	storage, err := u.client.ModifyStorage(ctx, &request.ModifyStorageRequest{
 		UUID: uuid,
@@ -272,6 +299,7 @@ func (u *UpCloudService) ResizeBlockDevice(ctx context.Context, uuid string, new
 	return u.waitForStorageOnline(ctx, storage.Storage.UUID)
 }
 
+// CreateStorageBackup creates a snapshot of a volume. Returns ErrBackupInProgress if the volume is currently in the backuping state.
 func (u *UpCloudService) CreateStorageBackup(ctx context.Context, uuid, title string) (*upcloud.StorageDetails, error) {
 	// check that a backup creation is not currently in progress
 	storage, err := u.GetStorageByUUID(ctx, uuid)
@@ -293,7 +321,7 @@ func (u *UpCloudService) CreateStorageBackup(ctx context.Context, uuid, title st
 	return u.waitForStorageOnline(ctx, backup.UUID)
 }
 
-// listStorageBackups lists strage backups. If `originUUID` is empty all backups are retured.
+// ListStorageBackups returns storage backups. If originUUID is empty, all backups are returned.
 func (u *UpCloudService) ListStorageBackups(ctx context.Context, originUUID string) ([]upcloud.Storage, error) {
 	storages, err := u.client.GetStorages(ctx, &request.GetStoragesRequest{Type: upcloud.StorageTypeBackup})
 	if err != nil {
@@ -308,6 +336,8 @@ func (u *UpCloudService) ListStorageBackups(ctx context.Context, originUUID stri
 	return backups, nil
 }
 
+// DeleteStorageBackup removes a backup identified by its UUID.
+// Returns an error if the storage is not a backup type.
 func (u *UpCloudService) DeleteStorageBackup(ctx context.Context, uuid string) error {
 	s, err := u.client.GetStorageDetails(ctx, &request.GetStorageDetailsRequest{UUID: uuid})
 	if err != nil {
@@ -319,6 +349,8 @@ func (u *UpCloudService) DeleteStorageBackup(ctx context.Context, uuid string) e
 	return u.client.DeleteStorage(ctx, &request.DeleteStorageRequest{UUID: s.UUID})
 }
 
+// GetStorageBackupByName returns the backup with the given title.
+// Returns ErrStorageNotFound if no backup matches.
 func (u *UpCloudService) GetStorageBackupByName(ctx context.Context, name string) (*upcloud.Storage, error) {
 	storages, err := u.client.GetStorages(ctx, &request.GetStoragesRequest{Type: upcloud.StorageTypeBackup})
 	if err != nil {
@@ -332,6 +364,7 @@ func (u *UpCloudService) GetStorageBackupByName(ctx context.Context, name string
 	return nil, ErrStorageNotFound
 }
 
+// RequireStorageOnline checks whether the storage is in the online state and waits for it to become online if it is not.
 func (u *UpCloudService) RequireStorageOnline(ctx context.Context, s *upcloud.Storage) error {
 	if s.State != upcloud.StorageStateOnline {
 		if _, err := u.waitForStorageOnline(ctx, s.UUID); err != nil {
