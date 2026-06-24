@@ -14,6 +14,9 @@ var _ = Describe("", func() {
 	It("Resize Volume XFS", func() {
 		testruns.TestProvisionResizeVolumeXfs()
 	})
+	It("Resize Volume Unattached", func() {
+		testruns.TestResizeUnattachedVolume()
+	})
 	It("Create Delete Volume", func() {
 		testruns.TestCreateDeleteVolume()
 	})

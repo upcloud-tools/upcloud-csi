@@ -64,6 +64,7 @@ test-integration:
 #   make test-e2e-(ci/local) RESIZE=y         — Resize Volume (ext4 + xfs, sequential)
 #   make test-e2e-(ci/local) RESIZE_EXT4=y    — Resize Volume (ext4 only)
 #   make test-e2e-(ci/local) RESIZE_XFS=y     — Resize Volume (xfs only)
+#   make test-e2e-(ci/local) RESIZE_UNATTACHED=y — Resize Unattached Volume
 #   make test-e2e-(ci/local) LIST=y           — List Volumes
 #   make test-e2e-(ci/local) PERSISTENCE=y    — Attach Detach Volume
 #   make test-e2e-(ci/local) CREATEDELETE=y   — Create Delete Volume
@@ -73,6 +74,7 @@ GINKGO_FOCUS = $(if $(NETPOL),--ginkgo.focus="NetworkPolicy Enforcement",) \
                $(if $(WEBHOOK),--ginkgo.focus="Snapshot Validation Webhook",) \
                $(if $(CREATEDELETE),--ginkgo.focus="Create Delete Volume",) \
                $(if $(LIST),--ginkgo.focus="List Volumes",) \
+               $(if $(RESIZE_UNATTACHED),--ginkgo.focus="Resize Volume Unattached",) \
                $(if $(RESIZE_EXT4),--ginkgo.focus="Resize Volume$$",) \
                $(if $(RESIZE_XFS),--ginkgo.focus="Resize Volume XFS",) \
                $(if $(RESIZE),--ginkgo.focus="Resize Volume",) \

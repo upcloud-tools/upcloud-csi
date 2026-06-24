@@ -626,16 +626,20 @@ func (c *Controller) ControllerExpandVolume(ctx context.Context, req *csi.Contro
 			return nil, status.Errorf(codes.Internal, "cannot resizeBlockDevice volume %s: %s", volumeID, err.Error())
 		}
 	} else {
-		log.Info("resizing volume")
-		_, err = c.svc.ResizeStorage(ctx, volume.UUID, int(resizeGigaBytes), false)
+		// Volume is not published (no ServerUUIDs) and not a block device. Use ResizeBlockDevice (ModifyStorage + wait, no ResizeStorageFilesystem)
+		// because the filesystem API call requires the volume to be  attached to a server. Filesystem resize happens when the volume is next mounted.
+		// Kubernetes calls NodeExpandVolume because NodeExpansionRequired: true below.
+		log.Info("resizing unattached volume")
+		_, err = c.svc.ResizeBlockDevice(ctx, volume.UUID, int(resizeGigaBytes))
 		if err != nil {
-			return nil, status.Errorf(codes.Internal, "cannot resizeStorage volume %s: %s", volumeID, err.Error())
+			return nil, status.Errorf(codes.Internal, "cannot resize volume %s: %s", volumeID, err.Error())
 		}
 	}
 
 	return &csi.ControllerExpandVolumeResponse{
 		CapacityBytes:         resizeGigaBytes * giB,
-		NodeExpansionRequired: false,
+		// NodeExpansionRequired: true signals Kubernetes to call NodeExpandVolume on the next stage/publish to resize the filesystem on the node side.
+		NodeExpansionRequired: true,
 	}, nil
 }
 
