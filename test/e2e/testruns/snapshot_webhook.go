@@ -137,6 +137,7 @@ func enableWebhook(caBundle string) {
 	defer func() { _ = os.Chdir("test/e2e") }()
 
 	cmd := exec.Command("helm", "upgrade", "--install", "upcloud-csi", "deploy/helm", //nolint:gosec,noctx // helm args controlled by test
+		"--reuse-values",
 		"--namespace", "kube-system",
 		"--set", "snapshotValidationWebhook.enabled=true",
 		"--set", fmt.Sprintf("snapshotValidationWebhook.caBundle=%s", caBundle),
@@ -156,6 +157,7 @@ func disableWebhook() {
 	defer func() { _ = os.Chdir("test/e2e") }()
 
 	cmd := exec.Command("helm", "upgrade", "--install", "upcloud-csi", "deploy/helm", //nolint:noctx // helm run in test context
+		"--reuse-values",
 		"--namespace", "kube-system",
 		"--set", "snapshotValidationWebhook.enabled=false",
 		"--wait",
