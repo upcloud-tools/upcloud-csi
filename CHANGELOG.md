@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.8.2] - 2026-06-26
+
+### Changed
+- chore: add startup validation for `resize2fs`, `xfs_growfs`, `growpart` in `NewLinuxFilesystem` — missing tools caught early instead of failing at runtime
+- ci: `gh release view` for version detection instead of `HEAD~1` — robust to multi-commit pushes
+
 ## [2.8.1] - 2026-06-24
 
 ### Fixed
@@ -174,7 +180,8 @@ Before upgrading to v2.5.0, users with existing VolumeSnapshots need to:
 
 First stable release
 
-[Unreleased]: https://github.com/upcloud-tools/upcloud-csi/compare/v2.5.1...HEAD
+[Unreleased]: https://github.com/upcloud-tools/upcloud-csi/compare/v2.9.0...HEAD
+[2.9.0]: https://github.com/upcloud-tools/upcloud-csi/compare/v2.8.1...v2.9.0
 [2.5.1]: https://github.com/upcloud-tools/upcloud-csi/compare/v2.5.0...v2.5.1
 [2.5.0]: https://github.com/upcloud-tools/upcloud-csi/compare/v2.3.0...v2.5.0
 [2.3.0]: https://github.com/upcloud-tools/upcloud-csi/compare/v2.2.0...v2.3.0

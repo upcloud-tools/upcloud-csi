@@ -1,5 +1,11 @@
 # Helm chart changelog
 
+## [1.9.2] - 2026-06-26
+
+### Changed
+- Release now created as draft — allows time to fix app releases before chart becomes available
+- Update app version to `v2.8.2`
+
 ## [1.9.1] - 2026-06-24
 
 ### Changed
