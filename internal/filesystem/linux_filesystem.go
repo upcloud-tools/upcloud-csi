@@ -59,9 +59,11 @@ func runCommandNoOutput(ctx context.Context, log *logrus.Entry, cmd string, args
 	return exec.CommandContext(ctx, cmd, args...).Run() //nolint:gosec // executable is fixed or selected from internal allowlist, args passed directly without shell
 }
 
+// NewLinuxFilesystem creates a LinuxFilesystem and validates that required tools are available.
+// Returns an error if a required tool is not found on the system.
 func NewLinuxFilesystem(filesystemTypes []string, log *logrus.Entry) (*LinuxFilesystem, error) {
-	tools := make([]string, 0, 3+len(filesystemTypes))
-	tools = append(tools, blkidCmd, partedCmd, sfdiskCmd)
+	tools := make([]string, 0, 6+len(filesystemTypes))
+	tools = append(tools, blkidCmd, partedCmd, sfdiskCmd, "resize2fs", "xfs_growfs", "growpart")
 	for i := range filesystemTypes {
 		tools = append(tools, fmt.Sprintf("mkfs.%s", filesystemTypes[i]))
 	}
