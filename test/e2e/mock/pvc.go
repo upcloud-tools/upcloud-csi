@@ -94,6 +94,9 @@ func (c *Client) isPVCRunning(pvcName, namespace string) wait.ConditionWithConte
 	return func(ctx context.Context) (bool, error) {
 		pvc, err := c.k8s.CoreV1().PersistentVolumeClaims(namespace).Get(ctx, pvcName, metav1.GetOptions{})
 		if err != nil {
+			if isRetryable(err) {
+				return false, nil
+			}
 			return false, err
 		}
 
@@ -113,6 +116,9 @@ func (c *Client) WaitForPVCCapacity(ctx context.Context, pvcName, namespace stri
 	return wait.PollUntilContextTimeout(ctx, 2*time.Second, 5*time.Minute, true, func(ctx context.Context) (bool, error) {
 		pvc, err := c.k8s.CoreV1().PersistentVolumeClaims(namespace).Get(ctx, pvcName, metav1.GetOptions{})
 		if err != nil {
+			if isRetryable(err) {
+				return false, nil
+			}
 			return false, err
 		}
 
@@ -123,6 +129,9 @@ func (c *Client) WaitForPVCCapacity(ctx context.Context, pvcName, namespace stri
 
 		pv, err := c.k8s.CoreV1().PersistentVolumes().Get(ctx, pvName, metav1.GetOptions{})
 		if err != nil {
+			if isRetryable(err) {
+				return false, nil
+			}
 			return false, err
 		}
 

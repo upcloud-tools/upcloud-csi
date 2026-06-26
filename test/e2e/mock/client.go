@@ -115,6 +115,18 @@ func (c *Client) Exec(params ExecParams) error {
 	return nil
 }
 
+// isRetryable checks if an error is a transient network issue that should be retried rather than fail the test.
+// This reduces flakiness from HTTP/2 connection drops and other ephemeral transport errors in CI.
+func isRetryable(err error) bool {
+	msg := err.Error()
+	return strings.Contains(msg, "http2: client connection lost") ||
+		strings.Contains(msg, "connection refused") ||
+		strings.Contains(msg, "TLS handshake timeout") ||
+		strings.Contains(msg, "i/o timeout") ||
+		strings.Contains(msg, "unexpected error when reading response body") ||
+		strings.Contains(msg, "EOF")
+}
+
 func GetKubeconfig() string {
 	if os.Getenv("KUBECONFIG") == "" {
 		home, err := os.UserHomeDir()

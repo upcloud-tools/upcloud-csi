@@ -73,6 +73,9 @@ func (c *Client) isPodRunning(podName, namespace string) wait.ConditionWithConte
 	return func(ctx context.Context) (bool, error) {
 		pod, err := c.k8s.CoreV1().Pods(namespace).Get(ctx, podName, metav1.GetOptions{})
 		if err != nil {
+			if isRetryable(err) {
+				return false, nil
+			}
 			return false, err
 		}
 
