@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.8.3] - 2026-06-26
+
+### Fixed
+- fix(controller): collapse duplicate `ResizeBlockDevice` branches in `ControllerExpandVolume` and return `NodeExpansionRequired: false` for block devices per CSI spec
+- fix(e2e): add `isRetryable` guard to `WaitForVolumeSnapshotReady` and `WaitForDeployment` — transient transport errors no longer fail tests
+- fix(e2e): increase `WaitForPVC` timeout from 1min to 3min
+- fix(e2e): migrate `WaitForDeployment` from deprecated `wait.PollImmediate` to `wait.PollUntilContextTimeout`
+
 ## [2.8.2] - 2026-06-26
 
 ### Changed
@@ -180,8 +188,9 @@ Before upgrading to v2.5.0, users with existing VolumeSnapshots need to:
 
 First stable release
 
-[Unreleased]: https://github.com/upcloud-tools/upcloud-csi/compare/v2.9.0...HEAD
-[2.9.0]: https://github.com/upcloud-tools/upcloud-csi/compare/v2.8.1...v2.9.0
+[Unreleased]: https://github.com/upcloud-tools/upcloud-csi/compare/v2.8.3...HEAD
+[2.8.3]: https://github.com/upcloud-tools/upcloud-csi/compare/v2.8.2...v2.8.3
+[2.8.2]: https://github.com/upcloud-tools/upcloud-csi/compare/v2.8.1...v2.8.2
 [2.5.1]: https://github.com/upcloud-tools/upcloud-csi/compare/v2.5.0...v2.5.1
 [2.5.0]: https://github.com/upcloud-tools/upcloud-csi/compare/v2.3.0...v2.5.0
 [2.3.0]: https://github.com/upcloud-tools/upcloud-csi/compare/v2.2.0...v2.3.0
