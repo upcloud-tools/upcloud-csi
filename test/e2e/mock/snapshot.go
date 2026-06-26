@@ -74,6 +74,9 @@ func (c *Client) WaitForVolumeSnapshotReady(ctx context.Context, name, namespace
 			if errors.IsNotFound(err) {
 				return false, nil
 			}
+			if isRetryable(err) {
+				return false, nil
+			}
 			return false, err
 		}
 

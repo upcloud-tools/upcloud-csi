@@ -105,7 +105,7 @@ func (c *Client) isPVCRunning(pvcName, namespace string) wait.ConditionWithConte
 }
 
 func (c *Client) WaitForPVC(ctx context.Context, pvcName, namespace string) error {
-	return wait.PollUntilContextTimeout(ctx, time.Second, time.Minute, true, c.isPVCRunning(pvcName, namespace))
+	return c.WaitForPVCWithTimeout(ctx, pvcName, namespace, 3*time.Minute)
 }
 
 func (c *Client) WaitForPVCWithTimeout(ctx context.Context, pvcName, namespace string, timeout time.Duration) error {
