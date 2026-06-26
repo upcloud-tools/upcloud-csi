@@ -82,11 +82,10 @@ func (u *UpCloudService) GetStorageByUUID(ctx context.Context, storageUUID strin
 	return sd, nil
 }
 
-// GetStorageByName returns all volumes whose Title matches storageName. The result is filtered to private normal-type storages on the API side.
+// GetStorageByName returns all volumes whose Title matches storageName. The result is filtered to normal-type storages on the API side.
 func (u *UpCloudService) GetStorageByName(ctx context.Context, storageName string) ([]*upcloud.StorageDetails, error) {
 	storages, err := u.client.GetStorages(ctx, &request.GetStoragesRequest{
-		Access: upcloud.StorageAccessPrivate,
-		Type:   upcloud.StorageTypeNormal,
+		Type: upcloud.StorageTypeNormal,
 	})
 	if err != nil {
 		return nil, err
@@ -223,8 +222,7 @@ func (u *UpCloudService) DetachStorage(ctx context.Context, storageUUID, serverU
 // the result set; client-side zone filtering handles the final selection.
 func (u *UpCloudService) ListStorage(ctx context.Context, zone string) ([]upcloud.Storage, error) {
 	storages, err := u.client.GetStorages(ctx, &request.GetStoragesRequest{
-		Access: upcloud.StorageAccessPrivate,
-		Type:   upcloud.StorageTypeNormal,
+		Type: upcloud.StorageTypeNormal,
 	})
 	if err != nil {
 		return nil, err
