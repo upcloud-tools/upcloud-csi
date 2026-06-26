@@ -109,9 +109,6 @@ func (c *Client) WaitForDeployment(ctx context.Context, deploymentName, namespac
 	return wait.PollUntilContextTimeout(ctx, time.Second, 5*time.Minute, true, func(ctx context.Context) (bool, error) {
 		deployment, err := c.k8s.AppsV1().Deployments(namespace).Get(ctx, deploymentName, metav1.GetOptions{})
 		if err != nil {
-			if isRetryable(err) {
-				return false, nil
-			}
 			return false, err
 		}
 

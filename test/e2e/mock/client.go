@@ -3,10 +3,12 @@ package mock
 import (
 	"fmt"
 	"log"
+	"net/http"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"github.com/google/uuid"
 	"github.com/onsi/gomega"
@@ -24,6 +26,25 @@ type ExecParams struct {
 	PodNamespace   string
 }
 
+// retryRoundTripper wraps an http.RoundTripper and retries requests on transient transport errors.
+// This handles load balancer idle connection drops (common in CI) that cause "http2: client connection lost"
+// and similar ephemeral failures across all API calls — not just wait/poll functions.
+type retryRoundTripper struct {
+	wrapped    http.RoundTripper
+	maxRetries int
+}
+
+func (rt *retryRoundTripper) RoundTrip(req *http.Request) (*http.Response, error) {
+	for range rt.maxRetries {
+		resp, err := rt.wrapped.RoundTrip(req)
+		if err == nil {
+			return resp, nil
+		}
+		time.Sleep(100 * time.Millisecond)
+	}
+	return rt.wrapped.RoundTrip(req)
+}
+
 func NewClient(namespace string) (*Client, error) {
 	kubeconfig := GetKubeconfig()
 
@@ -39,6 +60,13 @@ func NewClient(namespace string) (*Client, error) {
 	// Increase limits to match the concurrency.
 	config.QPS = 50
 	config.Burst = 100
+
+	// Retry all API calls on transient transport errors (connection drops, EOF, etc.)
+	// before they reach the application layer. The K8s API load balancer drops idle HTTP/2
+	// connections, which causes "http2: client connection lost" errors on long-running tests.
+	config.WrapTransport = func(rt http.RoundTripper) http.RoundTripper {
+		return &retryRoundTripper{wrapped: rt, maxRetries: 3}
+	}
 
 	k8s, err := kubernetes.NewForConfig(config)
 	if err != nil {
@@ -113,18 +141,6 @@ func (c *Client) Exec(params ExecParams) error {
 	}
 
 	return nil
-}
-
-// isRetryable checks if an error is a transient network issue that should be retried rather than fail the test.
-// This reduces flakiness from HTTP/2 connection drops and other ephemeral transport errors in CI.
-func isRetryable(err error) bool {
-	msg := err.Error()
-	return strings.Contains(msg, "http2: client connection lost") ||
-		strings.Contains(msg, "connection refused") ||
-		strings.Contains(msg, "TLS handshake timeout") ||
-		strings.Contains(msg, "i/o timeout") ||
-		strings.Contains(msg, "unexpected error when reading response body") ||
-		strings.Contains(msg, "EOF")
 }
 
 func GetKubeconfig() string {
