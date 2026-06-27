@@ -18,6 +18,7 @@ const (
 )
 
 type Node struct {
+	csi.UnimplementedNodeServer
 	name string
 	zone string
 
