@@ -396,7 +396,7 @@ func TestController_ValidateVolumeCapabilities(t *testing.T) {
 				t.Errorf("ValidateVolumeCapabilities() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
-			if !reflect.DeepEqual(got.Confirmed.VolumeCapabilities[0].AccessMode, tt.want) {
+			if got.Confirmed.VolumeCapabilities[0].AccessMode.GetMode() != tt.want.GetMode() {
 				t.Errorf("ValidateVolumeCapabilities() got = %v, want %v", got, tt.want)
 			}
 		})

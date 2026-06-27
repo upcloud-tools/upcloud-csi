@@ -8,6 +8,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"github.com/upcloud-tools/upcloud-csi/internal/identity"
 	"github.com/upcloud-tools/upcloud-csi/internal/logger"
+	"google.golang.org/protobuf/proto"
 )
 
 func TestIdentity_GetPluginInfo(t *testing.T) {
@@ -20,7 +21,7 @@ func TestIdentity_GetPluginInfo(t *testing.T) {
 	}
 	got, err := id.GetPluginInfo(context.TODO(), nil)
 	require.NoError(t, err)
-	require.Equal(t, want, *got)
+	require.True(t, proto.Equal(&want, got))
 }
 
 func TestIdentity_GetPluginCapabilities(t *testing.T) {
@@ -55,7 +56,7 @@ func TestIdentity_GetPluginCapabilities(t *testing.T) {
 	}
 	got, err := id.GetPluginCapabilities(context.TODO(), nil)
 	require.NoError(t, err)
-	require.Equal(t, want, *got)
+	require.True(t, proto.Equal(&want, got))
 }
 
 func TestIdentity_Probe(t *testing.T) {
