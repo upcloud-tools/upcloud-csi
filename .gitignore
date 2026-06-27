@@ -2,13 +2,14 @@ cmd/upcloud-csi-plugin/upcloud-csi-plugin
 cmd/upcloud-csi-manifest/upcloud-csi-manifest
 /go.work
 /go.work.sum
-.vscode
+.vscode/
 temp/ 
 .idea/
 .zed/
-.DS_Store
+.opencode/
 vendor/
 dist/
+.DS_Store
 # Generated release notes
 .release_notes
-*.kubeconfig.yaml
+*kubeconfig.yaml
