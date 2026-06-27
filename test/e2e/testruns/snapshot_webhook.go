@@ -1,6 +1,7 @@
 package testruns
 
 import (
+	"bytes"
 	"context"
 	"crypto/rand"
 	"crypto/rsa"
@@ -9,10 +10,12 @@ import (
 	"encoding/base64"
 	"encoding/pem"
 	"fmt"
+	"io"
 	"math/big"
 	"net"
 	"os"
 	"os/exec"
+	"strings"
 	"time"
 
 	"github.com/google/uuid"
@@ -136,39 +139,19 @@ func createTLSSecret(ctx context.Context, client *mock.Client, certPEM, keyPEM s
 }
 
 func enableWebhook(caBundle string) {
-	_ = os.Chdir("../..")
-	defer func() { _ = os.Chdir("test/e2e") }()
-
-	cmd := exec.Command("helm", "upgrade", "--install", "upcloud-csi", "deploy/helm", //nolint:gosec,noctx // helm args controlled by test
-		"--reuse-values",
+	err := runHelmUpgrade(
 		"--namespace", "kube-system",
 		"--set", "snapshotValidationWebhook.enabled=true",
 		"--set", fmt.Sprintf("snapshotValidationWebhook.caBundle=%s", caBundle),
-		"--wait",
-		"--timeout", "180s",
 	)
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
-	err := cmd.Run()
 	gomega.Expect(err).NotTo(gomega.HaveOccurred())
-
-	_ = os.Chdir("test/e2e")
 }
 
 func disableWebhook() {
-	_ = os.Chdir("../..")
-	defer func() { _ = os.Chdir("test/e2e") }()
-
-	cmd := exec.Command("helm", "upgrade", "--install", "upcloud-csi", "deploy/helm", //nolint:noctx // helm run in test context
-		"--reuse-values",
+	_ = runHelmUpgrade(
 		"--namespace", "kube-system",
 		"--set", "snapshotValidationWebhook.enabled=false",
-		"--wait",
-		"--timeout", "180s",
 	)
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
-	_ = cmd.Run()
 }
 
 func introduceDelayForAdmission(ctx context.Context) {
@@ -237,25 +220,40 @@ func TestSnapshotValidationWebhookCertManager() {
 }
 
 func enableWebhookCertManager(issuerName, issuerKind string) {
-	_ = os.Chdir("../..")
-	defer func() { _ = os.Chdir("test/e2e") }()
-
-	cmd := exec.Command("helm", "upgrade", "--install", "upcloud-csi", "deploy/helm", //nolint:gosec,noctx // helm args controlled by test
-		"--reuse-values",
+	err := runHelmUpgrade(
 		"--namespace", "kube-system",
 		"--set", "snapshotValidationWebhook.enabled=true",
 		"--set", "snapshotValidationWebhook.certManager.enabled=true",
 		"--set", fmt.Sprintf("snapshotValidationWebhook.certManager.issuerName=%s", issuerName),
 		"--set", fmt.Sprintf("snapshotValidationWebhook.certManager.issuerKind=%s", issuerKind),
-		"--wait",
-		"--timeout", "180s",
 	)
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
-	err := cmd.Run()
 	gomega.Expect(err).NotTo(gomega.HaveOccurred())
+}
 
-	_ = os.Chdir("test/e2e")
+func runHelmUpgrade(args ...string) error {
+	_ = os.Chdir("../..")
+	defer func() { _ = os.Chdir("test/e2e") }()
+
+	var lastErr error
+	for range 3 {
+		var stderr bytes.Buffer
+		cmd := exec.Command("helm", append([]string{ //nolint:gosec,noctx // helm args controlled by test
+			"upgrade", "--install", "upcloud-csi", "deploy/helm", "--reuse-values", "--wait", "--timeout", "180s",
+		}, args...)...)
+		cmd.Stdout = os.Stdout
+		cmd.Stderr = io.MultiWriter(os.Stderr, &stderr)
+		if err := cmd.Run(); err == nil {
+			return nil
+		} else {
+			lastErr = err
+			if strings.Contains(stderr.String(), "Please retry") {
+				time.Sleep(2 * time.Second)
+				continue
+			}
+			return err
+		}
+	}
+	return lastErr
 }
 
 func waitForCertManagerCertificate(ctx context.Context, client *mock.Client) {
