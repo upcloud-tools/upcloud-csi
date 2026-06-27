@@ -1,0 +1,30 @@
+{
+    "name": "upcloud-csi",
+    "image": "mcr.microsoft.com/devcontainers/go:1.26",
+    "features": {
+        "ghcr.io/devcontainers/features/helm:1": {},
+        "ghcr.io/devcontainers/features/github-cli:1": {},
+        "ghcr.io/paul-gilber/devcontainer-features/buildah-apt-get:1": {},
+        "ghcr.io/guiyomh/features/golangci-lint:0": {},
+        "ghcr.io/marcozac/devcontainer-features/gofumpt:1": {},
+        "ghcr.io/devcontainers-extra/features/pre-commit:2": {},
+        "ghcr.io/gickis/devcontainer-features/kubeconform:1": {}
+    },
+    "customizations": {
+        "vscode": {
+            "extensions": [
+                "golang.go",
+                "redhat.vscode-yaml",
+                "timonwong.shellcheck",
+                "redhat.vscode-podman"
+            ],
+            "settings": {
+                "go.useLanguageServer": true,
+                "go.lintTool": "golangci-lint",
+                "go.formatTool": "gofumpt",
+                "editor.formatOnSave": true
+            }
+        }
+    },
+    "postCreateCommand": "go mod download && curl -sSfL https://github.com/stackrox/kube-linter/releases/download/v0.7.1/kube-linter-linux.tar.gz | sudo tar -xz -C /usr/local/bin/ kube-linter && pre-commit install"
+}
