@@ -9,6 +9,7 @@ import (
 )
 
 type Identity struct {
+	csi.UnimplementedIdentityServer
 	driverName string
 	ready      bool
 	log        *logrus.Entry
