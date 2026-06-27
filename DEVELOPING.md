@@ -35,9 +35,9 @@ Project's application can be found under `cmd` directory:
 ### Plugin
 Required CSI interfaces are implemented in `controller`, `node` and `ìdentity` packages. 
 Plugin's gRPC server uses these packages to expose endpoints described in following interfaces:
-- [csi.IdentityServer](https://pkg.go.dev/github.com/container-storage-interface/spec@v1.6.0/lib/go/csi#IdentityServer)
-- [csi.ControllerServer](https://pkg.go.dev/github.com/container-storage-interface/spec@v1.6.0/lib/go/csi#ControllerServer)
-- [csi.NodeServer](https://pkg.go.dev/github.com/container-storage-interface/spec@v1.6.0/lib/go/csi#NodeServer)
+- [csi.IdentityServer](https://pkg.go.dev/github.com/container-storage-interface/spec@v1.12.0/lib/go/csi#IdentityServer)
+- [csi.ControllerServer](https://pkg.go.dev/github.com/container-storage-interface/spec@v1.12.0/lib/go/csi#ControllerServer)
+- [csi.NodeServer](https://pkg.go.dev/github.com/container-storage-interface/spec@v1.12.0/lib/go/csi#NodeServer)
 
 
 ## Testing
