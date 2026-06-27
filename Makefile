@@ -70,8 +70,10 @@ test-integration:
 #   make test-e2e-(ci/local) CREATEDELETE=y   — Create Delete Volume
 #   make test-e2e-(ci/local) NETPOL=y         — NetworkPolicy Enforcement
 #   make test-e2e-(ci/local) WEBHOOK=y        — Snapshot Validation Webhook
+#   make test-e2e-(ci/local) WEBHOOK_CM=y     — Snapshot Validation Webhook (cert-manager)
 GINKGO_FOCUS = $(if $(NETPOL),--ginkgo.focus="NetworkPolicy Enforcement",) \
                $(if $(WEBHOOK),--ginkgo.focus="Snapshot Validation Webhook",) \
+               $(if $(WEBHOOK_CM),--ginkgo.focus="Snapshot Validation Webhook (cert-manager)",) \
                $(if $(CREATEDELETE),--ginkgo.focus="Create Delete Volume",) \
                $(if $(LIST),--ginkgo.focus="List Volumes",) \
                $(if $(RESIZE_UNATTACHED),--ginkgo.focus="Resize Volume Unattached",) \

@@ -569,7 +569,7 @@ func (c *Controller) ListSnapshots(ctx context.Context, req *csi.ListSnapshotsRe
 
 // ControllerExpandVolume is called from the resizer to increase the volume size.
 //
-//nolint:funlen // ControllerExpandVolume orchestrates multiple operations
+
 func (c *Controller) ControllerExpandVolume(ctx context.Context, req *csi.ControllerExpandVolumeRequest) (*csi.ControllerExpandVolumeResponse, error) {
 	volumeID := req.GetVolumeId()
 
@@ -629,7 +629,7 @@ func (c *Controller) ControllerExpandVolume(ctx context.Context, req *csi.Contro
 	}
 
 	return &csi.ControllerExpandVolumeResponse{
-		CapacityBytes: resizeGigaBytes * giB,
+		CapacityBytes:         resizeGigaBytes * giB,
 		NodeExpansionRequired: !isBlockDevice,
 	}, nil
 }

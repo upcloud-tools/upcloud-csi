@@ -36,6 +36,27 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Install cert-manager
+        run: |
+          helm repo add jetstack https://charts.jetstack.io
+          helm install cert-manager jetstack/cert-manager \
+            --namespace cert-manager --create-namespace \
+            --version v1.20.3 \
+            --set crds.enabled=true
+          kubectl wait --namespace cert-manager --for=condition=Available deployment cert-manager --timeout=180s
+          kubectl wait --namespace cert-manager --for=condition=Available deployment cert-manager-webhook --timeout=180s
+
+      - name: Create e2e ClusterIssuer for webhook test
+        run: |
+          kubectl apply -f - <<EOF
+          apiVersion: cert-manager.io/v1
+          kind: ClusterIssuer
+          metadata:
+            name: e2e-selfsigned
+          spec:
+            selfSigned: {}
+          EOF
+
       - name: Deploy CSI driver via Helm
         run: |
           make deploy-test \
@@ -46,7 +67,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        test-case: [SNAPSHOT, RESIZE_EXT4, RESIZE_XFS, RESIZE_UNATTACHED, LIST, CREATEDELETE, PERSISTENCE, NETPOL, WEBHOOK]
+        test-case: [SNAPSHOT, RESIZE_EXT4, RESIZE_XFS, RESIZE_UNATTACHED, LIST, CREATEDELETE, PERSISTENCE, NETPOL, WEBHOOK, WEBHOOK_CM]
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
 

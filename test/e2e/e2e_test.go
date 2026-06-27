@@ -39,4 +39,8 @@ var _ = Describe("", func() {
 		testruns.TestSnapshotValidationWebhook()
 		log.Println("Webhook Passed")
 	})
+	It("Snapshot Validation Webhook (cert-manager)", func() {
+		testruns.TestSnapshotValidationWebhookCertManager()
+		log.Println("Webhook (cert-manager) Passed")
+	})
 })
