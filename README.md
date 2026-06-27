@@ -85,7 +85,7 @@ UpCloud Kubernetes clusters ship with an `upcloud` secret in `kube-system` by de
 
 ```shell
 helm upgrade --install upcloud-csi oci://ghcr.io/upcloud-tools/charts/upcloud-csi \
-  --namespace kube-system --version 1.5.1
+  --namespace kube-system --version [CHART_VERSION]
 ```
 
 To have the chart create the secret instead, set `credentials.createSecret=true` and provide the credentials.
@@ -97,7 +97,7 @@ To customize, create a values file and pass it with `--values`:
 
 ```shell
 helm upgrade --install upcloud-csi oci://ghcr.io/upcloud-tools/charts/upcloud-csi \
-  --namespace kube-system --version 1.5.1 --values values.yaml
+  --namespace kube-system --version [CHART_VERSION] --values values.yaml
 ```
 
 Verify container image signature:
