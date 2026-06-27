@@ -30,6 +30,7 @@ var supportedCapabilities = []csi.ControllerServiceCapability_RPC_Type{ //nolint
 }
 
 type Controller struct {
+	csi.UnimplementedControllerServer
 	zone              string
 	maxVolumesPerNode int
 
