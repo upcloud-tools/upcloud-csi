@@ -34,13 +34,24 @@ type retryRoundTripper struct {
 	maxRetries int
 }
 
+// RoundTrip retries on transport errors with exponential backoff: 100ms, 200ms, 400ms, ...
+// On each failure it forces the underlying transport to close idle connections so the
+// next attempt opens a fresh connection instead of reusing a dead one from the pool.
+// Returns early if the request context is cancelled so retries don't outlive the test.
 func (rt *retryRoundTripper) RoundTrip(req *http.Request) (*http.Response, error) {
-	for range rt.maxRetries {
+	for i := range rt.maxRetries {
 		resp, err := rt.wrapped.RoundTrip(req)
 		if err == nil {
 			return resp, nil
 		}
-		time.Sleep(100 * time.Millisecond)
+		if t, ok := rt.wrapped.(*http.Transport); ok {
+			t.CloseIdleConnections()
+		}
+		select {
+		case <-time.After(time.Duration(100*(1<<i)) * time.Millisecond):
+		case <-req.Context().Done():
+			return nil, req.Context().Err()
+		}
 	}
 	return rt.wrapped.RoundTrip(req)
 }
@@ -65,7 +76,10 @@ func NewClient(namespace string) (*Client, error) {
 	// before they reach the application layer. The K8s API load balancer drops idle HTTP/2
 	// connections, which causes "http2: client connection lost" errors on long-running tests.
 	config.WrapTransport = func(rt http.RoundTripper) http.RoundTripper {
-		return &retryRoundTripper{wrapped: rt, maxRetries: 3}
+		if t, ok := rt.(*http.Transport); ok {
+			t.IdleConnTimeout = 30 * time.Second
+		}
+		return &retryRoundTripper{wrapped: rt, maxRetries: 5}
 	}
 
 	k8s, err := kubernetes.NewForConfig(config)
