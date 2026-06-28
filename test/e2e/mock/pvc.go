@@ -81,14 +81,29 @@ func (c *Client) DeletePVC(ctx context.Context, pvcName, namespace string) error
 }
 
 func (c *Client) ResizePVC(ctx context.Context, pvcName string) (*v1.PersistentVolumeClaim, error) {
-	pvc, err := c.k8s.CoreV1().PersistentVolumeClaims(c.ns).Get(ctx, pvcName, metav1.GetOptions{})
-	if err != nil {
+	var lastErr error
+
+	for i := range 5 {
+		pvc, err := c.k8s.CoreV1().PersistentVolumeClaims(c.ns).Get(ctx, pvcName, metav1.GetOptions{})
+		if err != nil {
+			return nil, err
+		}
+
+		pvc.Spec.Resources.Requests["storage"] = resource.MustParse("20Gi")
+
+		updated, err := c.k8s.CoreV1().PersistentVolumeClaims(c.ns).Update(ctx, pvc, metav1.UpdateOptions{})
+		if err == nil {
+			return updated, nil
+		}
+		lastErr = err
+
+		if k8serrors.IsConflict(err) && i < 4 {
+			time.Sleep(time.Duration(100*(1<<i)) * time.Millisecond)
+			continue
+		}
 		return nil, err
 	}
-
-	pvc.Spec.Resources.Requests["storage"] = resource.MustParse("20Gi")
-
-	return c.k8s.CoreV1().PersistentVolumeClaims(c.ns).Update(ctx, pvc, metav1.UpdateOptions{})
+	return nil, lastErr
 }
 
 func (c *Client) ListVolumes(ctx context.Context) (*v1.PersistentVolumeList, error) {
