@@ -85,10 +85,10 @@ func NewClient(namespace string) (*Client, error) {
 		return nil, err
 	}
 
-	// E2e tests run concurrently (9 parallel matrix jobs). The default client-go rate limiter (10 QPS / 20 burst) is easily exhausted.
-	// Increase limits to match the concurrency.
-	config.QPS = 50
-	config.Burst = 100
+	// E2e tests run concurrently (10 parallel matrix jobs). The default client-go rate limiter (10 QPS / 20 burst) is easily exhausted.
+	// Increase limits to provide enough headroom for the initial burst of creates and subsequent polling loops.
+	config.QPS = 200
+	config.Burst = 400
 
 	// Retry all API calls on transient transport errors (connection drops, EOF, etc.)
 	// before they reach the application layer. The K8s API load balancer drops idle HTTP/2
