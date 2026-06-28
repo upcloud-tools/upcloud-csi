@@ -106,9 +106,17 @@ func (c *Client) GetVolumeSnapshotStatus(ctx context.Context, name, namespace st
 }
 
 func (c *Client) DeleteVolumeSnapshot(ctx context.Context, name, namespace string) error {
-	return c.dynamic.Resource(snapshotGVR).Namespace(namespace).Delete(ctx, name, metav1.DeleteOptions{})
+	err := c.dynamic.Resource(snapshotGVR).Namespace(namespace).Delete(ctx, name, metav1.DeleteOptions{})
+	if errors.IsNotFound(err) {
+		return nil
+	}
+	return err
 }
 
 func (c *Client) DeleteVolumeSnapshotClass(ctx context.Context, name string) error {
-	return c.dynamic.Resource(snapshotClassGVR).Delete(ctx, name, metav1.DeleteOptions{})
+	err := c.dynamic.Resource(snapshotClassGVR).Delete(ctx, name, metav1.DeleteOptions{})
+	if errors.IsNotFound(err) {
+		return nil
+	}
+	return err
 }

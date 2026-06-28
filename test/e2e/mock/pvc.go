@@ -5,6 +5,7 @@ import (
 	"time"
 
 	v1 "k8s.io/api/core/v1"
+	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
@@ -72,7 +73,11 @@ func (c *Client) CreatePVCFromSnapshot(ctx context.Context, name, snapshotName s
 }
 
 func (c *Client) DeletePVC(ctx context.Context, pvcName, namespace string) error {
-	return c.k8s.CoreV1().PersistentVolumeClaims(namespace).Delete(ctx, pvcName, metav1.DeleteOptions{})
+	err := c.k8s.CoreV1().PersistentVolumeClaims(namespace).Delete(ctx, pvcName, metav1.DeleteOptions{})
+	if k8serrors.IsNotFound(err) {
+		return nil
+	}
+	return err
 }
 
 func (c *Client) ResizePVC(ctx context.Context, pvcName string) (*v1.PersistentVolumeClaim, error) {

@@ -9,6 +9,7 @@ import (
 
 	appv1 "k8s.io/api/apps/v1"
 	v1 "k8s.io/api/core/v1"
+	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
 )
@@ -102,7 +103,11 @@ func (c *Client) GetPod() (*v1.Pod, error) {
 }
 
 func (c *Client) DeleteDeployment(ctx context.Context, deploymentName string) error {
-	return c.k8s.AppsV1().Deployments(c.ns).Delete(ctx, deploymentName, metav1.DeleteOptions{})
+	err := c.k8s.AppsV1().Deployments(c.ns).Delete(ctx, deploymentName, metav1.DeleteOptions{})
+	if k8serrors.IsNotFound(err) {
+		return nil
+	}
+	return err
 }
 
 func (c *Client) WaitForDeployment(ctx context.Context, deploymentName, namespace string) error {

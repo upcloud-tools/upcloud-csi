@@ -5,6 +5,7 @@ import (
 	"time"
 
 	v1 "k8s.io/api/core/v1"
+	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/dynamic"
@@ -66,7 +67,11 @@ func (c *Client) CreatePod(ctx context.Context, podName, pvcName string) (*v1.Po
 }
 
 func (c *Client) DeletePod(ctx context.Context, podName, namespace string) error {
-	return c.k8s.CoreV1().Pods(namespace).Delete(ctx, podName, metav1.DeleteOptions{})
+	err := c.k8s.CoreV1().Pods(namespace).Delete(ctx, podName, metav1.DeleteOptions{})
+	if k8serrors.IsNotFound(err) {
+		return nil
+	}
+	return err
 }
 
 func (c *Client) isPodRunning(podName, namespace string) wait.ConditionWithContextFunc {
