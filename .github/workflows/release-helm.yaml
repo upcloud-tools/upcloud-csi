@@ -93,13 +93,11 @@ jobs:
 
       - name: Sign chart package
         run: |
-          cosign sign-blob dist/*.tgz \
-            --bundle dist/*.tgz.sigstore.json \
-            --yes
-
+          PACKAGE=$(ls dist/*.tgz)
+          cosign sign-blob "$PACKAGE" --bundle "${PACKAGE}.sigstore.json" --yes
+      
       - name: Push chart to GHCR OCI
-        run: |
-          helm push dist/*.tgz oci://${{ env.REGISTRY }}/${{ env.CHART_OCI_REPO }}
+        run: helm push dist/*.tgz oci://${{ env.REGISTRY }}/${{ env.CHART_OCI_REPO }}
 
       - name: Push Artifact Hub metadata
         run: |
