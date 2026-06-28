@@ -1,6 +1,6 @@
 # Helm chart changelog
 
-## [1.9.4] - 2026-06-28
+## [1.10.0] - 2026-06-28
 
 ### Added
 - Chart packages are signed too now

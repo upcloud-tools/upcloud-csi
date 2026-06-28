@@ -32,8 +32,10 @@ jobs:
       - name: Install build tools
         if: runner.environment == 'self-hosted'
         run: |
-          sudo apt-get update
-          sudo apt-get install -y --no-install-recommends make
+          command -v make >/dev/null 2>&1 || {
+            sudo apt-get update
+            sudo apt-get install -y --no-install-recommends make
+          }
 
       - name: Install helm
         if: runner.environment == 'self-hosted'
@@ -89,8 +91,10 @@ jobs:
       - name: Install build tools
         if: runner.environment == 'self-hosted'
         run: |
-          sudo apt-get update
-          sudo apt-get install -y --no-install-recommends make
+          command -v make >/dev/null 2>&1 || {
+            sudo apt-get update
+            sudo apt-get install -y --no-install-recommends make
+          }
 
       - name: Install helm
         if: runner.environment == 'self-hosted'
