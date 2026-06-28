@@ -13,6 +13,8 @@ on:
         required: true
         type: string
 
+permissions: read-all
+
 env:
   REGISTRY: ghcr.io
 

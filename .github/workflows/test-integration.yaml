@@ -6,6 +6,8 @@ on:
 env:
   GO_VERSION: '1.26'
 
+permissions: read-all
+
 jobs:
   build:
     runs-on: ubuntu-24.04

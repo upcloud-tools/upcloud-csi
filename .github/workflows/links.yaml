@@ -5,6 +5,8 @@ on:
     - cron: "00 18 * * 1"
   workflow_dispatch:
 
+permissions: read-all
+
 jobs:
   check:
     runs-on: ubuntu-24.04
