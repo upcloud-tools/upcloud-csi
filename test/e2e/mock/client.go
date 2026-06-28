@@ -2,6 +2,7 @@ package mock
 
 import (
 	"fmt"
+	"io"
 	"log"
 	"net/http"
 	"os"
@@ -26,7 +27,7 @@ type ExecParams struct {
 	PodNamespace   string
 }
 
-// retryRoundTripper wraps an http.RoundTripper and retries requests on transient transport errors.
+// retryRoundTripper wraps an http.RoundTripper and retries requests on transient transport errors and HTTP 5xx responses.
 // This handles load balancer idle connection drops (common in CI) that cause "http2: client connection lost"
 // and similar ephemeral failures across all API calls — not just wait/poll functions.
 type retryRoundTripper struct {
@@ -34,18 +35,35 @@ type retryRoundTripper struct {
 	maxRetries int
 }
 
-// RoundTrip retries on transport errors with exponential backoff: 100ms, 200ms, 400ms, ...
-// On each failure it forces the underlying transport to close idle connections so the
-// next attempt opens a fresh connection instead of reusing a dead one from the pool.
+// RoundTrip retries on transport errors and HTTP 5xx responses with exponential backoff:
+// 100ms, 200ms, 400ms, ... On each failure it drains and closes the response body (if any),
+// forces the underlying transport to close idle connections so the next attempt opens a
+// fresh connection, and rewinds the request body via GetBody for safe PUT/POST retries.
 // Returns early if the request context is cancelled so retries don't outlive the test.
 func (rt *retryRoundTripper) RoundTrip(req *http.Request) (*http.Response, error) {
+	var resp *http.Response
+	var err error
+
 	for i := range rt.maxRetries {
-		resp, err := rt.wrapped.RoundTrip(req)
-		if err == nil {
+		resp, err = rt.wrapped.RoundTrip(req)
+		if err == nil && resp.StatusCode < 500 {
 			return resp, nil
+		}
+		if resp != nil {
+			_, _ = io.Copy(io.Discard, resp.Body)
+			_ = resp.Body.Close()
 		}
 		if t, ok := rt.wrapped.(*http.Transport); ok {
 			t.CloseIdleConnections()
+		}
+		if req.Body != nil && req.GetBody != nil {
+			body, bodyErr := req.GetBody()
+			if bodyErr != nil {
+				return nil, bodyErr
+			}
+			req.Body = body
+		} else if req.Body != nil {
+			return resp, err
 		}
 		select {
 		case <-time.After(time.Duration(100*(1<<i)) * time.Millisecond):
