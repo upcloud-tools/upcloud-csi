@@ -246,7 +246,7 @@ snapshotController:  # @schema additionalProperties: false
     maxUnavailable:  # @schema type:[string, integer, null]
     minAvailable:  # @schema type:[string, integer, null]
 
-# Snapshot validation webhook settings. (Beta, not yet recommended to use in production)
+# Snapshot validation webhook settings.
 # The webhook requires a TLS secret to be created before enabling:
 #   kubectl create secret generic snapshot-validation-secret --from-file=cert.pem --from-file=key.pem
 # See https://github.com/kubernetes-csi/external-snapshotter/tree/master/deploy/kubernetes/webhook-example

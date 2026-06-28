@@ -62,7 +62,7 @@ UpCloud CSI driver has been installed.
 
 {{- if .Values.snapshotValidationWebhook.enabled }}
 
-5. Snapshot validation webhook is enabled (beta).
+5. Snapshot validation webhook is enabled.
 
 {{- if .Values.snapshotValidationWebhook.certManager.enabled }}
 
