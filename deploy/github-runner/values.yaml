@@ -36,7 +36,7 @@ controllerServiceAccount:
   name: arc-gha-rs-controller
 
 # Autoscaling limits
-maxRunners: 10
+maxRunners: 12
 minRunners: 1
 
 # Runner pod configuration
@@ -51,6 +51,6 @@ template:
             cpu: "1"
             memory: "2Gi"
           limits:
-            memory: "4Gi"
+            memory: "8Gi"
     nodeSelector:
       gh-runner: "yes"
