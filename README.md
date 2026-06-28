@@ -21,13 +21,16 @@ Full-featured Helm chart, published as an OCI artifact to `ghcr.io/upcloud-tools
 
 - Controller StatefulSet with 4 sidecars (provisioner, attacher, resizer, snapshotter)
 - Node DaemonSet with node-driver-registrar
-- Snapshot controller (2 replicas, leader election) and optional validation webhook
+- Snapshot controller (2 replicas, leader election) and optional validation webhook backed by cert-manager
 - StorageClasses for all three UpCloud tiers: `maxiops`, `standard`, `hdd`
 - `securityContext` and `podSecurityContext` per component with secure defaults
 - `metrics` block — ClusterIP metrics Service, optional ServiceMonitor and PrometheusRule for prometheus-operator
 - `extraObjects` — deploy arbitrary Kubernetes resources with Go template support
-- Configurable pod spec fields
+- Configurable pod spec fields including `imagePullSecrets` and health probes
 - PodDisruptionBudget support for controller and snapshot-controller
+- NetworkPolicy support for in-cluster traffic isolation
+- Token-based Bearer auth (`credentials.token` + `credentials.tokenKey`) for new deployments
+- Resource labels and annotations, configurable per component
 - Credential checksum annotation for automatic pod rollout on secret changes
 
 ### Volume Snapshots
@@ -50,7 +53,15 @@ prometheus-operator. Controller sidecars expose `--http-endpoint` on ports 8080�
 
 ## Repository Security
 
-See [at organization level](https://github.com/upcloud-tools)
+The project is continuously scanned with [OpenSSF Scorecard](https://scorecard.dev/viewer/?uri=github.com/upcloud-tools/upcloud-csi), which evaluates branch protection, SAST tooling, pinned dependencies, CI tests, and other security best practices. Results are published as GitHub code scanning alerts and a badge in this README.
+
+Additional security tooling:
+- **CodeQL** — Go analysis on every push and PR
+- **Trivy** — Container image vulnerability scanning on every release
+- **Dependabot** — Automated dependency updates with weekly pull requests
+- **Signed releases** — Container images are signed with cosign (keyless) via GitHub OIDC
+
+See [at organization level](https://github.com/upcloud-tools) for the org-wide security policy.
 
 ## Deployment
 
