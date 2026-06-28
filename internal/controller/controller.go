@@ -27,6 +27,7 @@ var supportedCapabilities = []csi.ControllerServiceCapability_RPC_Type{ //nolint
 	csi.ControllerServiceCapability_RPC_LIST_SNAPSHOTS,
 	csi.ControllerServiceCapability_RPC_EXPAND_VOLUME,
 	csi.ControllerServiceCapability_RPC_CLONE_VOLUME,
+	csi.ControllerServiceCapability_RPC_GET_SNAPSHOT,
 }
 
 type Controller struct {
@@ -572,9 +573,34 @@ func (c *Controller) ListSnapshots(ctx context.Context, req *csi.ListSnapshotsRe
 	}, nil
 }
 
+// GetSnapshot returns a specific snapshot by ID.
+// Returns ErrNotFound if no matching snapshot exists.
+func (c *Controller) GetSnapshot(ctx context.Context, req *csi.GetSnapshotRequest) (*csi.GetSnapshotResponse, error) {
+	if req.GetSnapshotId() == "" {
+		return nil, status.Error(codes.InvalidArgument, "snapshot ID must be provided")
+	}
+
+	snap, err := c.svc.GetStorageByUUID(ctx, req.GetSnapshotId())
+	if err != nil {
+		if errors.Is(err, service.ErrStorageNotFound) {
+			return nil, status.Error(codes.NotFound, err.Error())
+		}
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+
+	return &csi.GetSnapshotResponse{
+		Snapshot: &csi.Snapshot{
+			SizeBytes:      int64(snap.Size) * giB,
+			SnapshotId:     snap.UUID,
+			SourceVolumeId: snap.Origin,
+			CreationTime:   timestamppb.New(snap.Created),
+			ReadyToUse:     snap.State == upcloud.StorageStateOnline,
+		},
+	}, nil
+}
+
 // ControllerExpandVolume is called from the resizer to increase the volume size.
 //
-
 func (c *Controller) ControllerExpandVolume(ctx context.Context, req *csi.ControllerExpandVolumeRequest) (*csi.ControllerExpandVolumeResponse, error) {
 	volumeID := req.GetVolumeId()
 
