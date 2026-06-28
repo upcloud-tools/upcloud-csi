@@ -93,7 +93,10 @@ jobs:
 
       - name: Sign chart package
         run: |
-          cosign sign-blob dist/*.tgz --output-signature dist/*.tgz.sig --yes
+          cosign sign-blob dist/*.tgz \
+            --output-signature dist/*.tgz.sig \
+            --new-bundle-format=false \
+            --yes
 
       - name: Push chart to GHCR OCI
         run: |
