@@ -92,6 +92,12 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y --no-install-recommends make
 
+      - name: Install helm
+        if: runner.environment == 'self-hosted'
+        uses: azure/setup-helm@9bc31f4ebc9c6b171d7bfbaa5d006ae7abdb4310 # v5.0.1
+        with:
+          version: 3.21.2
+
       - name: Install kubectl
         if: runner.environment == 'self-hosted'
         uses: azure/setup-kubectl@829323503d1be3d00ca8346e5391ca0b07a9ab0d # v5.1.0
