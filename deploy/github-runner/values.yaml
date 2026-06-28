@@ -52,3 +52,5 @@ template:
             memory: "2Gi"
           limits:
             memory: "4Gi"
+    nodeSelector:
+      gh-runner: "yes"
