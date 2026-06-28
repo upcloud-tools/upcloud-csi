@@ -94,8 +94,7 @@ jobs:
       - name: Sign chart package
         run: |
           cosign sign-blob dist/*.tgz \
-            --output-signature dist/*.tgz.sig \
-            --new-bundle-format=false \
+            --bundle dist/*.tgz.sigstore.json \
             --yes
 
       - name: Push chart to GHCR OCI
@@ -119,7 +118,7 @@ jobs:
           fi
           gh release create "helm-v${{ needs.detect.outputs.chart_version }}" \
             dist/*.tgz \
-            dist/*.sig \
+            dist/*.sigstore.json \
             --notes-file .release_notes \
             --title "helm-v${{ needs.detect.outputs.chart_version }}" \
             --draft \
