@@ -37,6 +37,8 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Install cert-manager
+        env:
+          DISABLE_HTTP2: "true"
         run: |
           helm repo add jetstack https://charts.jetstack.io
           helm upgrade --install cert-manager jetstack/cert-manager \
@@ -58,6 +60,8 @@ jobs:
           EOF
 
       - name: Deploy CSI driver via Helm
+        env:
+          DISABLE_HTTP2: "true"
         run: |
           make deploy-test \
             HELM_OPTS="--set image.repository=${{ env.REGISTRY }}/${{ github.repository }} --set image.tag=${{ inputs.image_tag }}"

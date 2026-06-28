@@ -240,6 +240,7 @@ func runHelmUpgrade(args ...string) error {
 		cmd := exec.Command("helm", append([]string{ //nolint:gosec,noctx // helm args controlled by test
 			"upgrade", "--install", "upcloud-csi", "deploy/helm", "--reuse-values", "--wait", "--timeout", "180s",
 		}, args...)...)
+		cmd.Env = append(os.Environ(), "DISABLE_HTTP2=true")
 		cmd.Stdout = os.Stdout
 		cmd.Stderr = io.MultiWriter(os.Stderr, &stderr)
 		if err := cmd.Run(); err == nil {
