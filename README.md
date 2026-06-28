@@ -3,6 +3,7 @@
 ![Go Lint](https://github.com/upcloud-tools/upcloud-csi/actions/workflows/lint-golang.yaml/badge.svg)
 ![Helm Lint](https://github.com/upcloud-tools/upcloud-csi/actions/workflows/lint-helm.yaml/badge.svg)
 ![Tests](https://github.com/upcloud-tools/upcloud-csi/actions/workflows/test.yaml/badge.svg)
+[![OpenSSF Scorecard](https://api.scorecard.dev/projects/github.com/upcloud-tools/upcloud-csi/badge)](https://scorecard.dev/viewer/?uri=github.com/upcloud-tools/upcloud-csi)
 
 UpCloud [CSI](https://github.com/container-storage-interface/spec) Driver provides support for UpCloud Block Storage in
 Kubernetes.
