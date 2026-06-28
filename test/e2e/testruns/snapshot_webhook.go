@@ -63,7 +63,52 @@ func TestSnapshotValidationWebhook() {
 	})
 	gomega.Expect(err).NotTo(gomega.HaveOccurred())
 
-	introduceDelayForAdmission(ctx)
+	validClassName := "e2e-valid-" + uuid.New().String()[:8]
+	validClass := &unstructured.Unstructured{}
+	validClass.SetAPIVersion("snapshot.storage.k8s.io/v1")
+	validClass.SetKind("VolumeSnapshotClass")
+	validClass.SetName(validClassName)
+	validClass.SetLabels(map[string]string{csiTestLabel: mock.RunID})
+	_ = unstructured.SetNestedField(validClass.Object, "storage.csi.upcloud.com", "driver")
+	_ = unstructured.SetNestedField(validClass.Object, "Delete", "deletionPolicy")
+
+	_, err = client.Dynamic().Resource(snapshotClassGVR).Create(ctx, validClass, metav1.CreateOptions{})
+	gomega.Expect(err).NotTo(gomega.HaveOccurred())
+
+	invalidClassName := "e2e-invalid-" + uuid.New().String()[:8]
+	invalidClass := &unstructured.Unstructured{}
+	invalidClass.SetAPIVersion("snapshot.storage.k8s.io/v1")
+	invalidClass.SetKind("VolumeSnapshotClass")
+	invalidClass.SetName(invalidClassName)
+	invalidClass.SetLabels(map[string]string{csiTestLabel: mock.RunID})
+	_ = unstructured.SetNestedField(invalidClass.Object, "storage.csi.upcloud.com", "driver")
+	_ = unstructured.SetNestedField(invalidClass.Object, "Invalid", "deletionPolicy")
+
+	_, err = client.Dynamic().Resource(snapshotClassGVR).Create(ctx, invalidClass, metav1.CreateOptions{})
+	gomega.Expect(err).To(gomega.HaveOccurred())
+
+	_ = client.Dynamic().Resource(snapshotClassGVR).Delete(ctx, validClassName, metav1.DeleteOptions{})
+
+	disableWebhook()
+}
+
+func TestSnapshotValidationWebhookCertManager() {
+	ctx := context.Background()
+	client, err := mock.NewClient(Namespace)
+	gomega.Expect(err).NotTo(gomega.HaveOccurred())
+
+	enableWebhookCertManager("e2e-selfsigned", "ClusterIssuer")
+
+	waitForCertManagerCertificate(ctx, client)
+
+	err = wait.PollUntilContextTimeout(ctx, 2*time.Second, 3*time.Minute, true, func(ctx context.Context) (bool, error) {
+		deploy, err := client.K8s().AppsV1().Deployments("kube-system").Get(ctx, "upcloud-csi-snapshot-validation-deployment", metav1.GetOptions{})
+		if err != nil {
+			return false, err
+		}
+		return deploy.Status.ReadyReplicas >= 1, nil
+	})
+	gomega.Expect(err).NotTo(gomega.HaveOccurred())
 
 	validClassName := "e2e-valid-" + uuid.New().String()[:8]
 	validClass := &unstructured.Unstructured{}
@@ -154,69 +199,10 @@ func disableWebhook() {
 	)
 }
 
-func introduceDelayForAdmission(ctx context.Context) {
-	for range 10 {
-		select {
-		case <-ctx.Done():
-			return
-		case <-time.After(3 * time.Second):
-		}
-	}
-}
-
 var certGVR = schema.GroupVersionResource{ //nolint:gochecknoglobals // immutable schema constant
 	Group:    "cert-manager.io",
 	Version:  "v1",
 	Resource: "certificates",
-}
-
-func TestSnapshotValidationWebhookCertManager() {
-	ctx := context.Background()
-	client, err := mock.NewClient(Namespace)
-	gomega.Expect(err).NotTo(gomega.HaveOccurred())
-
-	enableWebhookCertManager("e2e-selfsigned", "ClusterIssuer")
-
-	waitForCertManagerCertificate(ctx, client)
-
-	err = wait.PollUntilContextTimeout(ctx, 2*time.Second, 3*time.Minute, true, func(ctx context.Context) (bool, error) {
-		deploy, err := client.K8s().AppsV1().Deployments("kube-system").Get(ctx, "upcloud-csi-snapshot-validation-deployment", metav1.GetOptions{})
-		if err != nil {
-			return false, err
-		}
-		return deploy.Status.ReadyReplicas >= 1, nil
-	})
-	gomega.Expect(err).NotTo(gomega.HaveOccurred())
-
-	introduceDelayForAdmission(ctx)
-
-	validClassName := "e2e-valid-" + uuid.New().String()[:8]
-	validClass := &unstructured.Unstructured{}
-	validClass.SetAPIVersion("snapshot.storage.k8s.io/v1")
-	validClass.SetKind("VolumeSnapshotClass")
-	validClass.SetName(validClassName)
-	validClass.SetLabels(map[string]string{csiTestLabel: mock.RunID})
-	_ = unstructured.SetNestedField(validClass.Object, "storage.csi.upcloud.com", "driver")
-	_ = unstructured.SetNestedField(validClass.Object, "Delete", "deletionPolicy")
-
-	_, err = client.Dynamic().Resource(snapshotClassGVR).Create(ctx, validClass, metav1.CreateOptions{})
-	gomega.Expect(err).NotTo(gomega.HaveOccurred())
-
-	invalidClassName := "e2e-invalid-" + uuid.New().String()[:8]
-	invalidClass := &unstructured.Unstructured{}
-	invalidClass.SetAPIVersion("snapshot.storage.k8s.io/v1")
-	invalidClass.SetKind("VolumeSnapshotClass")
-	invalidClass.SetName(invalidClassName)
-	invalidClass.SetLabels(map[string]string{csiTestLabel: mock.RunID})
-	_ = unstructured.SetNestedField(invalidClass.Object, "storage.csi.upcloud.com", "driver")
-	_ = unstructured.SetNestedField(invalidClass.Object, "Invalid", "deletionPolicy")
-
-	_, err = client.Dynamic().Resource(snapshotClassGVR).Create(ctx, invalidClass, metav1.CreateOptions{})
-	gomega.Expect(err).To(gomega.HaveOccurred())
-
-	_ = client.Dynamic().Resource(snapshotClassGVR).Delete(ctx, validClassName, metav1.DeleteOptions{})
-
-	disableWebhook()
 }
 
 func enableWebhookCertManager(issuerName, issuerKind string) {
