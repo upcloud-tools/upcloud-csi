@@ -2,12 +2,6 @@
 
 All notable changes to this project will be documented in this file.
 
-## [Unreleased]
-
-### Security
-- deps: bump k8s.io/apimachinery v0.35.6 → v0.36.2
-- deps: bump k8s.io/client-go v0.35.6 → v0.36.2
-
 ## [2.8.3] - 2026-06-26
 
 ### Fixed
