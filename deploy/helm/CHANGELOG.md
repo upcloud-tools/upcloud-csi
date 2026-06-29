@@ -1,5 +1,10 @@
 # Helm chart changelog
 
+## [1.10.1] - 2026-06-29
+
+### Changed
+- Update csi-resizer image to v2.2.1
+
 ## [1.10.0] - 2026-06-28
 
 ### Added
