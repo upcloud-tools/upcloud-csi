@@ -55,6 +55,31 @@ test:
 	go vet ./...
 	go test -race ./...
 
+CONTROLLER_FUZZ_TARGETS = \
+	FuzzValidateCreateVolumeRequest \
+	FuzzValidateControllerPublishVolumeRequest \
+	FuzzObtainSize \
+	FuzzGetStorageRange \
+	FuzzParseToken \
+	FuzzDisplayByteString \
+	FuzzFormatBytes \
+	FuzzCreateVolumeRequestTier \
+	FuzzCreateVolumeRequestEncryptionAtRest
+
+NODE_FUZZ_TARGETS = \
+	FuzzValidateNodePublishVolumeRequest
+
+.PHONY: fuzz
+fuzz:
+	@for target in $(CONTROLLER_FUZZ_TARGETS); do \
+		echo "==> Fuzzing $$target"; \
+		go test -fuzz="^$$target$$" -fuzztime=30s ./internal/controller/; \
+	done
+	@for target in $(NODE_FUZZ_TARGETS); do \
+		echo "==> Fuzzing $$target"; \
+		go test -fuzz="^$$target$$" -fuzztime=30s ./internal/node/; \
+	done
+
 test-integration:
 	make -C test/integration test
 
