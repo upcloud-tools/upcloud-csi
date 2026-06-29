@@ -61,7 +61,7 @@ controller:  # @schema additionalProperties: false
       resources: {}
     csiResizer:
       repository: registry.k8s.io/sig-storage/csi-resizer
-      tag: v2.2.0
+      tag: v2.2.1
       pullPolicy: IfNotPresent
       resources: {}
     csiSnapshotter:
