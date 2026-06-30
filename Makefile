@@ -40,14 +40,7 @@ install-cert-manager:
 
 .PHONY: create-e2e-clusterissuer
 create-e2e-clusterissuer:
-	kubectl apply -f - <<EOF
-	apiVersion: cert-manager.io/v1
-	kind: ClusterIssuer
-	metadata:
-	  name: e2e-selfsigned
-	spec:
-	  selfSigned: {}
-	EOF
+	kubectl apply -f test/e2e/clusterissuer.yaml
 
 .PHONY: deploy-test
 deploy-test: install-cert-manager create-e2e-clusterissuer
