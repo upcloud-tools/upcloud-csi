@@ -1,5 +1,14 @@
 # Helm chart changelog
 
+## [1.11.0] - 2026-06-30
+
+### Added
+- `clusterZone` value for both controller and node. Setting it avoids an API call on the controller startup, since it's needed for the DaemonSet already.
+
+### Changed
+- Node DaemonSet runs `--mode=node` now instead of `--mode=monolith`. UpCloud API credentials are no longer deployed to every cluster node, reducing credential blast radius
+- Controller StatefulSet and Node DaemonSet use `clusterZone` for the `--zone` flag
+
 ## [1.10.0] - 2026-06-28
 
 ### Added

@@ -30,7 +30,6 @@ spec:
 {{ tpl (toYaml .) $ | indent 8 }}
 {{- end }}
       annotations:
-        checksum/credentials: {{ include "upcloud-csi.credentialsChecksum" . | quote }}
 {{- with .Values.node.podAnnotations }}
 {{ tpl (toYaml .) $ | indent 8 }}
 {{- end }}
@@ -119,8 +118,8 @@ spec:
           args:
             - "--endpoint=$(CSI_ENDPOINT)"
             - "--nodehost=$(NODE_ID)"
-            - "--mode=monolith"
-            {{- with .Values.controller.zone }}
+            - "--mode=node"
+            {{- with .Values.clusterZone }}
             - "--zone={{ . }}"
             {{- end }}
             - "--address=tcp://0.0.0.0:13071"
@@ -130,24 +129,6 @@ spec:
           env:
             - name: CSI_ENDPOINT
               value: unix:///csi/csi.sock
-            - name: UPCLOUD_USERNAME
-              valueFrom:
-                secretKeyRef:
-                  name: {{ include "upcloud-csi.credentialsSecret" . }}
-                  key: username
-                  optional: true
-            - name: UPCLOUD_PASSWORD
-              valueFrom:
-                secretKeyRef:
-                  name: {{ include "upcloud-csi.credentialsSecret" . }}
-                  key: password
-                  optional: true
-            - name: UPCLOUD_TOKEN
-              valueFrom:
-                secretKeyRef:
-                  name: {{ include "upcloud-csi.credentialsSecret" . }}
-                  key: {{ .Values.credentials.tokenKey }}
-                  optional: true
             - name: NODE_ID
               valueFrom:
                 fieldRef:

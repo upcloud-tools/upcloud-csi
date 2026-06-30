@@ -214,7 +214,7 @@ spec:
             - "--endpoint=$(CSI_ENDPOINT)"
             - "--nodehost=$(NODE_ID)"
             - "--mode=monolith"
-            {{- with .Values.controller.zone }}
+            {{- with .Values.clusterZone }}
             - "--zone={{ . }}"
             {{- end }}
             - "--address=tcp://0.0.0.0:13071"
