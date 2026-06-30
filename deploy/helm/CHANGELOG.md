@@ -1,5 +1,10 @@
 # Helm chart changelog
 
+## [1.11.1] - 2026-06-30
+
+### Changed
+- Bump app version to v2.8.4 (Go 1.26.4, Alpine 3.23.5)
+
 ## [1.11.0] - 2026-06-30
 
 ### Added

@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.8.4] - 2026-06-30
+
+### Changed
+- chore: bump Go from 1.26.0 to 1.26.4 and Alpine from 3.23 to 3.23.5 for security fixes
+
 ## [2.8.3] - 2026-06-26
 
 ### Fixed
