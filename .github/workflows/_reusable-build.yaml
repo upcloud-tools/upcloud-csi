@@ -46,6 +46,7 @@ jobs:
           context: .
           containerfiles: cmd/upcloud-csi-plugin/Containerfile
           platforms: linux/amd64
+          extra-args: --pull=always
 
       - name: Push image
         id: push-image
