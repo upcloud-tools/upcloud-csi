@@ -26,10 +26,34 @@ helm-deploy:
 		$(if $(HELM_VALUES),--values $(HELM_VALUES),) \
 		$(HELM_OPTS) --wait --timeout 180s
 
+CERT_MANAGER_VERSION ?= v1.20.3
+
+.PHONY: install-cert-manager
+install-cert-manager:
+	helm repo add jetstack https://charts.jetstack.io
+	helm upgrade --install cert-manager jetstack/cert-manager \
+		--namespace cert-manager --create-namespace \
+		--version $(CERT_MANAGER_VERSION) \
+		--set crds.enabled=true
+	kubectl wait --namespace cert-manager --for=condition=Available deployment cert-manager --timeout=180s
+	kubectl wait --namespace cert-manager --for=condition=Available deployment cert-manager-webhook --timeout=180s
+
+.PHONY: create-e2e-clusterissuer
+create-e2e-clusterissuer:
+	kubectl apply -f - <<EOF
+	apiVersion: cert-manager.io/v1
+	kind: ClusterIssuer
+	metadata:
+	  name: e2e-selfsigned
+	spec:
+	  selfSigned: {}
+	EOF
+
 .PHONY: deploy-test
-deploy-test:
+deploy-test: install-cert-manager create-e2e-clusterissuer
 	helm upgrade --install upcloud-csi $(HELM_CHART_DIR) --namespace kube-system \
 		--set networkPolicy.enabled=true \
+		--set clusterZone=de-fra1 \
 		$(if $(HELM_VALUES),--values $(HELM_VALUES),) \
 		$(HELM_OPTS) --wait --timeout 180s
 
