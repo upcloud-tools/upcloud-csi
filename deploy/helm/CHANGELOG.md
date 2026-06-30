@@ -2,6 +2,9 @@
 
 ## [1.11.0] - 2026-06-30
 
+### Added
+- `node.zone` Helm value with fallback to `controller.zone`. Required for node DaemonSet to pass `--zone` to `--mode=node`
+
 ### Changed
 - Node DaemonSet runs `--mode=node` instead of `--mode=monolith`. UpCloud API credentials are no longer deployed to every cluster node, reducing credential blast radius
 

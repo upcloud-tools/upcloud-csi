@@ -119,8 +119,9 @@ spec:
             - "--endpoint=$(CSI_ENDPOINT)"
             - "--nodehost=$(NODE_ID)"
             - "--mode=node"
-            {{- with .Values.controller.zone }}
-            - "--zone={{ . }}"
+            {{- $zone := .Values.node.zone | default .Values.controller.zone }}
+            {{- if $zone }}
+            - "--zone={{ $zone }}"
             {{- end }}
             - "--address=tcp://0.0.0.0:13071"
             {{- if .Values.metrics.enabled }}
