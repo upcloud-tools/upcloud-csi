@@ -26,4 +26,4 @@ annotations:
       url: https://github.com/upcloud-tools/upcloud-csi/issues
   artifacthub.io/changes: |
     - "Node DaemonSet switches to --mode=node — credentials no longer deployed to every node"
-    - "Add node.zone value for the node DaemonSet — required with --mode=node"
+    - "Add root-level clusterZone for both controller and node"

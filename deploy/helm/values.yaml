@@ -7,6 +7,10 @@ fullnameOverride: ""
 # -- Common labels added to all resources.
 commonLabels: {}
 
+# -- UpCloud zone (e.g. de-fra1). Passed to both controller and node pods.
+# The controller discovers it automatically if empty.
+clusterZone: ""  # @schema type:string
+
 # -- Default log verbosity, overridable per component.
 logLevel: 5
 
@@ -37,8 +41,6 @@ image:  # @schema additionalProperties: false
 
 # Controller StatefulSet settings.
 controller:  # @schema additionalProperties: false
-  # -- UpCloud zone (e.g. de-fra1). Auto-detected from node hostname if empty.
-  zone: ""  # @schema type:string
   # -- Log verbosity (inherits global logLevel when null).
   logLevel:  # @schema type:[integer, null]; minimum:0; maximum:10
 
@@ -126,9 +128,6 @@ controller:  # @schema additionalProperties: false
 
 # Node DaemonSet settings.
 node:  # @schema additionalProperties: false
-  # -- UpCloud zone (e.g. de-fra1). Required for --mode=node.
-  zone: ""  # @schema type:string
-
   # -- Log verbosity (inherits global logLevel when null).
   logLevel:  # @schema type:[integer, null]; minimum:0; maximum:10
 
