@@ -3,7 +3,7 @@
 ## [1.11.0] - 2026-06-30
 
 ### Added
-- `node.zone` Helm value with fallback to `controller.zone`. Required for node DaemonSet to pass `--zone` to `--mode=node`
+- `node.zone` Helm value for the node DaemonSet. **Required** with `--mode=node` to pass `--zone` to the CSI plugin
 
 ### Changed
 - Node DaemonSet runs `--mode=node` instead of `--mode=monolith`. UpCloud API credentials are no longer deployed to every cluster node, reducing credential blast radius

@@ -126,7 +126,7 @@ controller:  # @schema additionalProperties: false
 
 # Node DaemonSet settings.
 node:  # @schema additionalProperties: false
-  # -- UpCloud zone (e.g. de-fra1). Required for --mode=node; falls back to controller.zone if empty.
+  # -- UpCloud zone (e.g. de-fra1). Required for --mode=node.
   zone: ""  # @schema type:string
 
   # -- Log verbosity (inherits global logLevel when null).
