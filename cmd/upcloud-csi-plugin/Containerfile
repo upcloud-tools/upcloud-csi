@@ -1,4 +1,4 @@
-ARG GO_VERSION=1.26
+ARG GO_VERSION=1.26.4
 
 FROM --platform=$BUILDPLATFORM golang:${GO_VERSION} AS build
 ARG VERSION
@@ -14,7 +14,7 @@ RUN CGO_ENABLED=0 GOOS=$TARGETOS GOARCH=$TARGETARCH \
     go build -ldflags="-s -w -X github.com/upcloud-tools/upcloud-csi/internal/plugin.version=${VERSION} -X github.com/upcloud-tools/upcloud-csi/internal/plugin.commit=${COMMIT} -X github.com/upcloud-tools/upcloud-csi/internal/plugin.gitTreeState=${TREE_STATE}" \
     -o upcloud-csi-plugin ./cmd/upcloud-csi-plugin
 
-FROM alpine:3.23
+FROM alpine:3.23.5
 
 LABEL org.opencontainers.image.source=https://github.com/upcloud-tools/upcloud-csi \
       org.opencontainers.image.description="UpCloud CSI Driver"
