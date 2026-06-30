@@ -1,5 +1,10 @@
 # Helm chart changelog
 
+## [1.11.0] - 2026-06-30
+
+### Changed
+- Node DaemonSet runs `--mode=node` instead of `--mode=monolith`. UpCloud API credentials are no longer deployed to every cluster node, reducing credential blast radius
+
 ## [1.10.0] - 2026-06-28
 
 ### Added

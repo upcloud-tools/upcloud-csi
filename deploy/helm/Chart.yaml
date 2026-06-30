@@ -2,7 +2,7 @@ apiVersion: v2
 name: upcloud-csi
 description: CSI driver for UpCloud block storage
 type: application
-version: "1.10.0"
+version: "1.11.0"
 appVersion: "v2.8.3"
 kubeVersion: ">=1.21.0"
 keywords:
@@ -25,4 +25,4 @@ annotations:
     - name: Support
       url: https://github.com/upcloud-tools/upcloud-csi/issues
   artifacthub.io/changes: |
-    - "Chart packages are signed too now"
+    - "Node DaemonSet switches to --mode=node — credentials no longer deployed to every node"
