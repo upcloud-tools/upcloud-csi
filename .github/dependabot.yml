@@ -13,12 +13,22 @@ updates:
           - google.golang.org/grpc
           - google.golang.org/genproto
 
-  - package-ecosystem: github-actions
-    directory: /
+  - package-ecosystem: "github-actions"
+    commit-message:
+      prefix: chore(actions)
+    directory: "/"
     schedule:
-      interval: daily
+      interval: weekly
+      day: monday
 
   - package-ecosystem: docker
     directory: /cmd/upcloud-csi-plugin
     schedule:
-      interval: daily
+      interval: weekly
+      day: monday
+
+  - package-ecosystem: "devcontainers" # https://containers.dev/guide/dependabot
+    directory: "/"
+    schedule:
+      interval: weekly
+      day: monday
