@@ -50,7 +50,7 @@ jobs:
 
       - name: Push image
         id: push-image
-        uses: redhat-actions/push-to-registry@5ed88d269cf581ea9ef6dd6806d01562096bee9c # v2.8
+        uses: aardbol-actions/push-to-registry@39af5b4272a9deda2d8990e035248cd6c61ea701 # v3.0.0
         with:
           image: ${{ steps.build-image.outputs.image }}
           tags: ${{ inputs.tags }}
