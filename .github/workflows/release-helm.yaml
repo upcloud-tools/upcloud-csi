@@ -8,8 +8,8 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: write
-  packages: write
+  contents: read
+  packages: read
 
 env:
   CHART_DIR: deploy/helm
@@ -95,7 +95,7 @@ jobs:
         run: |
           PACKAGE=$(ls dist/*.tgz)
           cosign sign-blob "$PACKAGE" --bundle "${PACKAGE}.sigstore.json" --yes
-      
+
       - name: Push chart to GHCR OCI
         run: helm push dist/*.tgz oci://${{ env.REGISTRY }}/${{ env.CHART_OCI_REPO }}
 
