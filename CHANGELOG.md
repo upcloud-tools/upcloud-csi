@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.8.5] - 2026-07-15
+
+### Changed
+- chore: update go dependencies
+- chore: bump Go to 1.26.5
+
 ## [2.8.4] - 2026-06-30
 
 ### Changed

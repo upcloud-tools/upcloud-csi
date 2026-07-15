@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
 
 env:
-  GO_VERSION: '1.26'
+  GO_VERSION: '1.26.5'
 
 permissions:
   contents: read
@@ -18,7 +18,7 @@ jobs:
       - uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6.5.0
         with:
           go-version: ${{ env.GO_VERSION }}
-          
+
       - name: Test Driver Integration
         env:
           UPCLOUD_TEST_USERNAME: ${{ secrets.UPCLOUD_TEST_USERNAME }}
