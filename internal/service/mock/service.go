@@ -2,6 +2,7 @@ package mock
 
 import (
 	"context"
+	"time"
 
 	"github.com/UpCloudLtd/upcloud-go-api/v8/upcloud"
 	"github.com/UpCloudLtd/upcloud-go-api/v8/upcloud/request"
@@ -10,14 +11,16 @@ import (
 )
 
 type UpCloudServiceMock struct {
-	VolumeNameExists bool
-	VolumeUUIDExists bool
-	CloneStorageSize int
-	StorageSize      int
-	StorageBackingUp bool
-
-	SourceVolumeID string
+	VolumeNameExists      bool
+	VolumeUUIDExists      bool
+	FileStorageUUIDExists bool
+	CloneBlockStorageSize int
+	StorageSize           int
+	StorageBackingUp      bool
+	SourceVolumeID        string
 }
+
+// -- Block Storage --
 
 func newMockStorage(size int, label ...upcloud.Label) *upcloud.Storage {
 	id, _ := uuid.NewUUID()
@@ -30,14 +33,7 @@ func newMockStorage(size int, label ...upcloud.Label) *upcloud.Storage {
 	}
 }
 
-func newMockBackupStorage(s *upcloud.Storage) *upcloud.Storage {
-	b := newMockStorage(s.Size)
-	b.Type = upcloud.StorageTypeBackup
-	b.Origin = s.UUID
-	return b
-}
-
-func (m *UpCloudServiceMock) GetStorageByUUID(ctx context.Context, storageUUID string) (*upcloud.StorageDetails, error) {
+func (m *UpCloudServiceMock) GetBlockStorageByUUID(ctx context.Context, storageUUID string) (*upcloud.StorageDetails, error) {
 	if !m.VolumeUUIDExists {
 		return nil, service.ErrStorageNotFound
 	}
@@ -48,7 +44,7 @@ func (m *UpCloudServiceMock) GetStorageByUUID(ctx context.Context, storageUUID s
 	return s, nil
 }
 
-func (m *UpCloudServiceMock) GetStorageByName(ctx context.Context, storageName string) ([]*upcloud.StorageDetails, error) {
+func (m *UpCloudServiceMock) GetBlockStorageByName(ctx context.Context, storageName string) ([]*upcloud.StorageDetails, error) {
 	if !m.VolumeNameExists {
 		return nil, nil
 	}
@@ -61,7 +57,7 @@ func (m *UpCloudServiceMock) GetStorageByName(ctx context.Context, storageName s
 	return s, nil
 }
 
-func (m *UpCloudServiceMock) CreateStorage(ctx context.Context, csr *request.CreateStorageRequest) (*upcloud.StorageDetails, error) {
+func (m *UpCloudServiceMock) CreateBlockStorage(ctx context.Context, csr *request.CreateStorageRequest) (*upcloud.StorageDetails, error) {
 	id, _ := uuid.NewUUID()
 	storage := newMockStorage(m.StorageSize)
 	storage.Encrypted = csr.Encrypted
@@ -73,9 +69,9 @@ func (m *UpCloudServiceMock) CreateStorage(ctx context.Context, csr *request.Cre
 	return s, nil
 }
 
-func (m *UpCloudServiceMock) CloneStorage(ctx context.Context, csr *request.CloneStorageRequest, label ...upcloud.Label) (*upcloud.StorageDetails, error) {
+func (m *UpCloudServiceMock) CloneBlockStorage(ctx context.Context, csr *request.CloneStorageRequest, label ...upcloud.Label) (*upcloud.StorageDetails, error) {
 	id, _ := uuid.NewUUID()
-	storage := newMockStorage(m.CloneStorageSize, label...)
+	storage := newMockStorage(m.CloneBlockStorageSize, label...)
 	storage.Encrypted = csr.Encrypted
 	s := &upcloud.StorageDetails{
 		Storage:     *storage,
@@ -85,19 +81,19 @@ func (m *UpCloudServiceMock) CloneStorage(ctx context.Context, csr *request.Clon
 	return s, nil
 }
 
-func (m *UpCloudServiceMock) DeleteStorage(ctx context.Context, storageUUID string) error {
+func (m *UpCloudServiceMock) DeleteBlockStorage(ctx context.Context, storageUUID string) error {
 	return nil
 }
 
-func (m *UpCloudServiceMock) AttachStorage(ctx context.Context, storageUUID, serverUUID string) error {
+func (m *UpCloudServiceMock) AttachBlockStorage(ctx context.Context, storageUUID, serverUUID string) error {
 	return nil
 }
 
-func (m *UpCloudServiceMock) DetachStorage(ctx context.Context, storageUUID, serverUUID string) error {
+func (m *UpCloudServiceMock) DetachBlockStorage(ctx context.Context, storageUUID, serverUUID string) error {
 	return nil
 }
 
-func (m *UpCloudServiceMock) ListStorage(ctx context.Context, zone string) ([]upcloud.Storage, error) {
+func (m *UpCloudServiceMock) ListBlockStorage(ctx context.Context, zone string) ([]upcloud.Storage, error) {
 	return []upcloud.Storage{
 		*newMockStorage(m.StorageSize),
 		*newMockStorage(m.StorageSize),
@@ -113,7 +109,7 @@ func (m *UpCloudServiceMock) GetServerByHostname(ctx context.Context, hostname s
 	}, nil
 }
 
-func (m *UpCloudServiceMock) ResizeStorage(ctx context.Context, _ string, newSize int, deleteBackup bool) (*upcloud.StorageDetails, error) {
+func (m *UpCloudServiceMock) ResizeBlockStorage(ctx context.Context, _ string, newSize int, deleteBackup bool) (*upcloud.StorageDetails, error) {
 	id, _ := uuid.NewUUID()
 	return &upcloud.StorageDetails{Storage: upcloud.Storage{UUID: id.String(), Size: newSize}}, nil
 }
@@ -123,7 +119,16 @@ func (m *UpCloudServiceMock) ResizeBlockDevice(ctx context.Context, _ string, ne
 	return &upcloud.StorageDetails{Storage: upcloud.Storage{UUID: id.String(), Size: newSize}}, nil
 }
 
-func (m *UpCloudServiceMock) CreateStorageBackup(ctx context.Context, uuid, title string) (*upcloud.StorageDetails, error) {
+// -- Backup Storage --
+
+func newMockBackupStorage(s *upcloud.Storage) *upcloud.Storage {
+	b := newMockStorage(s.Size)
+	b.Type = upcloud.StorageTypeBackup
+	b.Origin = s.UUID
+	return b
+}
+
+func (m *UpCloudServiceMock) CreateBlockStorageBackup(ctx context.Context, uuid, title string) (*upcloud.StorageDetails, error) {
 	if m.StorageBackingUp {
 		return nil, service.ErrBackupInProgress
 	}
@@ -135,7 +140,7 @@ func (m *UpCloudServiceMock) CreateStorageBackup(ctx context.Context, uuid, titl
 	return &upcloud.StorageDetails{Storage: *s}, nil
 }
 
-func (m *UpCloudServiceMock) ListStorageBackups(ctx context.Context, uuid string) ([]upcloud.Storage, error) {
+func (m *UpCloudServiceMock) ListBlockStorageBackups(ctx context.Context, uuid string) ([]upcloud.Storage, error) {
 	s := newMockStorage(m.StorageSize)
 	return []upcloud.Storage{
 		*newMockBackupStorage(s),
@@ -143,11 +148,11 @@ func (m *UpCloudServiceMock) ListStorageBackups(ctx context.Context, uuid string
 	}, nil
 }
 
-func (m *UpCloudServiceMock) DeleteStorageBackup(ctx context.Context, uuid string) error {
+func (m *UpCloudServiceMock) DeleteBlockStorageBackup(ctx context.Context, uuid string) error {
 	return nil
 }
 
-func (m *UpCloudServiceMock) GetStorageBackupByName(ctx context.Context, name string) (*upcloud.Storage, error) {
+func (m *UpCloudServiceMock) GetBlockStorageBackupByName(ctx context.Context, name string) (*upcloud.Storage, error) {
 	var s *upcloud.Storage
 	if !m.VolumeUUIDExists || name == "" {
 		return nil, service.ErrStorageNotFound
@@ -160,6 +165,46 @@ func (m *UpCloudServiceMock) GetStorageBackupByName(ctx context.Context, name st
 	return s, nil
 }
 
-func (m *UpCloudServiceMock) RequireStorageOnline(ctx context.Context, s *upcloud.Storage) error {
+func (m *UpCloudServiceMock) RequireBlockStorageOnline(ctx context.Context, s *upcloud.Storage) error {
 	return nil
+}
+
+// -- File Storage tests --
+
+func newMockFileStorage(size int, labels ...upcloud.Label) *upcloud.FileStorage {
+	id, _ := uuid.NewUUID()
+	return &upcloud.FileStorage{
+		UUID:             id.String(),
+		Name:             "mock-file-storage",
+		Zone:             "fi-hel2",
+		Labels:           labels,
+		Encrypted:        false,
+		SizeGiB:          size,
+		ConfiguredStatus: upcloud.FileStorageConfiguredStatusStarted,
+		OperationalState: string(upcloud.FileStorageOperationalStateRunning),
+		CreatedAt:        time.Now(),
+	}
+}
+
+func (m *UpCloudServiceMock) GetFileStorageByUUID(ctx context.Context, uuid string) (*upcloud.FileStorage, error) {
+	if !m.FileStorageUUIDExists {
+		return nil, service.ErrFileStorageNotFound
+	}
+	return newMockFileStorage(m.StorageSize), nil
+}
+
+func (m *UpCloudServiceMock) GetFileStorages(ctx context.Context) ([]upcloud.FileStorage, error) {
+	return []upcloud.FileStorage{
+		*newMockFileStorage(m.StorageSize),
+	}, nil
+}
+
+func (m *UpCloudServiceMock) DeleteFileStorage(ctx context.Context, uuid string) error {
+	return nil
+}
+
+func (m *UpCloudServiceMock) ModifyFileStorage(ctx context.Context, inputUUID string, size int) (*upcloud.FileStorage, error) {
+	fs := newMockFileStorage(size)
+	fs.UUID = inputUUID
+	return fs, nil
 }

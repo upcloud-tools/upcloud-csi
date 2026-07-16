@@ -1,13 +1,14 @@
 package controller
 
 import (
+	"context"
 	"fmt"
 	"strconv"
 	"strings"
 
+	"github.com/UpCloudLtd/upcloud-go-api/v8/upcloud"
 	"github.com/container-storage-interface/spec/lib/go/csi"
 	"github.com/google/uuid"
-
 	"k8s.io/apimachinery/pkg/util/sets"
 )
 
@@ -17,83 +18,72 @@ const (
 	miB
 	giB
 	tiB
-
-	// minimumVolumeSizeInBytes is used to validate that the user is not trying
-	// to create a volume that is smaller than what we support.
-	minimumVolumeSizeInBytes int64 = 1 * giB
-
-	// maximumVolumeSizeInBytes is used to validate that the user is not trying
-	// to create a volume that is larger than what we support.
-	maximumVolumeSizeInBytes int64 = 4096 * giB
-
-	// defaultVolumeSize is used when the user did not provide a size or
-	// the size they provided did not satisfy our requirements.
-	defaultVolumeSize = 1 * giB
 )
 
-var supportedAccessMode = &csi.VolumeCapability_AccessMode{Mode: csi.VolumeCapability_AccessMode_SINGLE_NODE_WRITER} //nolint: gochecknoglobals // supportedAccessMode is readonly variable
+var (
+	accessModeSingleNodeWrite = &csi.VolumeCapability_AccessMode{Mode: csi.VolumeCapability_AccessMode_SINGLE_NODE_WRITER}      //nolint: gochecknoglobals // readonly variable
+	accessModeMultiNodeWrite  = &csi.VolumeCapability_AccessMode{Mode: csi.VolumeCapability_AccessMode_MULTI_NODE_MULTI_WRITER} //nolint: gochecknoglobals // readonly variable
+)
 
-type storageRange struct {
-	requiredBytes int64
-	requiredSet   bool
-	limitBytes    int64
-	limitSet      bool
+// lookupVolume dispatches a volume lookup by UUID to block storage or file storage based on the UUID prefix.
+func (c *Controller) lookupVolume(ctx context.Context, id string) (*upcloud.StorageDetails, *upcloud.FileStorage, *csi.VolumeCapability_AccessMode, error) {
+	if isValidBlockStorageUUID(id) {
+		vol, err := c.svc.GetBlockStorageByUUID(ctx, id)
+		if err != nil {
+			return nil, nil, nil, err
+		}
+		return vol, nil, accessModeSingleNodeWrite, nil
+	}
+
+	if isValidFileStorageUUID(id) {
+		fs, err := c.svc.GetFileStorageByUUID(ctx, id)
+		if err != nil {
+			return nil, nil, nil, err
+		}
+		return nil, fs, accessModeMultiNodeWrite, nil
+	}
+
+	return nil, nil, nil, fmt.Errorf("invalid volume UUID: %s", id)
 }
 
-// TODO reword/rework
-// getStorageRange extracts the storage size in bytes from the given capacity
-// range. If the capacity range is not satisfied it returns the default volume
-// size. If the capacity range is below or above supported sizes, it returns an
-// error.
-func getStorageRange(cr *csi.CapacityRange) (int64, error) {
+// validateCapacityRange validates and returns a capacity from the given range, bounded by storage-type-specific limits.
+// When both required and limit are set, required is preferred.
+// Returns minBytes when no range is provided.
+func validateCapacityRange(cr *csi.CapacityRange, minBytes, maxBytes int64) (int64, error) {
 	if cr == nil {
-		return defaultVolumeSize, nil
+		return minBytes, nil
 	}
 
-	sr := &storageRange{
-		requiredBytes: cr.GetRequiredBytes(),
-		requiredSet:   0 < cr.GetRequiredBytes(),
-		limitBytes:    cr.GetLimitBytes(),
-		limitSet:      0 < cr.GetLimitBytes(),
+	required, limit := cr.GetRequiredBytes(), cr.GetLimitBytes()
+
+	lo, hi := required, limit
+	switch {
+	// If both required and limit are unset, return minBytes.
+	case lo <= 0 && hi <= 0:
+		return minBytes, nil
+	// If only required is set, use it as the capacity.
+	case lo <= 0:
+		lo = hi
+	// If only limit is set, use it as the capacity.
+	case hi <= 0:
+		hi = lo
+	// If both are set, use the smaller as the capacity.
+	case hi < lo:
+		return 0, fmt.Errorf("limit (%v) can not be less than required (%v) size", displayByteString(limit), displayByteString(required))
 	}
 
-	if !sr.requiredSet && !sr.limitSet {
-		return defaultVolumeSize, nil
+	// The request is satisfiable iff [lo, hi] overlaps [minBytes, maxBytes].
+	if hi < minBytes {
+		return 0, fmt.Errorf("requested size (%v) can not be less than minimum supported volume size (%v)", displayByteString(hi), displayByteString(minBytes))
+	}
+	if lo > maxBytes {
+		return 0, fmt.Errorf("required size (%v) can not exceed maximum supported volume size (%v)", displayByteString(lo), displayByteString(maxBytes))
 	}
 
-	if sr.requiredSet && sr.limitSet && sr.limitBytes < sr.requiredBytes {
-		return 0, fmt.Errorf("required bytes %d is greater than limit bytes %d", sr.requiredBytes, sr.limitBytes)
+	if required > 0 {
+		return required, nil
 	}
-
-	if sr.requiredSet && !sr.limitSet && sr.requiredBytes < minimumVolumeSizeInBytes {
-		return 0, fmt.Errorf("required (%v) can not be less than minimum supported volume size (%v)", displayByteString(sr.requiredBytes), displayByteString(minimumVolumeSizeInBytes))
-	}
-
-	if sr.limitSet && sr.limitBytes < minimumVolumeSizeInBytes {
-		return 0, fmt.Errorf("limit (%v) can not be less than minimum supported volume size (%v)", displayByteString(sr.limitBytes), displayByteString(minimumVolumeSizeInBytes))
-	}
-
-	if sr.requiredSet && sr.requiredBytes > maximumVolumeSizeInBytes {
-		return 0, fmt.Errorf("required (%v) can not exceed maximum supported volume size (%v)", displayByteString(sr.requiredBytes), displayByteString(maximumVolumeSizeInBytes))
-	}
-
-	if !sr.requiredSet && sr.limitSet && sr.limitBytes > maximumVolumeSizeInBytes {
-		return 0, fmt.Errorf("limit (%v) can not exceed maximum supported volume size (%v)", displayByteString(sr.limitBytes), displayByteString(maximumVolumeSizeInBytes))
-	}
-
-	if sr.requiredSet && sr.limitSet && sr.requiredBytes == sr.limitBytes {
-		return sr.requiredBytes, nil
-	}
-
-	if sr.requiredSet {
-		return sr.requiredBytes, nil
-	}
-
-	if sr.limitSet {
-		return sr.limitBytes, nil
-	}
-
-	return defaultVolumeSize, nil
+	return limit, nil
 }
 
 // displayByteString takes a byte representation of storage size and returns a human-readable string: (1 GiB).
@@ -124,12 +114,12 @@ func displayByteString(bytes int64) string {
 }
 
 // TODO reword...
-// validateCapabilities validates the requested capabilities. It returns a list
-// of violations which may be empty if no violatons were found.
+// validateCapabilities validates the requested capabilities.
+// It returns a list of violations which may be empty if no violatons were found.
 func validateCapabilities(capacities []*csi.VolumeCapability) []string {
 	violations := sets.NewString()
 	for _, capacity := range capacities {
-		if capacity.GetAccessMode().GetMode() != supportedAccessMode.GetMode() {
+		if capacity.GetAccessMode().GetMode() != accessModeSingleNodeWrite.GetMode() {
 			violations.Insert(fmt.Sprintf("unsupported access mode %s", capacity.GetAccessMode().GetMode().String()))
 		}
 
@@ -148,11 +138,4 @@ func validateCapabilities(capacities []*csi.VolumeCapability) []string {
 func isValidUUID(s string) bool {
 	_, err := uuid.Parse(s)
 	return err == nil
-}
-
-func isValidStorageUUID(s string) bool {
-	if isValidUUID(s) {
-		return strings.HasPrefix(s, "01")
-	}
-	return false
 }

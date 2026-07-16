@@ -12,6 +12,8 @@ import (
 	"k8s.io/client-go/kubernetes"
 )
 
+const dataMountPath = "/data"
+
 type Client struct {
 	k8s       kubernetes.Interface
 	dynamic   dynamic.Interface
@@ -43,7 +45,7 @@ func (c *Client) CreatePod(ctx context.Context, podName, pvcName string) (*v1.Po
 					VolumeMounts: []v1.VolumeMount{
 						{
 							Name:      pvcName,
-							MountPath: "/data",
+							MountPath: dataMountPath,
 						},
 					},
 				},
@@ -64,6 +66,42 @@ func (c *Client) CreatePod(ctx context.Context, podName, pvcName string) (*v1.Po
 	pod, err := c.k8s.CoreV1().Pods(c.ns).Create(ctx, req, metav1.CreateOptions{})
 
 	return pod, err
+}
+
+func (c *Client) CreatePodWithCommand(ctx context.Context, podName, pvcName, command string) (*v1.Pod, error) {
+	req := &v1.Pod{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: podName,
+		},
+		Spec: v1.PodSpec{
+			RestartPolicy: v1.RestartPolicyNever,
+			Containers: []v1.Container{
+				{
+					Name:    "main",
+					Image:   "busybox",
+					Command: []string{shellPath},
+					Args:    []string{"-c", command},
+					VolumeMounts: []v1.VolumeMount{
+						{
+							Name:      pvcName,
+							MountPath: dataMountPath,
+						},
+					},
+				},
+			},
+			Volumes: []v1.Volume{
+				{
+					Name: pvcName,
+					VolumeSource: v1.VolumeSource{
+						PersistentVolumeClaim: &v1.PersistentVolumeClaimVolumeSource{
+							ClaimName: pvcName,
+						},
+					},
+				},
+			},
+		},
+	}
+	return c.k8s.CoreV1().Pods(c.ns).Create(ctx, req, metav1.CreateOptions{})
 }
 
 func (c *Client) DeletePod(ctx context.Context, podName, namespace string) error {
@@ -122,4 +160,13 @@ func (c *Client) ListPods(ctx context.Context, namespace, labelSelector string) 
 	return c.k8s.CoreV1().Pods(namespace).List(ctx, metav1.ListOptions{
 		LabelSelector: labelSelector,
 	})
+}
+
+func (c *Client) GetPodLogs(ctx context.Context, podName, namespace string) (string, error) {
+	req := c.k8s.CoreV1().Pods(namespace).GetLogs(podName, &v1.PodLogOptions{})
+	data, err := req.Do(ctx).Raw()
+	if err != nil {
+		return "", err
+	}
+	return string(data), nil
 }

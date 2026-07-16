@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"math/rand"
+	"net/http"
 	"sync"
 	"time"
 
@@ -12,6 +13,18 @@ import (
 	"github.com/UpCloudLtd/upcloud-go-api/v8/upcloud/request"
 	upsvc "github.com/UpCloudLtd/upcloud-go-api/v8/upcloud/service"
 )
+
+func mockFileStorage(uuid string, sizeGiB int) *upcloud.FileStorage {
+	return &upcloud.FileStorage{
+		UUID:             uuid,
+		Name:             "mock-file-storage",
+		Zone:             "fi-hel2",
+		SizeGiB:          sizeGiB,
+		ConfiguredStatus: upcloud.FileStorageConfiguredStatusStarted,
+		OperationalState: string(upcloud.FileStorageOperationalStateRunning),
+		CreatedAt:        time.Now(),
+	}
+}
 
 type UpCloudClient struct {
 	upsvc.Storage
@@ -105,4 +118,30 @@ func (u *UpCloudClient) DetachStorage(ctx context.Context, r *request.DetachStor
 	u.StoreServer(server)
 
 	return server, nil
+}
+
+func (u *UpCloudClient) GetFileStorages(ctx context.Context, r *request.GetFileStoragesRequest) ([]upcloud.FileStorage, error) {
+	return []upcloud.FileStorage{}, nil
+}
+
+func (u *UpCloudClient) GetFileStorage(ctx context.Context, r *request.GetFileStorageRequest) (*upcloud.FileStorage, error) {
+	return nil, &upcloud.Problem{Status: http.StatusNotFound}
+}
+
+func (u *UpCloudClient) DeleteFileStorage(ctx context.Context, r *request.DeleteFileStorageRequest) error {
+	return nil
+}
+
+func (u *UpCloudClient) ModifyFileStorage(ctx context.Context, r *request.ModifyFileStorageRequest) (*upcloud.FileStorage, error) {
+	size := 250
+	if r.SizeGiB != nil {
+		size = *r.SizeGiB
+	}
+	return mockFileStorage(r.UUID, size), nil
+}
+
+func (u *UpCloudClient) WaitForFileStorageOperationalState(ctx context.Context, r *request.WaitForFileStorageOperationalStateRequest) (*upcloud.FileStorage, error) {
+	fs := mockFileStorage(r.UUID, 250)
+	fs.OperationalState = string(r.DesiredState)
+	return fs, nil
 }

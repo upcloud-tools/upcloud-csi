@@ -2,9 +2,11 @@ package controller_test
 
 import (
 	"context"
+	"errors"
 	"reflect"
 	"testing"
 
+	"github.com/UpCloudLtd/upcloud-go-api/v8/upcloud"
 	"github.com/container-storage-interface/spec/lib/go/csi"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
@@ -28,7 +30,7 @@ const (
 
 func newController(svc service.Service) *controller.Controller {
 	if svc == nil {
-		svc = &mock.UpCloudServiceMock{StorageSize: 10, CloneStorageSize: 10, VolumeUUIDExists: true}
+		svc = &mock.UpCloudServiceMock{StorageSize: 10, CloneBlockStorageSize: 10, VolumeUUIDExists: true, FileStorageUUIDExists: true}
 	}
 
 	c, _ := controller.NewController(svc, "fi-hel2", 10, logrus.New().WithField("package", "controller_test"))
@@ -220,10 +222,10 @@ func TestController_CreateVolume(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			d := newController(&mock.UpCloudServiceMock{
-				VolumeNameExists: tt.volumeNameExists,
-				VolumeUUIDExists: tt.volumeUUIDExists,
-				StorageSize:      10,
-				CloneStorageSize: 9, // set smaller size so that resize is triggered
+				VolumeNameExists:      tt.volumeNameExists,
+				VolumeUUIDExists:      tt.volumeUUIDExists,
+				StorageSize:           10,
+				CloneBlockStorageSize: 9, // set smaller size so that resize is triggered
 			})
 			gotResp, err := d.CreateVolume(context.Background(), tt.args.req)
 			if (err != nil) != tt.wantErr {
@@ -372,7 +374,7 @@ func TestController_ValidateVolumeCapabilities(t *testing.T) {
 			name: "Test ValidateVolumeCapabilities",
 			args: args{
 				&csi.ValidateVolumeCapabilitiesRequest{
-					VolumeId: testVolumeName,
+					VolumeId: "015d681c-813a-11f1-81d2-80fa5b957a6c",
 					VolumeCapabilities: []*csi.VolumeCapability{
 						{
 							AccessType: &csi.VolumeCapability_Mount{
@@ -408,7 +410,7 @@ func TestController_ExpandVolume(t *testing.T) {
 	c := newController(nil)
 	wantBytes := int64(30 * giB)
 	r, err := c.ControllerExpandVolume(context.Background(), &csi.ControllerExpandVolumeRequest{
-		VolumeId: "test-vol",
+		VolumeId: "015d681c-813a-11f1-81d2-80fa5b957a6c",
 		CapacityRange: &csi.CapacityRange{
 			RequiredBytes: wantBytes,
 			LimitBytes:    0,
@@ -421,6 +423,119 @@ func TestController_ExpandVolume(t *testing.T) {
 	}
 	if r.CapacityBytes != wantBytes {
 		t.Errorf("CapacityBytes failed want %d got %d", wantBytes, r.CapacityBytes)
+	}
+}
+
+// blockStorageNotFoundMock embeds UpCloudServiceMock but overrides DeleteBlockStorage to simulate
+// block storage not found, triggering the file storage deletion fallback path.
+type blockStorageNotFoundMock struct {
+	mock.UpCloudServiceMock
+}
+
+func (m *blockStorageNotFoundMock) DeleteBlockStorage(ctx context.Context, uuid string) error {
+	return service.ErrStorageNotFound
+}
+
+func TestController_ValidateVolumeCapabilities_FileStorage(t *testing.T) {
+	t.Parallel()
+	c := newController(nil)
+	req := &csi.ValidateVolumeCapabilitiesRequest{
+		VolumeId: "175d681c-813a-11f1-81d2-80fa5b957a6c",
+		VolumeCapabilities: []*csi.VolumeCapability{
+			{
+				AccessType: &csi.VolumeCapability_Mount{
+					Mount: &csi.VolumeCapability_MountVolume{},
+				},
+			},
+		},
+	}
+	wantMode := csi.VolumeCapability_AccessMode_MULTI_NODE_MULTI_WRITER
+	got, err := c.ValidateVolumeCapabilities(context.Background(), req)
+	if err != nil {
+		t.Errorf("ValidateVolumeCapabilities() error = %v", err)
+		return
+	}
+	if got.Confirmed.VolumeCapabilities[0].AccessMode.GetMode() != wantMode {
+		t.Errorf("ValidateVolumeCapabilities() got mode = %v, want %v",
+			got.Confirmed.VolumeCapabilities[0].AccessMode.GetMode(), wantMode)
+	}
+}
+
+func TestController_ExpandVolume_FileStorage(t *testing.T) {
+	t.Parallel()
+	c := newController(nil)
+	wantBytes := int64(300 * giB)
+	r, err := c.ControllerExpandVolume(context.Background(), &csi.ControllerExpandVolumeRequest{
+		VolumeId: "175d681c-813a-11f1-81d2-80fa5b957a6c",
+		CapacityRange: &csi.CapacityRange{
+			RequiredBytes: wantBytes,
+			LimitBytes:    0,
+		},
+	})
+	if err != nil {
+		t.Errorf("ControllerExpandVolume error = %v", err)
+		return
+	}
+	if r.CapacityBytes != wantBytes {
+		t.Errorf("CapacityBytes failed want %d got %d", wantBytes, r.CapacityBytes)
+	}
+	if r.NodeExpansionRequired {
+		t.Error("file storage should not require node expansion")
+	}
+}
+
+func TestController_DeleteVolume_FileStorage(t *testing.T) {
+	t.Parallel()
+	svc := &blockStorageNotFoundMock{UpCloudServiceMock: mock.UpCloudServiceMock{VolumeUUIDExists: true, FileStorageUUIDExists: true}}
+	c := newController(svc)
+	_, err := c.DeleteVolume(context.Background(), &csi.DeleteVolumeRequest{
+		VolumeId: "175d681c-813a-11f1-81d2-80fa5b957a6c",
+	})
+	if err != nil {
+		t.Errorf("DeleteVolume() error = %v", err)
+	}
+}
+
+type modifyFileStorageErrorMock struct {
+	mock.UpCloudServiceMock
+}
+
+func (m *modifyFileStorageErrorMock) ModifyFileStorage(ctx context.Context, uuid string, size int) (*upcloud.FileStorage, error) {
+	return nil, errors.New("modify failed")
+}
+
+func TestController_ExpandVolume_FileStorage_Error(t *testing.T) {
+	t.Parallel()
+	svc := &modifyFileStorageErrorMock{UpCloudServiceMock: mock.UpCloudServiceMock{VolumeUUIDExists: true, FileStorageUUIDExists: true}}
+	c := newController(svc)
+	_, err := c.ControllerExpandVolume(context.Background(), &csi.ControllerExpandVolumeRequest{
+		VolumeId: "175d681c-813a-11f1-81d2-80fa5b957a6c",
+		CapacityRange: &csi.CapacityRange{
+			RequiredBytes: 300 * giB,
+			LimitBytes:    0,
+		},
+	})
+	if err == nil {
+		t.Error("expected error when ModifyFileStorage fails")
+	}
+}
+
+func TestController_ValidateVolumeCapabilities_InvalidUUID(t *testing.T) {
+	t.Parallel()
+	c := newController(nil)
+	req := &csi.ValidateVolumeCapabilitiesRequest{
+		VolumeId: "invalid-uuid",
+		VolumeCapabilities: []*csi.VolumeCapability{
+			{
+				AccessType: &csi.VolumeCapability_Mount{
+					Mount: &csi.VolumeCapability_MountVolume{},
+				},
+			},
+		},
+	}
+	_, err := c.ValidateVolumeCapabilities(context.Background(), req)
+	if err == nil {
+		t.Error("expected error for invalid UUID")
 	}
 }
 

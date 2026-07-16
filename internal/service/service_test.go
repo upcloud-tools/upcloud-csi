@@ -2,6 +2,7 @@ package service_test
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net/http"
 	"net/http/httptest"
@@ -19,7 +20,7 @@ import (
 	"github.com/upcloud-tools/upcloud-csi/internal/service/mock"
 )
 
-func TestUpCloudService_ListStorage(t *testing.T) {
+func TestUpCloudService_ListBlockStorage(t *testing.T) {
 	t.Parallel()
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		fmt.Fprint(w, `
@@ -39,7 +40,7 @@ func TestUpCloudService_ListStorage(t *testing.T) {
 						"type" : "normal",
 						"uuid" : "id2",
 						"zone" : "fi-hel2"
-					},		
+					},
 					{
 						"access" : "private",
 						"state" : "online",
@@ -61,7 +62,7 @@ func TestUpCloudService_ListStorage(t *testing.T) {
 	}))
 	defer srv.Close()
 	c := service.NewUpCloudService(upsvc.New(client.New("", "", client.WithBaseURL(srv.URL))))
-	storages, err := c.ListStorage(context.Background(), "fi-hel2")
+	storages, err := c.ListBlockStorage(context.Background(), "fi-hel2")
 	if err != nil {
 		t.Error(err)
 	}
@@ -94,7 +95,7 @@ func TestUpCloudService_ListStorage(t *testing.T) {
 	}
 }
 
-func TestUpCloudService_ListStorageBackups(t *testing.T) {
+func TestUpCloudService_ListBlockStorageBackups(t *testing.T) {
 	t.Parallel()
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		fmt.Fprint(w, `
@@ -140,7 +141,7 @@ func TestUpCloudService_ListStorageBackups(t *testing.T) {
 	defer srv.Close()
 
 	c := service.NewUpCloudService(upsvc.New(client.New("", "", client.WithBaseURL(srv.URL))))
-	storages, err := c.ListStorageBackups(context.Background(), "id1")
+	storages, err := c.ListBlockStorageBackups(context.Background(), "id1")
 	assert.NoError(t, err)
 	want := []*upcloud.Storage{
 		{
@@ -169,12 +170,12 @@ func TestUpCloudService_ListStorageBackups(t *testing.T) {
 		}
 	}
 
-	storages, err = c.ListStorageBackups(context.Background(), "")
+	storages, err = c.ListBlockStorageBackups(context.Background(), "")
 	assert.NoError(t, err)
 	assert.Len(t, storages, 3)
 }
 
-func TestUpCloudService_AttachDetachStorage_Concurrency(t *testing.T) {
+func TestUpCloudService_AttachDetachBlockStorage_Concurrency(t *testing.T) {
 	t.Parallel()
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
@@ -200,7 +201,7 @@ func TestUpCloudService_AttachDetachStorage_Concurrency(t *testing.T) {
 		go func(volUUID, serverUUID string) {
 			defer wg.Done()
 			t1 := time.Now()
-			err := s.AttachStorage(ctx, volUUID, serverUUID)
+			err := s.AttachBlockStorage(ctx, volUUID, serverUUID)
 			t.Logf("attached %s to node %s in %s", volUUID, serverUUID, time.Since(t1))
 			assert.NoError(t, err)
 		}(volUUID, serverUUID)
@@ -219,13 +220,185 @@ func TestUpCloudService_AttachDetachStorage_Concurrency(t *testing.T) {
 			go func(volUUID, serverUUID string) {
 				defer wg.Done()
 				t1 := time.Now()
-				err := s.DetachStorage(ctx, volUUID, serverUUID)
+				err := s.DetachBlockStorage(ctx, volUUID, serverUUID)
 				t.Logf("detached %s from node %s in %s", volUUID, serverUUID, time.Since(t1))
 				assert.NoError(t, err)
 			}(storage.UUID, d.UUID)
 		}
 	}
 	wg.Wait()
+}
+
+func TestUpCloudService_GetFileStorages(t *testing.T) {
+	t.Parallel()
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		fmt.Fprint(w, `[
+			{
+				"uuid": "175d681c-813a-11f1-81d2-80fa5b957a6c",
+				"name": "test-file-storage",
+				"zone": "de-fra1",
+				"size_gib": 250
+			},
+			{
+				"uuid": "17aaddaa-0001-0002-0003-80fa5b957a6c",
+				"name": "second-file-storage",
+				"zone": "de-fra1",
+				"size_gib": 500
+			}
+		]`)
+	}))
+	defer srv.Close()
+
+	c := service.NewUpCloudService(upsvc.New(client.New("", "", client.WithBaseURL(srv.URL))))
+	storages, err := c.GetFileStorages(context.Background())
+	require.NoError(t, err)
+	require.Len(t, storages, 2)
+	assert.Equal(t, "175d681c-813a-11f1-81d2-80fa5b957a6c", storages[0].UUID)
+	assert.Equal(t, 250, storages[0].SizeGiB)
+	assert.Equal(t, "de-fra1", storages[0].Zone)
+}
+
+func TestUpCloudService_GetFileStorageByUUID(t *testing.T) {
+	t.Parallel()
+
+	t.Run("Success", func(t *testing.T) {
+		t.Parallel()
+		srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			fmt.Fprint(w, `{
+				"uuid": "175d681c-813a-11f1-81d2-80fa5b957a6c",
+				"name": "test-file-storage",
+				"zone": "de-fra1",
+				"size_gib": 250
+			}`)
+		}))
+		defer srv.Close()
+
+		c := service.NewUpCloudService(upsvc.New(client.New("", "", client.WithBaseURL(srv.URL))))
+		fs, err := c.GetFileStorageByUUID(context.Background(), "175d681c-813a-11f1-81d2-80fa5b957a6c")
+		require.NoError(t, err)
+		assert.Equal(t, "175d681c-813a-11f1-81d2-80fa5b957a6c", fs.UUID)
+		assert.Equal(t, 250, fs.SizeGiB)
+	})
+
+	t.Run("NotFound", func(t *testing.T) {
+		t.Parallel()
+		srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.WriteHeader(http.StatusNotFound)
+			fmt.Fprint(w, `{"error": {"error_code": "NOT_FOUND", "error_status": 404}}`)
+		}))
+		defer srv.Close()
+
+		c := service.NewUpCloudService(upsvc.New(client.New("", "", client.WithBaseURL(srv.URL))))
+		_, err := c.GetFileStorageByUUID(context.Background(), "nonexistent")
+		require.ErrorIs(t, err, service.ErrFileStorageNotFound)
+	})
+}
+
+func TestUpCloudService_DeleteFileStorage(t *testing.T) {
+	t.Parallel()
+
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// DELETE /file-storage/{uuid} - delete
+		w.WriteHeader(http.StatusNoContent)
+	}))
+	defer srv.Close()
+
+	c := service.NewUpCloudService(upsvc.New(client.New("", "", client.WithBaseURL(srv.URL))))
+	err := c.DeleteFileStorage(context.Background(), "175d681c-813a-11f1-81d2-80fa5b957a6c")
+	require.NoError(t, err)
+}
+
+func TestUpCloudService_ModifyFileStorage(t *testing.T) {
+	t.Parallel()
+
+	callCount := 0
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		callCount++
+		switch callCount {
+		case 1:
+			// PATCH /file-storage/{uuid} - modify
+			fmt.Fprint(w, `{
+				"uuid": "175d681c-813a-11f1-81d2-80fa5b957a6c",
+				"name": "test-file-storage",
+				"zone": "de-fra1",
+				"size_gib": 300
+			}`)
+		case 2:
+			// GET /file-storage/{uuid} - wait for operational state
+			fmt.Fprint(w, `{
+				"uuid": "175d681c-813a-11f1-81d2-80fa5b957a6c",
+				"name": "test-file-storage",
+				"zone": "de-fra1",
+				"size_gib": 300,
+				"operational_state": "running"
+			}`)
+		}
+	}))
+	defer srv.Close()
+
+	c := service.NewUpCloudService(upsvc.New(client.New("", "", client.WithBaseURL(srv.URL))))
+	fs, err := c.ModifyFileStorage(context.Background(), "175d681c-813a-11f1-81d2-80fa5b957a6c", 300)
+	require.NoError(t, err)
+	assert.Equal(t, 300, fs.SizeGiB)
+}
+
+func TestUpCloudService_GetFileStorageByUUID_Non404Error(t *testing.T) {
+	t.Parallel()
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusInternalServerError)
+		fmt.Fprint(w, `{"error": {"error_code": "INTERNAL_ERROR", "error_status": 500}}`)
+	}))
+	defer srv.Close()
+
+	c := service.NewUpCloudService(upsvc.New(client.New("", "", client.WithBaseURL(srv.URL))))
+	_, err := c.GetFileStorageByUUID(context.Background(), "175d681c-813a-11f1-81d2-80fa5b957a6c")
+	require.Error(t, err)
+	require.False(t, errors.Is(err, service.ErrFileStorageNotFound), "non-404 errors should not be wrapped")
+}
+
+func TestUpCloudService_DeleteFileStorage_Errors(t *testing.T) {
+	t.Parallel()
+
+	t.Run("GetFileStorageFails", func(t *testing.T) {
+		t.Parallel()
+		srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.WriteHeader(http.StatusNotFound)
+			fmt.Fprint(w, `{"error": {"error_code": "NOT_FOUND", "error_status": 404}}`)
+		}))
+		defer srv.Close()
+
+		c := service.NewUpCloudService(upsvc.New(client.New("", "", client.WithBaseURL(srv.URL))))
+		err := c.DeleteFileStorage(context.Background(), "nonexistent")
+		require.ErrorIs(t, err, service.ErrFileStorageNotFound)
+	})
+
+	t.Run("DeleteAPIFails", func(t *testing.T) {
+		t.Parallel()
+		srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			// DELETE /file-storage/{uuid} - fails
+			w.WriteHeader(http.StatusInternalServerError)
+			fmt.Fprint(w, `{"error": {"error_code": "INTERNAL_ERROR", "error_status": 500}}`)
+		}))
+		defer srv.Close()
+
+		c := service.NewUpCloudService(upsvc.New(client.New("", "", client.WithBaseURL(srv.URL))))
+		err := c.DeleteFileStorage(context.Background(), "175d681c-813a-11f1-81d2-80fa5b957a6c")
+		require.Error(t, err)
+	})
+}
+
+func TestUpCloudService_ModifyFileStorage_Error(t *testing.T) {
+	t.Parallel()
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// PATCH /file-storage/{uuid} - fails
+		w.WriteHeader(http.StatusInternalServerError)
+		fmt.Fprint(w, `{"error": {"error_code": "INTERNAL_ERROR", "error_status": 500}}`)
+	}))
+	defer srv.Close()
+
+	c := service.NewUpCloudService(upsvc.New(client.New("", "", client.WithBaseURL(srv.URL))))
+	_, err := c.ModifyFileStorage(context.Background(), "175d681c-813a-11f1-81d2-80fa5b957a6c", 300)
+	require.Error(t, err)
 }
 
 func TestUpCloudService_NewUpCloudServiceFromCredentials(t *testing.T) {
@@ -259,7 +432,7 @@ func TestUpCloudService_NewUpCloudServiceFromCredentials(t *testing.T) {
 		defer srv.Close()
 		svc, err := service.NewUpCloudServiceFromCredentials("a", "b", "", client.WithBaseURL(srv.URL))
 		require.NoError(t, err)
-		_, err = svc.ListStorage(t.Context(), "fi-hel2")
+		_, err = svc.ListBlockStorage(t.Context(), "fi-hel2")
 		require.NoError(t, err)
 	})
 
@@ -277,12 +450,12 @@ func TestUpCloudService_NewUpCloudServiceFromCredentials(t *testing.T) {
 
 		svc, err := service.NewUpCloudServiceFromCredentials("a", "b", "c", client.WithBaseURL(srv.URL))
 		require.NoError(t, err)
-		_, err = svc.ListStorage(t.Context(), "fi-hel1")
+		_, err = svc.ListBlockStorage(t.Context(), "fi-hel1")
 		require.NoError(t, err)
 
 		svc, err = service.NewUpCloudServiceFromCredentials("", "", "c", client.WithBaseURL(srv.URL))
 		require.NoError(t, err)
-		_, err = svc.ListStorage(t.Context(), "fi-hel2")
+		_, err = svc.ListBlockStorage(t.Context(), "fi-hel2")
 		require.NoError(t, err)
 	})
 }

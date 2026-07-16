@@ -19,7 +19,7 @@ func FuzzValidateCreateVolumeRequest(f *testing.F) {
 					AccessType: &csi.VolumeCapability_Mount{
 						Mount: &csi.VolumeCapability_MountVolume{},
 					},
-					AccessMode: supportedAccessMode,
+					AccessMode: accessModeSingleNodeWrite,
 				},
 			},
 		}
@@ -58,7 +58,7 @@ func FuzzObtainSize(f *testing.F) {
 			RequiredBytes: required,
 			LimitBytes:    limit,
 		}
-		_, _ = obtainSize(cr)
+		_, _ = validateCapacityRange(cr, minBlockStorageSize, maxBlockStorageSize)
 	})
 }
 
@@ -73,7 +73,7 @@ func FuzzGetStorageRange(f *testing.F) {
 			RequiredBytes: required,
 			LimitBytes:    limit,
 		}
-		_, _ = getStorageRange(cr)
+		_, _ = validateCapacityRange(cr, minBlockStorageSize, maxBlockStorageSize)
 	})
 }
 
@@ -95,16 +95,6 @@ func FuzzDisplayByteString(f *testing.F) {
 
 	f.Fuzz(func(t *testing.T, bytes int64) {
 		_ = displayByteString(bytes)
-	})
-}
-
-func FuzzFormatBytes(f *testing.F) {
-	f.Add(int64(0))
-	f.Add(int64(1024))
-	f.Add(int64(-1))
-
-	f.Fuzz(func(t *testing.T, bytes int64) {
-		_ = formatBytes(bytes)
 	})
 }
 

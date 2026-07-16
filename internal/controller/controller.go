@@ -16,7 +16,6 @@ import (
 	"github.com/upcloud-tools/upcloud-csi/internal/service"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
-	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 var supportedCapabilities = []csi.ControllerServiceCapability_RPC_Type{ //nolint: gochecknoglobals // readonly variable
@@ -62,7 +61,7 @@ func (c *Controller) CreateVolume(ctx context.Context, req *csi.CreateVolumeRequ
 		return nil, err
 	}
 	// get volume first, and skip if exists
-	volumes, err := c.svc.GetStorageByName(ctx, req.GetName())
+	volumes, err := c.svc.GetBlockStorageByName(ctx, req.GetName())
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
@@ -75,7 +74,7 @@ func (c *Controller) CreateVolume(ctx context.Context, req *csi.CreateVolumeRequ
 		return nil, err
 	}
 	// determine the size of the storage
-	storageSize, err := getStorageRange(req.GetCapacityRange())
+	storageSize, err := validateCapacityRange(req.GetCapacityRange(), minBlockStorageSize, maxBlockStorageSize)
 	if err != nil {
 		return nil, status.Error(codes.OutOfRange, fmt.Sprintf("CreateVolume failed to extract storage size: %s", err.Error()))
 	}
@@ -96,7 +95,7 @@ func (c *Controller) CreateVolume(ctx context.Context, req *csi.CreateVolumeRequ
 			Encrypted: upcloud.FromBool(createVolumeRequestEncryptionAtRest(req)),
 		}
 		logger.WithServiceRequest(log, volumeReq).Info("creating volume")
-		if vol, err = c.svc.CreateStorage(ctx, volumeReq); err != nil {
+		if vol, err = c.svc.CreateBlockStorage(ctx, volumeReq); err != nil {
 			return nil, status.Error(codes.Internal, err.Error())
 		}
 	}
@@ -122,7 +121,7 @@ func createVolumeExistsResponse(req *csi.CreateVolumeRequest, volumes []*upcloud
 		return nil, fmt.Errorf("fatal: duplicate volume %q exists", req.GetName())
 	}
 	vol := volumes[0].Storage
-	storageSize, err := getStorageRange(req.GetCapacityRange())
+	storageSize, err := validateCapacityRange(req.GetCapacityRange(), minBlockStorageSize, maxBlockStorageSize)
 	if err != nil {
 		return nil, status.Error(codes.OutOfRange, fmt.Sprintf("CreateVolume failed to extract storage size: %s", err.Error()))
 	}
@@ -163,7 +162,7 @@ func (c *Controller) createVolumeFromSource(ctx context.Context, req *csi.Create
 	}
 	log := logger.WithServerContext(ctx, c.log).WithField(logger.VolumeNameKey, req.GetName()).WithField(logger.VolumeSourceKey, sourceID)
 	log.Info("getting source storage by uuid")
-	src, err := c.svc.GetStorageByUUID(ctx, sourceID)
+	src, err := c.svc.GetBlockStorageByUUID(ctx, sourceID)
 	if err != nil {
 		if errors.Is(err, service.ErrStorageNotFound) {
 			return nil, status.Errorf(codes.NotFound, "could not retrieve source volume by ID: %s", err.Error())
@@ -175,7 +174,7 @@ func (c *Controller) createVolumeFromSource(ctx context.Context, req *csi.Create
 		return nil, status.Errorf(codes.InvalidArgument, "source and destination volumes needs to have same encryption policy")
 	}
 	log.Info("checking that source storage is online")
-	if err := c.svc.RequireStorageOnline(ctx, &src.Storage); err != nil {
+	if err := c.svc.RequireBlockStorageOnline(ctx, &src.Storage); err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 	volumeReq := &request.CloneStorageRequest{
@@ -186,7 +185,7 @@ func (c *Controller) createVolumeFromSource(ctx context.Context, req *csi.Create
 		Encrypted: upcloud.FromBool(createVolumeRequestEncryptionAtRest(req)),
 	}
 	logger.WithServiceRequest(log, volumeReq).Info("cloning volume")
-	vol, err := c.svc.CloneStorage(ctx, volumeReq, c.storageLabels...)
+	vol, err := c.svc.CloneBlockStorage(ctx, volumeReq, c.storageLabels...)
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
@@ -195,7 +194,7 @@ func (c *Controller) createVolumeFromSource(ctx context.Context, req *csi.Create
 	if storageSizeGB > vol.Storage.Size {
 		log.WithField("new_size", storageSizeGB).Info("resizing volume")
 		// resize cloned storage and delete backup taken during resize operation as this is newly created storage
-		if vol, err = c.svc.ResizeStorage(ctx, vol.Storage.UUID, storageSizeGB, true); err != nil {
+		if vol, err = c.svc.ResizeBlockStorage(ctx, vol.Storage.UUID, storageSizeGB, true); err != nil {
 			return nil, status.Error(codes.Internal, err.Error())
 		}
 	}
@@ -209,9 +208,14 @@ func (c *Controller) DeleteVolume(ctx context.Context, req *csi.DeleteVolumeRequ
 	}
 
 	logger.WithServerContext(ctx, c.log).WithField(logger.VolumeIDKey, req.GetVolumeId()).Info("deleting volume")
-	err := c.svc.DeleteStorage(ctx, req.VolumeId)
+	err := c.svc.DeleteBlockStorage(ctx, req.VolumeId)
 	if err != nil && !errors.Is(err, service.ErrStorageNotFound) {
 		return &csi.DeleteVolumeResponse{}, err
+	}
+	if errors.Is(err, service.ErrStorageNotFound) {
+		if err := c.svc.DeleteFileStorage(ctx, req.VolumeId); err != nil && !errors.Is(err, service.ErrFileStorageNotFound) {
+			return &csi.DeleteVolumeResponse{}, err
+		}
 	}
 	return &csi.DeleteVolumeResponse{}, nil
 }
@@ -233,7 +237,7 @@ func (c *Controller) ControllerPublishVolume(ctx context.Context, req *csi.Contr
 
 	// check if volume exist before trying to attach it
 	log.Info("getting storage by uuid")
-	volume, err := c.svc.GetStorageByUUID(ctx, req.VolumeId)
+	volume, err := c.svc.GetBlockStorageByUUID(ctx, req.VolumeId)
 	if err != nil {
 		if errors.Is(err, service.ErrStorageNotFound) {
 			return nil, status.Error(codes.NotFound, err.Error())
@@ -242,7 +246,7 @@ func (c *Controller) ControllerPublishVolume(ctx context.Context, req *csi.Contr
 	}
 
 	log.Info("checking that storage is online")
-	if err = c.svc.RequireStorageOnline(ctx, &volume.Storage); err != nil {
+	if err = c.svc.RequireBlockStorageOnline(ctx, &volume.Storage); err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
@@ -274,7 +278,7 @@ func (c *Controller) ControllerPublishVolume(ctx context.Context, req *csi.Contr
 		return nil, status.Error(codes.ResourceExhausted, "volumes already attached to the node is more than the maximum supported")
 	}
 	log.Info("attaching storage to node")
-	err = c.svc.AttachStorage(ctx, req.VolumeId, server.UUID)
+	err = c.svc.AttachBlockStorage(ctx, req.VolumeId, server.UUID)
 	if err != nil {
 		var svcError *upcloud.Problem
 		if errors.As(err, &svcError) && svcError.Status != http.StatusConflict && svcError.ErrorCode() == upcloud.ErrCodeStorageDeviceLimitReached {
@@ -310,7 +314,7 @@ func (c *Controller) ControllerUnpublishVolume(ctx context.Context, req *csi.Con
 	})
 	log.Info("getting storage by uuid")
 	// check if volume exist before trying to detach it
-	_, err := c.svc.GetStorageByUUID(ctx, req.GetVolumeId())
+	_, err := c.svc.GetBlockStorageByUUID(ctx, req.GetVolumeId())
 	if err != nil {
 		if errors.Is(err, service.ErrStorageNotFound) {
 			log.Info("storage not found")
@@ -331,7 +335,7 @@ func (c *Controller) ControllerUnpublishVolume(ctx context.Context, req *csi.Con
 	}
 
 	log.Info("detaching volume")
-	err = c.svc.DetachStorage(ctx, req.VolumeId, server.UUID)
+	err = c.svc.DetachBlockStorage(ctx, req.VolumeId, server.UUID)
 	if err != nil {
 		if errors.Is(err, service.ErrServerStorageNotFound) {
 			log.Info("volume was already detached from the node")
@@ -366,10 +370,11 @@ func (c *Controller) ValidateVolumeCapabilities(ctx context.Context, req *csi.Va
 		return nil, status.Error(codes.InvalidArgument, "volume vapabilities must be provided")
 	}
 
-	log.Info("getting storage by uuid")
-	// check if volume exist before trying to validate it
-	if _, err := c.svc.GetStorageByUUID(ctx, req.VolumeId); err != nil {
-		if errors.Is(err, service.ErrStorageNotFound) {
+	log.Info("getting volume by uuid")
+
+	_, _, accessMode, err := c.lookupVolume(ctx, req.VolumeId)
+	if err != nil {
+		if errors.Is(err, service.ErrStorageNotFound) || errors.Is(err, service.ErrFileStorageNotFound) {
 			return nil, status.Error(codes.NotFound, err.Error())
 		}
 		return nil, status.Error(codes.Internal, err.Error())
@@ -380,7 +385,7 @@ func (c *Controller) ValidateVolumeCapabilities(ctx context.Context, req *csi.Va
 		Confirmed: &csi.ValidateVolumeCapabilitiesResponse_Confirmed{
 			VolumeCapabilities: []*csi.VolumeCapability{
 				{
-					AccessMode: supportedAccessMode,
+					AccessMode: accessMode,
 				},
 			},
 		},
@@ -402,9 +407,26 @@ func (c *Controller) ListVolumes(ctx context.Context, req *csi.ListVolumesReques
 		return nil, status.Error(codes.Aborted, "failed to parse starting_token")
 	}
 	log.Info("getting list of storages")
-	volumes, err := c.svc.ListStorage(ctx, c.zone)
+	volumes, err := c.svc.ListBlockStorage(ctx, c.zone)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "listvolumes failed with: %s", err.Error())
+	}
+
+	fileStorages, err := c.svc.GetFileStorages(ctx)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "listvolumes failed to list file storage: %s", err.Error())
+	}
+	for _, fs := range fileStorages {
+		if fs.Zone != c.zone {
+			continue
+		}
+		volumes = append(volumes, upcloud.Storage{
+			UUID:  fs.UUID,
+			Size:  fs.SizeGiB,
+			Title: fs.Name,
+			Zone:  fs.Zone,
+			Type:  "file",
+		})
 	}
 
 	volumes, listNext := paginateStorage(volumes, listStart, int(req.GetMaxEntries()))
@@ -450,157 +472,7 @@ func (c *Controller) ControllerGetCapabilities(ctx context.Context, req *csi.Con
 	}, nil
 }
 
-// CreateSnapshot will be called by the CO to create a new snapshot from a
-// source volume on behalf of a user.
-func (c *Controller) CreateSnapshot(ctx context.Context, req *csi.CreateSnapshotRequest) (*csi.CreateSnapshotResponse, error) {
-	if req.GetName() == "" {
-		return nil, status.Error(codes.InvalidArgument, "snapshot name must be provided")
-	}
-	if req.GetSourceVolumeId() == "" {
-		return nil, status.Error(codes.InvalidArgument, "snapshot source volume ID must be provided")
-	}
-
-	log := logger.WithServerContext(ctx, c.log)
-	log.Info("getting storage backup by name")
-
-	s, err := c.svc.GetStorageBackupByName(ctx, req.GetName())
-	if err != nil && !errors.Is(err, service.ErrStorageNotFound) {
-		return nil, status.Errorf(codes.Internal, "CreateSnapshot failed with: %s", err.Error())
-	}
-
-	if s != nil && s.Origin != req.GetSourceVolumeId() {
-		return nil, status.Error(codes.AlreadyExists, "snapshot already exists with different source volume ID")
-	}
-
-	if s == nil {
-		log.Info("creating storage backup")
-
-		sd, err := c.svc.CreateStorageBackup(ctx, req.GetSourceVolumeId(), req.GetName())
-		if err != nil {
-			if errors.Is(err, service.ErrBackupInProgress) {
-				return nil, status.Errorf(codes.Aborted, "cannot create snapshot for volume with backup in progress")
-			}
-
-			return nil, status.Errorf(codes.Internal, "CreateSnapshot failed with: %s", err.Error())
-		}
-
-		s = &sd.Storage
-	}
-
-	return &csi.CreateSnapshotResponse{
-		Snapshot: &csi.Snapshot{
-			SizeBytes:      int64(s.Size) * giB,
-			SnapshotId:     s.UUID,
-			SourceVolumeId: s.Origin,
-			CreationTime:   timestamppb.New(s.Created),
-			ReadyToUse:     s.State == upcloud.StorageStateOnline,
-		},
-	}, nil
-}
-
-// DeleteSnapshot will be called by the CO to delete a snapshot.
-func (c *Controller) DeleteSnapshot(ctx context.Context, req *csi.DeleteSnapshotRequest) (*csi.DeleteSnapshotResponse, error) {
-	snapID := req.GetSnapshotId()
-	if snapID == "" {
-		return nil, status.Error(codes.InvalidArgument, "snapshot ID must be provided")
-	}
-	// Delete should succeed if snapshot is not found or an invalid snapshot id is used.
-	if isValidStorageUUID(snapID) {
-		if err := c.svc.DeleteStorageBackup(ctx, snapID); err != nil {
-			var svcError *upcloud.Problem
-			if errors.As(err, &svcError) && svcError.Status != http.StatusNotFound {
-				return nil, status.Error(codes.Internal, err.Error())
-			}
-		}
-	}
-	return &csi.DeleteSnapshotResponse{}, nil
-}
-
-// ListSnapshots returns the information about all snapshots on the storage
-// system within the given parameters regardless of how they were created.
-// ListSnapshots should not list a snapshot that is being created but has not
-// been cut successfully yet.
-//
-// TODO OPTIONAL: implement starting token / pagination.
-func (c *Controller) ListSnapshots(ctx context.Context, req *csi.ListSnapshotsRequest) (*csi.ListSnapshotsResponse, error) {
-	log := logger.WithServerContext(ctx, c.log).WithFields(logrus.Fields{
-		logger.ListStartingTokenKey: req.GetStartingToken(),
-		logger.ListMaxEntriesKey:    req.GetMaxEntries(),
-		logger.VolumeSourceKey:      req.GetSourceVolumeId(),
-		logger.SnapshotIDKey:        req.GetSnapshotId(),
-	})
-
-	listStart, err := parseToken(req.GetStartingToken())
-	if err != nil {
-		return nil, status.Error(codes.Aborted, "failed to parse starting_token")
-	}
-
-	backups := make([]upcloud.Storage, 0)
-
-	if snapID := req.GetSnapshotId(); snapID != "" {
-		log = log.WithField("snapshot_id", snapID)
-		log.Info("getting storage snapshots by ID")
-		s, err := c.svc.GetStorageByUUID(ctx, snapID)
-		if err != nil {
-			return listSnapshotsErrorResponse(err)
-		}
-		backups = append(backups, s.Storage)
-	} else {
-		log.Info("getting list of storage snapshots")
-		// NOTE: SourceVolumeId can also be empty
-		backups, err = c.svc.ListStorageBackups(ctx, req.GetSourceVolumeId())
-		if err != nil {
-			return nil, status.Errorf(codes.Internal, "listsnapshots failed with: %s", err.Error())
-		}
-	}
-	backups, listNext := paginateStorage(backups, listStart, int(req.GetMaxEntries()))
-	entries := make([]*csi.ListSnapshotsResponse_Entry, 0, len(backups))
-	for _, s := range backups {
-		entries = append(entries, &csi.ListSnapshotsResponse_Entry{
-			Snapshot: &csi.Snapshot{
-				SizeBytes:      int64(s.Size) * giB,
-				SnapshotId:     s.UUID,
-				SourceVolumeId: s.Origin,
-				CreationTime:   timestamppb.New(s.Created),
-				ReadyToUse:     s.State == upcloud.StorageStateOnline,
-			},
-		})
-	}
-	log.Infof("found %d snapshots", len(entries))
-	return &csi.ListSnapshotsResponse{
-		Entries:   entries,
-		NextToken: fmt.Sprint(listNext),
-	}, nil
-}
-
-// GetSnapshot returns a specific snapshot by ID.
-// Returns ErrNotFound if no matching snapshot exists.
-func (c *Controller) GetSnapshot(ctx context.Context, req *csi.GetSnapshotRequest) (*csi.GetSnapshotResponse, error) {
-	if req.GetSnapshotId() == "" {
-		return nil, status.Error(codes.InvalidArgument, "snapshot ID must be provided")
-	}
-
-	snap, err := c.svc.GetStorageByUUID(ctx, req.GetSnapshotId())
-	if err != nil {
-		if errors.Is(err, service.ErrStorageNotFound) {
-			return nil, status.Error(codes.NotFound, err.Error())
-		}
-		return nil, status.Error(codes.Internal, err.Error())
-	}
-
-	return &csi.GetSnapshotResponse{
-		Snapshot: &csi.Snapshot{
-			SizeBytes:      int64(snap.Size) * giB,
-			SnapshotId:     snap.UUID,
-			SourceVolumeId: snap.Origin,
-			CreationTime:   timestamppb.New(snap.Created),
-			ReadyToUse:     snap.State == upcloud.StorageStateOnline,
-		},
-	}, nil
-}
-
 // ControllerExpandVolume is called from the resizer to increase the volume size.
-//
 func (c *Controller) ControllerExpandVolume(ctx context.Context, req *csi.ControllerExpandVolumeRequest) (*csi.ControllerExpandVolumeResponse, error) {
 	volumeID := req.GetVolumeId()
 
@@ -609,136 +481,19 @@ func (c *Controller) ControllerExpandVolume(ctx context.Context, req *csi.Contro
 	}
 	log := logger.WithServerContext(ctx, c.log).WithField(logger.VolumeIDKey, req.GetVolumeId())
 
-	log.Info("getting storage by uuid")
-	volume, err := c.svc.GetStorageByUUID(ctx, volumeID)
+	volume, fileStorage, _, err := c.lookupVolume(ctx, volumeID)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "could not retrieve existing volumes: %v", err)
-	}
-
-	resizeBytes, err := obtainSize(req.CapacityRange)
-	if err != nil {
-		return nil, status.Errorf(codes.OutOfRange, "invalid capacity range: %v", err)
-	}
-	resizeGigaBytes := resizeBytes / giB
-
-	log = log.WithFields(logrus.Fields{
-		"size":     volume.Size,
-		"new_size": resizeGigaBytes,
-	})
-
-	if resizeGigaBytes <= int64(volume.Size) {
-		log.Info("skipping volume resizeStorage because current volume size exceeds requested volume size")
-		return &csi.ControllerExpandVolumeResponse{CapacityBytes: int64(volume.Size * giB), NodeExpansionRequired: true}, nil
-	}
-
-	if len(volume.ServerUUIDs) > 0 {
-		log.Info("expanding volume while published on a node")
-		_, err = c.svc.ResizeBlockDevice(ctx, volume.UUID, int(resizeGigaBytes))
-		if err != nil {
-			return nil, status.Errorf(codes.Internal, "cannot resize volume %s: %s", volumeID, err.Error())
+		if errors.Is(err, service.ErrStorageNotFound) || errors.Is(err, service.ErrFileStorageNotFound) {
+			return nil, status.Error(codes.NotFound, err.Error())
 		}
-		return &csi.ControllerExpandVolumeResponse{
-			CapacityBytes:         resizeGigaBytes * giB,
-			NodeExpansionRequired: true,
-		}, nil
+		return nil, status.Errorf(codes.Internal, "could not retrieve existing volume: %v", err)
 	}
 
-	isBlockDevice := false
-	if req.GetVolumeCapability() != nil {
-		if _, ok := req.VolumeCapability.AccessType.(*csi.VolumeCapability_Block); ok {
-			isBlockDevice = true
-		}
+	if fileStorage != nil {
+		return c.controllerExpandFileStorage(ctx, log, req, fileStorage)
 	}
 
-	// Volume is not published (no ServerUUIDs). Use ResizeBlockDevice (ModifyStorage + wait, no ResizeStorageFilesystem)
-	// because the filesystem API call requires the volume to be attached to a server. Node-side expansion is only needed
-	// for filesystem volumes — block devices have no filesystem to grow on the node side.
-	log.Info("resizing unattached volume")
-	_, err = c.svc.ResizeBlockDevice(ctx, volume.UUID, int(resizeGigaBytes))
-	if err != nil {
-		return nil, status.Errorf(codes.Internal, "cannot resize volume %s: %s", volumeID, err.Error())
-	}
-
-	return &csi.ControllerExpandVolumeResponse{
-		CapacityBytes:         resizeGigaBytes * giB,
-		NodeExpansionRequired: !isBlockDevice,
-	}, nil
-}
-
-func obtainSize(capRange *csi.CapacityRange) (int64, error) {
-	if capRange == nil {
-		return defaultVolumeSize, nil
-	}
-
-	requiredBytes := capRange.GetRequiredBytes()
-	requiredSet := 0 < requiredBytes
-	limitBytes := capRange.GetLimitBytes()
-	limitSet := 0 < limitBytes
-
-	if !requiredSet && !limitSet {
-		return defaultVolumeSize, nil
-	}
-
-	if requiredSet && limitSet && limitBytes < requiredBytes {
-		return 0, fmt.Errorf("limit (%v) can not be less than required (%v) size", formatBytes(limitBytes), formatBytes(requiredBytes))
-	}
-
-	if requiredSet && !limitSet && requiredBytes < minimumVolumeSizeInBytes {
-		return 0, fmt.Errorf("required (%v) can not be less than minimum supported volume size (%v)", formatBytes(requiredBytes), formatBytes(minimumVolumeSizeInBytes))
-	}
-
-	if limitSet && limitBytes < minimumVolumeSizeInBytes {
-		return 0, fmt.Errorf("limit (%v) can not be less than minimum supported volume size (%v)", formatBytes(limitBytes), formatBytes(minimumVolumeSizeInBytes))
-	}
-
-	if requiredSet && requiredBytes > maximumVolumeSizeInBytes {
-		return 0, fmt.Errorf("required (%v) can not exceed maximum supported volume size (%v)", formatBytes(requiredBytes), formatBytes(maximumVolumeSizeInBytes))
-	}
-
-	if !requiredSet && limitSet && limitBytes > maximumVolumeSizeInBytes {
-		return 0, fmt.Errorf("limit (%v) can not exceed maximum supported volume size (%v)", formatBytes(limitBytes), formatBytes(maximumVolumeSizeInBytes))
-	}
-
-	if requiredSet && limitSet && requiredBytes == limitBytes {
-		return requiredBytes, nil
-	}
-
-	if requiredSet {
-		return requiredBytes, nil
-	}
-
-	if limitSet {
-		return limitBytes, nil
-	}
-
-	return defaultVolumeSize, nil
-}
-
-func formatBytes(inputBytes int64) string {
-	output := float64(inputBytes)
-	unit := ""
-
-	switch {
-	case inputBytes >= tiB:
-		output /= tiB
-		unit = "Tb"
-	case inputBytes >= giB:
-		output /= giB
-		unit = "Gb"
-	case inputBytes >= miB:
-		output /= miB
-		unit = "Mb"
-	case inputBytes >= kiB:
-		output /= kiB
-		unit = "Kb"
-	case inputBytes == 0:
-		return "0"
-	}
-
-	result := strconv.FormatFloat(output, 'f', 1, 64)
-	result = strings.TrimSuffix(result, ".0")
-
-	return result + unit
+	return c.controllerExpandBlockStorage(ctx, log, req, volume)
 }
 
 func parseToken(t string) (int, error) {
@@ -767,15 +522,6 @@ func paginateStorage(s []upcloud.Storage, start, size int) ([]upcloud.Storage, i
 	}
 
 	return s, next
-}
-
-func listSnapshotsErrorResponse(err error) (*csi.ListSnapshotsResponse, error) {
-	if errors.Is(err, service.ErrStorageNotFound) {
-		return &csi.ListSnapshotsResponse{
-			Entries: make([]*csi.ListSnapshotsResponse_Entry, 0),
-		}, nil
-	}
-	return nil, status.Error(codes.Internal, err.Error())
 }
 
 func createVolumeRequestTier(r *csi.CreateVolumeRequest) (string, error) {

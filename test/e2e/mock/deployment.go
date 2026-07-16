@@ -47,7 +47,7 @@ func (c *Client) CreateDeployment(ctx context.Context, pvc *v1.PersistentVolumeC
 							VolumeMounts: []v1.VolumeMount{
 								{
 									Name:      pvc.Name,
-									MountPath: "/data",
+									MountPath: dataMountPath,
 								},
 							},
 						},

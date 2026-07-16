@@ -113,6 +113,7 @@ test-integration:
 #   make test-e2e-(ci/local) NETPOL=y         — NetworkPolicy Enforcement
 #   make test-e2e-(ci/local) WEBHOOK=y        — Snapshot Validation Webhook
 #   make test-e2e-(ci/local) WEBHOOK_CM=y     — Snapshot Validation Webhook (cert-manager)
+#   make test-e2e-(ci/local) FILESTORAGE=y    — File Storage ReadWriteMany
 GINKGO_FOCUS = $(if $(NETPOL),--ginkgo.focus="NetworkPolicy Enforcement",) \
                $(if $(WEBHOOK),--ginkgo.focus="Snapshot Validation Webhook",) \
                $(if $(WEBHOOK_CM),--ginkgo.focus="Snapshot Validation Webhook (cert-manager)",) \
@@ -122,6 +123,7 @@ GINKGO_FOCUS = $(if $(NETPOL),--ginkgo.focus="NetworkPolicy Enforcement",) \
                $(if $(RESIZE_EXT4),--ginkgo.focus="Resize Volume$$",) \
                $(if $(RESIZE_XFS),--ginkgo.focus="Resize Volume XFS",) \
                $(if $(RESIZE),--ginkgo.focus="Resize Volume",) \
+               $(if $(FILESTORAGE),--ginkgo.focus="File Storage ReadWriteMany",) \
                $(if $(PERSISTENCE),--ginkgo.focus="Attach Detach Volume",) \
                $(if $(SNAPSHOT),--ginkgo.focus="Create Snapshot And Restore",)
 

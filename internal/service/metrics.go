@@ -39,87 +39,87 @@ func (i *instrumentedService) GetServerByHostname(ctx context.Context, hostname 
 	return result, err
 }
 
-func (i *instrumentedService) GetStorageByUUID(ctx context.Context, uuid string) (*upcloud.StorageDetails, error) {
+func (i *instrumentedService) GetBlockStorageByUUID(ctx context.Context, uuid string) (*upcloud.StorageDetails, error) {
 	start := time.Now()
-	result, err := i.inner.GetStorageByUUID(ctx, uuid)
-	i.record("GetStorageByUUID", start, err)
+	result, err := i.inner.GetBlockStorageByUUID(ctx, uuid)
+	i.record("GetBlockStorageByUUID", start, err)
 	return result, err
 }
 
-func (i *instrumentedService) GetStorageByName(ctx context.Context, name string) ([]*upcloud.StorageDetails, error) {
+func (i *instrumentedService) GetBlockStorageByName(ctx context.Context, name string) ([]*upcloud.StorageDetails, error) {
 	start := time.Now()
-	result, err := i.inner.GetStorageByName(ctx, name)
-	i.record("GetStorageByName", start, err)
+	result, err := i.inner.GetBlockStorageByName(ctx, name)
+	i.record("GetBlockStorageByName", start, err)
 	return result, err
 }
 
-func (i *instrumentedService) ListStorage(ctx context.Context, zone string) ([]upcloud.Storage, error) {
+func (i *instrumentedService) ListBlockStorage(ctx context.Context, zone string) ([]upcloud.Storage, error) {
 	start := time.Now()
-	result, err := i.inner.ListStorage(ctx, zone)
-	i.record("ListStorage", start, err)
+	result, err := i.inner.ListBlockStorage(ctx, zone)
+	i.record("ListBlockStorage", start, err)
 	return result, err
 }
 
-func (i *instrumentedService) GetStorageBackupByName(ctx context.Context, name string) (*upcloud.Storage, error) {
+func (i *instrumentedService) GetBlockStorageBackupByName(ctx context.Context, name string) (*upcloud.Storage, error) {
 	start := time.Now()
-	result, err := i.inner.GetStorageBackupByName(ctx, name)
-	i.record("GetStorageBackupByName", start, err)
+	result, err := i.inner.GetBlockStorageBackupByName(ctx, name)
+	i.record("GetBlockStorageBackupByName", start, err)
 	return result, err
 }
 
-func (i *instrumentedService) ListStorageBackups(ctx context.Context, uuid string) ([]upcloud.Storage, error) {
+func (i *instrumentedService) ListBlockStorageBackups(ctx context.Context, uuid string) ([]upcloud.Storage, error) {
 	start := time.Now()
-	result, err := i.inner.ListStorageBackups(ctx, uuid)
-	i.record("ListStorageBackups", start, err)
+	result, err := i.inner.ListBlockStorageBackups(ctx, uuid)
+	i.record("ListBlockStorageBackups", start, err)
 	return result, err
 }
 
-func (i *instrumentedService) RequireStorageOnline(ctx context.Context, s *upcloud.Storage) error {
+func (i *instrumentedService) RequireBlockStorageOnline(ctx context.Context, s *upcloud.Storage) error {
 	start := time.Now()
-	err := i.inner.RequireStorageOnline(ctx, s)
-	i.record("RequireStorageOnline", start, err)
+	err := i.inner.RequireBlockStorageOnline(ctx, s)
+	i.record("RequireBlockStorageOnline", start, err)
 	return err
 }
 
-func (i *instrumentedService) CreateStorage(ctx context.Context, req *request.CreateStorageRequest) (*upcloud.StorageDetails, error) {
+func (i *instrumentedService) CreateBlockStorage(ctx context.Context, req *request.CreateStorageRequest) (*upcloud.StorageDetails, error) {
 	start := time.Now()
-	result, err := i.inner.CreateStorage(ctx, req)
-	i.record("CreateStorage", start, err)
+	result, err := i.inner.CreateBlockStorage(ctx, req)
+	i.record("CreateBlockStorage", start, err)
 	return result, err
 }
 
-func (i *instrumentedService) CloneStorage(ctx context.Context, req *request.CloneStorageRequest, labels ...upcloud.Label) (*upcloud.StorageDetails, error) {
+func (i *instrumentedService) CloneBlockStorage(ctx context.Context, req *request.CloneStorageRequest, labels ...upcloud.Label) (*upcloud.StorageDetails, error) {
 	start := time.Now()
-	result, err := i.inner.CloneStorage(ctx, req, labels...)
-	i.record("CloneStorage", start, err)
+	result, err := i.inner.CloneBlockStorage(ctx, req, labels...)
+	i.record("CloneBlockStorage", start, err)
 	return result, err
 }
 
-func (i *instrumentedService) DeleteStorage(ctx context.Context, uuid string) error {
+func (i *instrumentedService) DeleteBlockStorage(ctx context.Context, uuid string) error {
 	start := time.Now()
-	err := i.inner.DeleteStorage(ctx, uuid)
-	i.record("DeleteStorage", start, err)
+	err := i.inner.DeleteBlockStorage(ctx, uuid)
+	i.record("DeleteBlockStorage", start, err)
 	return err
 }
 
-func (i *instrumentedService) AttachStorage(ctx context.Context, storage, server string) error {
+func (i *instrumentedService) AttachBlockStorage(ctx context.Context, storage, server string) error {
 	start := time.Now()
-	err := i.inner.AttachStorage(ctx, storage, server)
-	i.record("AttachStorage", start, err)
+	err := i.inner.AttachBlockStorage(ctx, storage, server)
+	i.record("AttachBlockStorage", start, err)
 	return err
 }
 
-func (i *instrumentedService) DetachStorage(ctx context.Context, storage, server string) error {
+func (i *instrumentedService) DetachBlockStorage(ctx context.Context, storage, server string) error {
 	start := time.Now()
-	err := i.inner.DetachStorage(ctx, storage, server)
-	i.record("DetachStorage", start, err)
+	err := i.inner.DetachBlockStorage(ctx, storage, server)
+	i.record("DetachBlockStorage", start, err)
 	return err
 }
 
-func (i *instrumentedService) ResizeStorage(ctx context.Context, uuid string, newSize int, deleteBackup bool) (*upcloud.StorageDetails, error) {
+func (i *instrumentedService) ResizeBlockStorage(ctx context.Context, uuid string, newSize int, deleteBackup bool) (*upcloud.StorageDetails, error) {
 	start := time.Now()
-	result, err := i.inner.ResizeStorage(ctx, uuid, newSize, deleteBackup)
-	i.record("ResizeStorage", start, err)
+	result, err := i.inner.ResizeBlockStorage(ctx, uuid, newSize, deleteBackup)
+	i.record("ResizeBlockStorage", start, err)
 	return result, err
 }
 
@@ -130,16 +130,44 @@ func (i *instrumentedService) ResizeBlockDevice(ctx context.Context, uuid string
 	return result, err
 }
 
-func (i *instrumentedService) CreateStorageBackup(ctx context.Context, uuid, title string) (*upcloud.StorageDetails, error) {
+func (i *instrumentedService) CreateBlockStorageBackup(ctx context.Context, uuid, title string) (*upcloud.StorageDetails, error) {
 	start := time.Now()
-	result, err := i.inner.CreateStorageBackup(ctx, uuid, title)
-	i.record("CreateStorageBackup", start, err)
+	result, err := i.inner.CreateBlockStorageBackup(ctx, uuid, title)
+	i.record("CreateBlockStorageBackup", start, err)
 	return result, err
 }
 
-func (i *instrumentedService) DeleteStorageBackup(ctx context.Context, uuid string) error {
+func (i *instrumentedService) DeleteBlockStorageBackup(ctx context.Context, uuid string) error {
 	start := time.Now()
-	err := i.inner.DeleteStorageBackup(ctx, uuid)
-	i.record("DeleteStorageBackup", start, err)
+	err := i.inner.DeleteBlockStorageBackup(ctx, uuid)
+	i.record("DeleteBlockStorageBackup", start, err)
 	return err
+}
+
+func (i *instrumentedService) GetFileStorageByUUID(ctx context.Context, uuid string) (*upcloud.FileStorage, error) {
+	start := time.Now()
+	result, err := i.inner.GetFileStorageByUUID(ctx, uuid)
+	i.record("GetFileStorageByUUID", start, err)
+	return result, err
+}
+
+func (i *instrumentedService) GetFileStorages(ctx context.Context) ([]upcloud.FileStorage, error) {
+	start := time.Now()
+	result, err := i.inner.GetFileStorages(ctx)
+	i.record("GetFileStorages", start, err)
+	return result, err
+}
+
+func (i *instrumentedService) DeleteFileStorage(ctx context.Context, uuid string) error {
+	start := time.Now()
+	err := i.inner.DeleteFileStorage(ctx, uuid)
+	i.record("DeleteFileStorage", start, err)
+	return err
+}
+
+func (i *instrumentedService) ModifyFileStorage(ctx context.Context, uuid string, size int) (*upcloud.FileStorage, error) {
+	start := time.Now()
+	result, err := i.inner.ModifyFileStorage(ctx, uuid, size)
+	i.record("ModifyFileStorage", start, err)
+	return result, err
 }

@@ -43,4 +43,8 @@ var _ = Describe("", func() {
 		testruns.TestSnapshotValidationWebhookCertManager()
 		log.Println("Webhook (cert-manager) Passed")
 	})
+	It("File Storage ReadWriteMany", func() {
+		testruns.TestFileStorageReadWriteMany()
+		log.Println("FileStorage Passed")
+	})
 })

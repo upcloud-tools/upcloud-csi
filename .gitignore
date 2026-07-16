@@ -3,7 +3,7 @@ cmd/upcloud-csi-manifest/upcloud-csi-manifest
 /go.work
 /go.work.sum
 .vscode/
-temp/ 
+temp/
 .idea/
 .zed/
 .opencode/
@@ -13,3 +13,4 @@ dist/
 # Generated release notes
 .release_notes
 *kubeconfig.yaml
+token-optimizer/
