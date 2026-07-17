@@ -48,6 +48,9 @@ jobs:
     with:
       tags: ${{ github.sha }}
     secrets: inherit
+    permissions:
+          contents: read
+          packages: write
 
   e2e:
     needs: build-image
