@@ -1,5 +1,10 @@
 # Helm chart changelog
 
+## [1.12.0] - 2026-07-17
+
+### Changed
+- Bump app version to `v3.0.0` (NFS File Storage support)
+
 ## [1.11.2] - 2026-07-15
 
 ### Changed

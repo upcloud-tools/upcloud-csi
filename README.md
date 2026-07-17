@@ -16,7 +16,7 @@ features, security, and fast iteration.
 ### Online Volume Expansion
 Resize a PVC while a pod is actively using it — no restart required. Both `ext4` and `XFS` filesystems are supported.
 
-### NFS File Storage (ReadWriteMany) — **Beta**
+### NFS File Storage (ReadWriteMany) — **BETA**
 Static provisioning for UpCloud NFS File Storage services. Create a FileStorage manually, then mount it as a `ReadWriteMany` volume across multiple pods.
 
 Architecture:

@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file.
 
+## [3.0.0] - 2026-07-17
+
+### Added
+- feat: add NFS FileStorage support (static provisioning) — BETA
+- feat(e2e): add `FILESTORAGE` e2e test for ReadWriteMany NFS access
+
+### Changed
+- refactor(service): split `upcloud_service.go` into per-type files
+- refactor(service): segregate `Service` interface into `BlockStorageService`, `BackupService`, `FileStorageService`, `ServerService`
+- refactor(controller): extract block storage and snapshot RPCs into dedicated files
+- refactor(controller): route volumes by UUID prefix ("01" block, "17" file)
+
 ## [2.8.5] - 2026-07-15
 
 ### Changed
