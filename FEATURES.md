@@ -3,17 +3,34 @@
 ### Online Block Volume Expansion (ReadWriteOnce)
 Resize a PVC while a pod is actively using it — no restart required. Both `ext4` and `XFS` filesystems are supported.
 
-### NFS File Storage (ReadWriteMany) — **BETA**
-Static provisioning for UpCloud NFS File Storage services. Create a FileStorage manually, then mount it as a `ReadWriteMany` volume across multiple pods.
+### File Storage (ReadWriteMany)
+Dynamic provisioning for UpCloud File Storage (NFS) services. Use the `upcloud-file-storage` or `upcloud-file-storage-encrypted`
+StorageClass to automatically provision a FileStorage with a default NFS share at `/share-1`.
 
 Architecture:
 
 ```
->=1 pods -> 1 PVC -> 1 PV -> NFS File Storage with 1 share path
+>=1 pods -> 1 PVC -> upcloud-file-storage SC -> CSI driver -> UpCloud FileStorage
 ```
-**Note**: Just a single share path is supported in this approach. Multiple PVs using the same File Storage service (and different share paths) is currently not supported.
 
-Original docs: https://upcloud.com/docs/guides/file-storage-nfs-managed-kubernetes/
+The share's ACL is automatically configured to allow all IP addresses read-write access. For encrypted volumes,
+use the `upcloud-file-storage-encrypted` StorageClass.
+
+```yaml
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: my-file-storage-claim
+spec:
+  accessModes:
+    - ReadWriteMany
+  resources:
+    requests:
+      storage: 250Gi
+  storageClassName: upcloud-file-storage
+```
+
+Static provisioning is also supported — create a FileStorage manually and mount it as a `nfs:` PV:
 
 ```yaml
 apiVersion: v1
@@ -26,31 +43,23 @@ spec:
   accessModes:
     - ReadWriteMany
   persistentVolumeReclaimPolicy: Retain
-  storageClassName: "" # Prevents dynamic provisioning
+  storageClassName: ""
   nfs:
     server: FILE_STORAGE_IP
-    path: /your/share/path
+    path: /share-1
   mountOptions:
-    - vers=4.1
-    - nconnect=8
-    - rsize=1048576
-    - wsize=1048576
-    - noatime
     - hard
+    - intr
 ```
-
-The CSI driver currently supports delete, list, validate capabilities, and expand for existing FileStorage volumes.
-`CreateVolume` is not implemented for FileStorage (dynamic provisioning is not available). FileStorage services must
-be created directly via UpCloud or the CLI.
 
 | Operation | Status |
 |-----------|--------|
-| Create (dynamic provisioning) | ❌ Not implemented |
+| Create (dynamic provisioning) | ✅ |
 | Delete | ✅ |
 | List | ✅ |
 | Validate capabilities | ✅ |
 | Expand (resize) | ✅ |
-| ControllerPublish / Unpublish | ❌ Not called for `nfs:` PVs (kubelet handles mount) |
+| ControllerPublish / Unpublish | ✅ (no-op for NFS) |
 
 ### Helm Chart
 Full-featured Helm chart, published as an OCI artifact to `ghcr.io/upcloud-tools/charts`. Includes:
@@ -58,7 +67,7 @@ Full-featured Helm chart, published as an OCI artifact to `ghcr.io/upcloud-tools
 - Controller StatefulSet with 4 sidecars (provisioner, attacher, resizer, snapshotter)
 - Node DaemonSet with node-driver-registrar
 - Snapshot controller (2 replicas, leader election) and optional validation webhook backed by cert-manager
-- StorageClasses for all three UpCloud tiers: `maxiops`, `standard`, `hdd`
+- StorageClasses for all three UpCloud tiers (`maxiops`, `standard`, `hdd`) and NFS (encrypted)
 - `securityContext` and `podSecurityContext` per component with secure defaults
 - `metrics` block — ClusterIP metrics Service, optional ServiceMonitor and PrometheusRule for prometheus-operator
 - `extraObjects` — deploy arbitrary Kubernetes resources with Go template support

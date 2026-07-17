@@ -32,6 +32,7 @@ var supportedCapabilities = []csi.ControllerServiceCapability_RPC_Type{ //nolint
 type Controller struct {
 	csi.UnimplementedControllerServer
 	zone              string
+	nodeHost          string
 	maxVolumesPerNode int
 
 	svc service.Service
@@ -40,12 +41,13 @@ type Controller struct {
 	storageLabels []upcloud.Label
 }
 
-func NewController(svc service.Service, zone string, maxVolumesPerNode int, l *logrus.Entry, labels ...string) (*Controller, error) {
+func NewController(svc service.Service, zone, nodeHost string, maxVolumesPerNode int, l *logrus.Entry, labels ...string) (*Controller, error) {
 	if zone == "" {
 		return nil, errors.New("controller zone is required field")
 	}
 	return &Controller{
 		zone:              zone,
+		nodeHost:          nodeHost,
 		svc:               svc,
 		log:               l,
 		storageLabels:     upcloudLabels(labels),
@@ -54,12 +56,17 @@ func NewController(svc service.Service, zone string, maxVolumesPerNode int, l *l
 }
 
 // CreateVolume provisions storage via UpCloud Storage service.
-func (c *Controller) CreateVolume(ctx context.Context, req *csi.CreateVolumeRequest) (resp *csi.CreateVolumeResponse, err error) {
+func (c *Controller) CreateVolume(ctx context.Context, req *csi.CreateVolumeRequest) (resp *csi.CreateVolumeResponse, err error) { //nolint:funlen // will be refactored in Phase 3
 	log := logger.WithServerContext(ctx, c.log).WithField(logger.VolumeNameKey, req.GetName())
+
+	if req.Parameters["type"] == volumeTypeFileStorage {
+		return c.createFileStorageVolume(ctx, req)
+	}
 
 	if err := validateCreateVolumeRequest(req, c.zone); err != nil {
 		return nil, err
 	}
+
 	// get volume first, and skip if exists
 	volumes, err := c.svc.GetBlockStorageByName(ctx, req.GetName())
 	if err != nil {
@@ -207,24 +214,35 @@ func (c *Controller) DeleteVolume(ctx context.Context, req *csi.DeleteVolumeRequ
 		return nil, status.Error(codes.InvalidArgument, "DeleteVolume Volume ID must be provided")
 	}
 
-	logger.WithServerContext(ctx, c.log).WithField(logger.VolumeIDKey, req.GetVolumeId()).Info("deleting volume")
-	err := c.svc.DeleteBlockStorage(ctx, req.VolumeId)
-	if err != nil && !errors.Is(err, service.ErrStorageNotFound) {
-		return &csi.DeleteVolumeResponse{}, err
-	}
-	if errors.Is(err, service.ErrStorageNotFound) {
+	log := logger.WithServerContext(ctx, c.log).WithField(logger.VolumeIDKey, req.GetVolumeId())
+
+	if isValidFileStorageUUID(req.VolumeId) {
+		log.Info("deleting FileStorage")
 		if err := c.svc.DeleteFileStorage(ctx, req.VolumeId); err != nil && !errors.Is(err, service.ErrFileStorageNotFound) {
 			return &csi.DeleteVolumeResponse{}, err
 		}
+		return &csi.DeleteVolumeResponse{}, nil
+	}
+
+	log.Info("deleting block storage")
+	if err := c.svc.DeleteBlockStorage(ctx, req.VolumeId); err != nil && !errors.Is(err, service.ErrStorageNotFound) {
+		return &csi.DeleteVolumeResponse{}, err
 	}
 	return &csi.DeleteVolumeResponse{}, nil
 }
 
 // ControllerPublishVolume attaches storage to a node via UpCloud Storage service.
+// For NFS volumes this is a no-op (kubelet handles NFS mounts directly).
 func (c *Controller) ControllerPublishVolume(ctx context.Context, req *csi.ControllerPublishVolumeRequest) (*csi.ControllerPublishVolumeResponse, error) { //nolint: funlen // TODO: refactor
 	if err := validateControllerPublishVolumeRequest(req); err != nil {
 		return nil, err
 	}
+
+	if req.VolumeContext["type"] == volumeTypeFileStorage {
+		logger.WithServerContext(ctx, c.log).WithField(logger.VolumeIDKey, req.GetVolumeId()).Info("NFS volume, publish is a no-op")
+		return &csi.ControllerPublishVolumeResponse{}, nil
+	}
+
 	log := logger.WithServerContext(ctx, c.log).WithField(logger.VolumeIDKey, req.GetVolumeId()).WithField(logger.NodeIDKey, req.GetNodeId())
 
 	server, err := c.svc.GetServerByHostname(ctx, req.NodeId)
@@ -308,6 +326,12 @@ func (c *Controller) ControllerUnpublishVolume(ctx context.Context, req *csi.Con
 	if req.VolumeId == "" {
 		return nil, status.Error(codes.InvalidArgument, "volume ID must be provided")
 	}
+
+	if isValidFileStorageUUID(req.VolumeId) {
+		logger.WithServerContext(ctx, c.log).WithField(logger.VolumeIDKey, req.GetVolumeId()).Info("NFS volume, unpublish is a no-op")
+		return &csi.ControllerUnpublishVolumeResponse{}, nil
+	}
+
 	log := logger.WithServerContext(ctx, c.log).WithFields(logrus.Fields{
 		logger.VolumeIDKey: req.GetVolumeId(),
 		logger.NodeIDKey:   req.GetNodeId(),

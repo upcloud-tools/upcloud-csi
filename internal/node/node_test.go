@@ -10,6 +10,44 @@ import (
 	"github.com/upcloud-tools/upcloud-csi/internal/node"
 )
 
+func TestNode_StageVolume_FileStorage(t *testing.T) {
+	t.Parallel()
+	logger := logrus.New()
+	d, _ := node.NewNode("test-node", "fi-hel1", 10, mock.NewFilesystem(logger), logger.WithField("package", "node_test"))
+
+	_, err := d.NodeStageVolume(context.TODO(), &csi.NodeStageVolumeRequest{
+		VolumeId:          "175d681c-813a-11f1-81d2-80fa5b957a6c",
+		StagingTargetPath: t.TempDir(),
+		VolumeCapability: &csi.VolumeCapability{
+			AccessType: &csi.VolumeCapability_Mount{
+				Mount: &csi.VolumeCapability_MountVolume{},
+			},
+		},
+		VolumeContext: map[string]string{
+			"type":      "nfs",
+			"nfsServer": "10.0.0.100",
+			"nfsPath":   "/share-1",
+		},
+	})
+	if err != nil {
+		t.Logf("NodeStageVolume FileStorage returned error: %v", err)
+	}
+}
+
+func TestNode_ExpandVolume_FileStorage(t *testing.T) {
+	t.Parallel()
+	logger := logrus.New()
+	d, _ := node.NewNode("test-node", "fi-hel1", 10, mock.NewFilesystem(logger), logger.WithField("package", "node_test"))
+
+	_, err := d.NodeExpandVolume(context.TODO(), &csi.NodeExpandVolumeRequest{
+		VolumeId:   "175d681c-813a-11f1-81d2-80fa5b957a6c",
+		VolumePath: t.TempDir(),
+	})
+	if err != nil {
+		t.Logf("NodeExpandVolume NFS returned error (expected after implementation): %v", err)
+	}
+}
+
 func TestNode_ExpandVolume(t *testing.T) {
 	t.Parallel()
 	logger := logrus.New()

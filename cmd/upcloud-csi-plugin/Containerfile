@@ -25,6 +25,7 @@ RUN apk add --no-cache \
     e2fsprogs \
     e2fsprogs-extra \
     eudev \
+    nfs-utils \
     parted \
     util-linux \
     xfsprogs \

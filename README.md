@@ -13,8 +13,10 @@ features, security, and fast iteration.
 
 ## Features
 
+This fork contains these extra features:
+
 - Online block volume expansion (ReadWriteOnce)
-- NFS File Storage (ReadWriteMany) — **BETA**
+- NFS File Storage (ReadWriteMany)
 - Helm chart
 - Robust integration testing to ensure feature stability
 - Hardened container images

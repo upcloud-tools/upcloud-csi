@@ -843,6 +843,12 @@
                 "type": "string",
                 "enum": ["maxiops", "hdd", "standard"]
               },
+              "type": {
+                "type": "string"
+              },
+              "encryption": {
+                "type": "string"
+              },
               "isDefault": {
                 "type": "boolean",
                 "default": false

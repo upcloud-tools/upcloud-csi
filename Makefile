@@ -47,6 +47,9 @@ deploy-test: install-cert-manager create-e2e-clusterissuer
 	helm upgrade --install upcloud-csi $(HELM_CHART_DIR) --namespace kube-system \
 		--set networkPolicy.enabled=true \
 		--set clusterZone=de-fra1 \
+		--set image.repository=$(CONTAINER_REPO) \
+		--set image.tag=$(IMAGE_TAG) \
+		--set image.pullPolicy=Always \
 		$(if $(HELM_VALUES),--values $(HELM_VALUES),) \
 		$(HELM_OPTS) --wait --timeout 180s
 
@@ -102,18 +105,20 @@ test-integration:
 
 
 # Named shortcuts for running e2e tests locally or in CI:
-#   make test-e2e-(ci/local) SNAPSHOT=y       — Create Snapshot And Restore
-#   make test-e2e-(ci/local) RESIZE=y         — Resize Volume (ext4 + xfs, sequential)
-#   make test-e2e-(ci/local) RESIZE_EXT4=y    — Resize Volume (ext4 only)
-#   make test-e2e-(ci/local) RESIZE_XFS=y     — Resize Volume (xfs only)
+#   make test-e2e-(ci/local) SNAPSHOT=y        — Create Snapshot And Restore
+#   make test-e2e-(ci/local) RESIZE=y          — Resize Volume (ext4 + xfs, sequential)
+#   make test-e2e-(ci/local) RESIZE_EXT4=y     — Resize Volume (ext4 only)
+#   make test-e2e-(ci/local) RESIZE_XFS=y      — Resize Volume (xfs only)
 #   make test-e2e-(ci/local) RESIZE_UNATTACHED=y — Resize Unattached Volume
-#   make test-e2e-(ci/local) LIST=y           — List Volumes
-#   make test-e2e-(ci/local) PERSISTENCE=y    — Attach Detach Volume
-#   make test-e2e-(ci/local) CREATEDELETE=y   — Create Delete Volume
-#   make test-e2e-(ci/local) NETPOL=y         — NetworkPolicy Enforcement
-#   make test-e2e-(ci/local) WEBHOOK=y        — Snapshot Validation Webhook
-#   make test-e2e-(ci/local) WEBHOOK_CM=y     — Snapshot Validation Webhook (cert-manager)
-#   make test-e2e-(ci/local) FILESTORAGE=y    — File Storage ReadWriteMany
+#   make test-e2e-(ci/local) LIST=y            — List Volumes
+#   make test-e2e-(ci/local) PERSISTENCE=y     — Attach Detach Volume
+#   make test-e2e-(ci/local) CREATEDELETE=y    — Create Delete Volume
+#   make test-e2e-(ci/local) NETPOL=y          — NetworkPolicy Enforcement
+#   make test-e2e-(ci/local) WEBHOOK=y         — Snapshot Validation Webhook
+#   make test-e2e-(ci/local) WEBHOOK_CM=y      — Snapshot Validation Webhook (cert-manager)
+#   make test-e2e-(ci/local) FILESTORAGE=y     — File Storage Dynamic Provisioning
+#   make test-e2e-(ci/local) FS_EXPAND=y       — File Storage Expand
+#   make test-e2e-(ci/local) FS_CONCURRENT=y   — File Storage Concurrent RWX
 GINKGO_FOCUS = $(if $(NETPOL),--ginkgo.focus="NetworkPolicy Enforcement",) \
                $(if $(WEBHOOK),--ginkgo.focus="Snapshot Validation Webhook",) \
                $(if $(WEBHOOK_CM),--ginkgo.focus="Snapshot Validation Webhook (cert-manager)",) \
@@ -123,7 +128,9 @@ GINKGO_FOCUS = $(if $(NETPOL),--ginkgo.focus="NetworkPolicy Enforcement",) \
                $(if $(RESIZE_EXT4),--ginkgo.focus="Resize Volume$$",) \
                $(if $(RESIZE_XFS),--ginkgo.focus="Resize Volume XFS",) \
                $(if $(RESIZE),--ginkgo.focus="Resize Volume",) \
-               $(if $(FILESTORAGE),--ginkgo.focus="File Storage ReadWriteMany",) \
+               $(if $(FILESTORAGE),--ginkgo.focus="File Storage Dynamic Provisioning",) \
+               $(if $(FS_EXPAND),--ginkgo.focus="File Storage Expand",) \
+               $(if $(FS_CONCURRENT),--ginkgo.focus="File Storage Concurrent RWX",) \
                $(if $(PERSISTENCE),--ginkgo.focus="Attach Detach Volume",) \
                $(if $(SNAPSHOT),--ginkgo.focus="Create Snapshot And Restore",)
 

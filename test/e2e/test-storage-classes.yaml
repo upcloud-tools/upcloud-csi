@@ -20,3 +20,14 @@ parameters:
 provisioner: storage.csi.upcloud.com
 allowVolumeExpansion: true
 reclaimPolicy: Delete
+
+---
+kind: StorageClass
+apiVersion: storage.k8s.io/v1
+metadata:
+  name: upcloud-file-storage-test
+parameters:
+  type: nfs
+provisioner: storage.csi.upcloud.com
+allowVolumeExpansion: true
+reclaimPolicy: Delete

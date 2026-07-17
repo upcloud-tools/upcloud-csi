@@ -8,7 +8,15 @@ metadata:
   annotations:
     storageclass.kubernetes.io/is-default-class: {{ .isDefault | quote }}
 parameters:
+  {{- if .tier }}
   tier: {{ .tier }}
+  {{- end }}
+  {{- if .type }}
+  type: {{ .type }}
+  {{- end }}
+  {{- if .encryption }}
+  encryption: {{ .encryption }}
+  {{- end }}
 provisioner: {{ $.Values.csiDriver.name }}
 allowVolumeExpansion: {{ .allowVolumeExpansion }}
 reclaimPolicy: {{ .reclaimPolicy }}

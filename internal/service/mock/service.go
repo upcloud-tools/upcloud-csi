@@ -10,14 +10,21 @@ import (
 	"github.com/upcloud-tools/upcloud-csi/internal/service"
 )
 
+const (
+	mockNetworkName = "mock-network"
+	mockNetworkUUID = "mock-net-uuid"
+	mockZone        = "fi-hel2"
+)
+
 type UpCloudServiceMock struct {
-	VolumeNameExists      bool
-	VolumeUUIDExists      bool
-	FileStorageUUIDExists bool
-	CloneBlockStorageSize int
-	StorageSize           int
-	StorageBackingUp      bool
-	SourceVolumeID        string
+	VolumeNameExists         bool
+	VolumeUUIDExists         bool
+	FileStorageUUIDExists    bool
+	CreateFileStorageEnabled bool
+	CloneBlockStorageSize    int
+	StorageSize              int
+	StorageBackingUp         bool
+	SourceVolumeID           string
 }
 
 // -- Block Storage --
@@ -102,11 +109,19 @@ func (m *UpCloudServiceMock) ListBlockStorage(ctx context.Context, zone string) 
 
 func (m *UpCloudServiceMock) GetServerByHostname(ctx context.Context, hostname string) (*upcloud.ServerDetails, error) {
 	id, _ := uuid.NewUUID()
-	return &upcloud.ServerDetails{
+	srv := &upcloud.ServerDetails{
 		Server: upcloud.Server{
 			UUID: id.String(),
 		},
-	}, nil
+	}
+	if m.CreateFileStorageEnabled {
+		srv.Networking = upcloud.ServerNetworking{
+			Interfaces: []upcloud.ServerInterface{
+				{Network: mockNetworkUUID, Type: upcloud.NetworkTypePrivate},
+			},
+		}
+	}
+	return srv, nil
 }
 
 func (m *UpCloudServiceMock) ResizeBlockStorage(ctx context.Context, _ string, newSize int, deleteBackup bool) (*upcloud.StorageDetails, error) {
@@ -207,4 +222,68 @@ func (m *UpCloudServiceMock) ModifyFileStorage(ctx context.Context, inputUUID st
 	fs := newMockFileStorage(size)
 	fs.UUID = inputUUID
 	return fs, nil
+}
+
+func (m *UpCloudServiceMock) CreateFileStorage(ctx context.Context, name string, net service.NetworkRef, sizeGiB int, encrypted bool) (*upcloud.FileStorage, error) {
+	if !m.CreateFileStorageEnabled {
+		return nil, service.ErrFileStorageCreateNotImpl
+	}
+	fs := newMockFileStorage(sizeGiB)
+	fs.Name = name
+	fs.Zone = net.Zone
+	fs.Encrypted = encrypted
+	fs.Networks = []upcloud.FileStorageNetwork{
+		{UUID: net.UUID, Name: net.Name, Family: "IPv4", IPAddress: "10.0.0.100"},
+	}
+	return fs, nil
+}
+
+func (m *UpCloudServiceMock) CreateFileStorageShareACL(ctx context.Context, fsUUID, sharePath string) error {
+	if !m.CreateFileStorageEnabled {
+		return service.ErrFileStorageShareACLNotImpl
+	}
+	return nil
+}
+
+func (m *UpCloudServiceMock) GetFileStorageNetworks(ctx context.Context, fsUUID string) ([]upcloud.FileStorageNetwork, error) {
+	if !m.CreateFileStorageEnabled {
+		return nil, service.ErrFileStorageNetworkNotImpl
+	}
+	return []upcloud.FileStorageNetwork{
+		{UUID: mockNetworkUUID, Name: mockNetworkName, Family: "IPv4", IPAddress: "10.0.0.100"},
+	}, nil
+}
+
+func (m *UpCloudServiceMock) GetFileStorageShares(ctx context.Context, fsUUID string) ([]upcloud.FileStorageShare, error) {
+	if !m.CreateFileStorageEnabled {
+		return nil, service.ErrFileStorageCreateNotImpl
+	}
+	return []upcloud.FileStorageShare{
+		{Name: "default", Path: "/share-1"},
+	}, nil
+}
+
+func (m *UpCloudServiceMock) CreateFileStorageShare(ctx context.Context, fsUUID, name, path string) (*upcloud.FileStorageShare, error) {
+	if !m.CreateFileStorageEnabled {
+		return nil, service.ErrFileStorageCreateNotImpl
+	}
+	return &upcloud.FileStorageShare{Name: name, Path: path}, nil
+}
+
+func (m *UpCloudServiceMock) GetNetworks(ctx context.Context) (*upcloud.Networks, error) {
+	if !m.CreateFileStorageEnabled {
+		return nil, service.ErrFileStorageNetworkNotImpl
+	}
+	return &upcloud.Networks{
+		Networks: []upcloud.Network{
+			{UUID: mockNetworkUUID, Name: mockNetworkName, Zone: mockZone, Type: upcloud.NetworkTypePrivate, Router: "mock-router"},
+		},
+	}, nil
+}
+
+func (m *UpCloudServiceMock) GetNetworkDetails(ctx context.Context, uuid string) (*upcloud.Network, error) {
+	if !m.CreateFileStorageEnabled {
+		return nil, service.ErrFileStorageNetworkNotImpl
+	}
+	return &upcloud.Network{UUID: uuid, Name: mockNetworkName, Zone: mockZone, Type: upcloud.NetworkTypePrivate, Router: "mock-router"}, nil
 }

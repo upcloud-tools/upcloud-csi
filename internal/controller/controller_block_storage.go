@@ -2,11 +2,11 @@ package controller
 
 import (
 	"context"
-	"strings"
 
 	"github.com/UpCloudLtd/upcloud-go-api/v8/upcloud"
 	"github.com/container-storage-interface/spec/lib/go/csi"
 	"github.com/sirupsen/logrus"
+	"github.com/upcloud-tools/upcloud-csi/internal/service"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
@@ -74,8 +74,5 @@ func (c *Controller) controllerExpandBlockStorage(ctx context.Context, log *logr
 }
 
 func isValidBlockStorageUUID(s string) bool {
-	if isValidUUID(s) {
-		return strings.HasPrefix(s, "01")
-	}
-	return false
+	return service.IsValidBlockStorageUUID(s)
 }

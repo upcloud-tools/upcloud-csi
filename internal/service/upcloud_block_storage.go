@@ -4,10 +4,17 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strings"
 	"sync"
 
 	"github.com/UpCloudLtd/upcloud-go-api/v8/upcloud"
 	"github.com/UpCloudLtd/upcloud-go-api/v8/upcloud/request"
+	"github.com/google/uuid"
+)
+
+const (
+	// blockStorageUUIDPrefix is the prefix used for block storage UUIDs.
+	blockStorageUUIDPrefix string = "01"
 )
 
 // GetBlockStorageByUUID returns storage details for the given UUID.
@@ -32,6 +39,7 @@ func (u *UpCloudService) GetBlockStorageByName(ctx context.Context, storageName 
 	if err != nil {
 		return nil, err
 	}
+
 	volumes := make([]*upcloud.StorageDetails, 0, len(storages.Storages))
 	for _, s := range storages.Storages {
 		if s.Title == storageName {
@@ -290,4 +298,12 @@ func (u *UpCloudService) RequireBlockStorageOnline(ctx context.Context, s *upclo
 		}
 	}
 	return nil
+}
+
+// IsValidBlockStorageUUID checks if a UUID has the prefix used for block storage volumes.
+func IsValidBlockStorageUUID(s string) bool {
+	if _, err := uuid.Parse(s); err != nil {
+		return false
+	}
+	return strings.HasPrefix(s, blockStorageUUIDPrefix)
 }

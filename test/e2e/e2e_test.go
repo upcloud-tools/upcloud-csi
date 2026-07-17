@@ -43,8 +43,16 @@ var _ = Describe("", func() {
 		testruns.TestSnapshotValidationWebhookCertManager()
 		log.Println("Webhook (cert-manager) Passed")
 	})
-	It("File Storage ReadWriteMany", func() {
-		testruns.TestFileStorageReadWriteMany()
-		log.Println("FileStorage Passed")
+	It("File Storage Dynamic Provisioning", func() {
+		testruns.TestFileStorageDynamicProvisioning()
+		log.Println("FileStorage Dynamic Passed")
+	})
+	It("File Storage Expand", func() {
+		testruns.TestFileStorageExpand()
+		log.Println("FileStorage Expand Passed")
+	})
+	It("File Storage Concurrent RWX", func() {
+		testruns.TestFileStorageConcurrentRWX()
+		log.Println("FileStorage Concurrent RWX Passed")
 	})
 })

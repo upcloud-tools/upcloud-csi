@@ -18,7 +18,7 @@ func mockFileStorage(uuid string, sizeGiB int) *upcloud.FileStorage {
 	return &upcloud.FileStorage{
 		UUID:             uuid,
 		Name:             "mock-file-storage",
-		Zone:             "fi-hel2",
+		Zone:             mockZone,
 		SizeGiB:          sizeGiB,
 		ConfiguredStatus: upcloud.FileStorageConfiguredStatusStarted,
 		OperationalState: string(upcloud.FileStorageOperationalStateRunning),
@@ -140,8 +140,36 @@ func (u *UpCloudClient) ModifyFileStorage(ctx context.Context, r *request.Modify
 	return mockFileStorage(r.UUID, size), nil
 }
 
+func (u *UpCloudClient) GetFileStorageShares(ctx context.Context, r *request.GetFileStorageSharesRequest) ([]upcloud.FileStorageShare, error) {
+	return nil, fmt.Errorf("not implemented")
+}
+
+func (u *UpCloudClient) CreateFileStorageShare(ctx context.Context, r *request.CreateFileStorageShareRequest) (*upcloud.FileStorageShare, error) {
+	return nil, fmt.Errorf("not implemented")
+}
+
+func (u *UpCloudClient) GetNetworks(ctx context.Context, r ...request.QueryFilter) (*upcloud.Networks, error) {
+	return nil, fmt.Errorf("not implemented")
+}
+
+func (u *UpCloudClient) GetNetworkDetails(ctx context.Context, r *request.GetNetworkDetailsRequest) (*upcloud.Network, error) {
+	return nil, fmt.Errorf("not implemented")
+}
+
 func (u *UpCloudClient) WaitForFileStorageOperationalState(ctx context.Context, r *request.WaitForFileStorageOperationalStateRequest) (*upcloud.FileStorage, error) {
 	fs := mockFileStorage(r.UUID, 250)
 	fs.OperationalState = string(r.DesiredState)
 	return fs, nil
+}
+
+func (u *UpCloudClient) CreateFileStorage(ctx context.Context, r *request.CreateFileStorageRequest) (*upcloud.FileStorage, error) {
+	return nil, fmt.Errorf("not implemented")
+}
+
+func (u *UpCloudClient) GetFileStorageNetworks(ctx context.Context, r *request.GetFileStorageNetworksRequest) ([]upcloud.FileStorageNetwork, error) {
+	return nil, fmt.Errorf("not implemented")
+}
+
+func (u *UpCloudClient) CreateFileStorageShareACL(ctx context.Context, r *request.CreateFileStorageShareACLRequest) (*upcloud.FileStorageShareACL, error) {
+	return nil, fmt.Errorf("not implemented")
 }

@@ -188,7 +188,11 @@ func (m *LinuxFilesystem) Mount(ctx context.Context, source, target, fsType stri
 
 	mountArgs = append(mountArgs, source, target)
 
-	return runCommandNoOutput(ctx, logger.WithServerContext(ctx, m.log), mountCmd, mountArgs...)
+	output, err := runCommand(ctx, logger.WithServerContext(ctx, m.log), mountCmd, mountArgs...)
+	if err != nil {
+		return fmt.Errorf("mount failed: %w (%s)", err, formatCmdError(output))
+	}
+	return nil
 }
 
 // Unmount unmounts the given target.

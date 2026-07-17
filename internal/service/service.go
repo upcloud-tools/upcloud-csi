@@ -9,11 +9,14 @@ import (
 )
 
 var (
-	ErrStorageNotFound       = errors.New("upcloud: storage not found")
-	ErrServerNotFound        = errors.New("upcloud: server not found")
-	ErrServerStorageNotFound = errors.New("upcloud: server storage not found")
-	ErrBackupInProgress      = errors.New("upcloud: cannot take snapshot while storage is in state backup")
-	ErrFileStorageNotFound   = errors.New("upcloud: file storage not found")
+	ErrStorageNotFound            = errors.New("upcloud: storage not found")
+	ErrServerNotFound             = errors.New("upcloud: server not found")
+	ErrServerStorageNotFound      = errors.New("upcloud: server storage not found")
+	ErrBackupInProgress           = errors.New("upcloud: cannot take snapshot while storage is in state backup")
+	ErrFileStorageNotFound        = errors.New("upcloud: file storage not found")
+	ErrFileStorageCreateNotImpl   = errors.New("upcloud: file storage dynamic provisioning not implemented")
+	ErrFileStorageShareACLNotImpl = errors.New("upcloud: file storage share ACL management not implemented")
+	ErrFileStorageNetworkNotImpl  = errors.New("upcloud: file storage network discovery not implemented")
 )
 
 type BlockStorageService interface { //nolint:interfacebloat // block storage operations are inherently cohesive
@@ -37,11 +40,23 @@ type BackupService interface {
 	DeleteBlockStorageBackup(ctx context.Context, uuid string) error
 }
 
+// NetworkRef identifies a network by its UUID, zone, and human-readable name.
+type NetworkRef struct {
+	UUID string
+	Name string
+	Zone string
+}
+
 type FileStorageService interface {
 	GetFileStorageByUUID(ctx context.Context, uuid string) (*upcloud.FileStorage, error)
 	GetFileStorages(ctx context.Context) ([]upcloud.FileStorage, error)
 	DeleteFileStorage(ctx context.Context, uuid string) error
 	ModifyFileStorage(ctx context.Context, uuid string, size int) (*upcloud.FileStorage, error)
+	CreateFileStorage(ctx context.Context, name string, net NetworkRef, sizeGiB int, encrypted bool) (*upcloud.FileStorage, error)
+	CreateFileStorageShareACL(ctx context.Context, fsUUID, sharePath string) error
+	GetFileStorageNetworks(ctx context.Context, fsUUID string) ([]upcloud.FileStorageNetwork, error)
+	GetNetworkDetails(ctx context.Context, uuid string) (*upcloud.Network, error)
+	GetNetworks(ctx context.Context) (*upcloud.Networks, error)
 }
 
 type ServerService interface {

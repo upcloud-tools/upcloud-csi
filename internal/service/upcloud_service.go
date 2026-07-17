@@ -20,7 +20,7 @@ const (
 	clientTimeout time.Duration = 120 * time.Second
 )
 
-type upCloudClient interface {
+type upCloudClient interface { //nolint:interfacebloat // wraps SDK interfaces for unit-testability
 	upsvc.Storage
 
 	WaitForServerState(ctx context.Context, r *request.WaitForServerStateRequest) (*upcloud.ServerDetails, error)
@@ -28,9 +28,16 @@ type upCloudClient interface {
 	GetServerDetails(ctx context.Context, r *request.GetServerDetailsRequest) (*upcloud.ServerDetails, error)
 	GetFileStorages(ctx context.Context, r *request.GetFileStoragesRequest) ([]upcloud.FileStorage, error)
 	GetFileStorage(ctx context.Context, r *request.GetFileStorageRequest) (*upcloud.FileStorage, error)
+	CreateFileStorage(ctx context.Context, r *request.CreateFileStorageRequest) (*upcloud.FileStorage, error)
 	DeleteFileStorage(ctx context.Context, r *request.DeleteFileStorageRequest) error
 	ModifyFileStorage(ctx context.Context, r *request.ModifyFileStorageRequest) (*upcloud.FileStorage, error)
 	WaitForFileStorageOperationalState(ctx context.Context, r *request.WaitForFileStorageOperationalStateRequest) (*upcloud.FileStorage, error)
+	GetFileStorageNetworks(ctx context.Context, r *request.GetFileStorageNetworksRequest) ([]upcloud.FileStorageNetwork, error)
+	GetFileStorageShares(ctx context.Context, r *request.GetFileStorageSharesRequest) ([]upcloud.FileStorageShare, error)
+	CreateFileStorageShare(ctx context.Context, r *request.CreateFileStorageShareRequest) (*upcloud.FileStorageShare, error)
+	CreateFileStorageShareACL(ctx context.Context, r *request.CreateFileStorageShareACLRequest) (*upcloud.FileStorageShareACL, error)
+	GetNetworkDetails(ctx context.Context, r *request.GetNetworkDetailsRequest) (*upcloud.Network, error)
+	GetNetworks(ctx context.Context, r ...request.QueryFilter) (*upcloud.Networks, error)
 }
 
 type UpCloudService struct {
@@ -59,13 +66,15 @@ func NewUpCloudServiceFromCredentials(username, password, token string, c ...cli
 	c = append(c, client.WithTimeout(clientTimeout))
 	if token != "" {
 		c = append(c, client.WithBearerAuth(token))
-	} else {
-		if username == "" {
-			return nil, errors.New("UpCloud API username is missing")
-		}
-		if password == "" {
-			return nil, errors.New("UpCloud API password is missing")
-		}
+		return NewUpCloudService(
+			upsvc.New(client.New("", "", c...)),
+		), nil
+	}
+	if username == "" {
+		return nil, errors.New("UpCloud API username is missing")
+	}
+	if password == "" {
+		return nil, errors.New("UpCloud API password is missing")
 	}
 	return NewUpCloudService(
 		upsvc.New(client.New(username, password, c...)),

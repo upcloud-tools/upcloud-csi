@@ -3,14 +3,19 @@ package service
 import (
 	"context"
 	"errors"
+	"fmt"
+	"strings"
 	"time"
 
 	"github.com/UpCloudLtd/upcloud-go-api/v8/upcloud"
 	"github.com/UpCloudLtd/upcloud-go-api/v8/upcloud/request"
+	"github.com/google/uuid"
 )
 
 const (
 	fileStorageStateTimeout time.Duration = 30 * time.Minute
+	// fileStorageUUIDPrefix is the prefix used for file storage UUIDs.
+	fileStorageUUIDPrefix   string        = "17"
 )
 
 // GetFileStorageByUUID returns file storage details for the given UUID.
@@ -52,9 +57,98 @@ func (u *UpCloudService) ModifyFileStorage(ctx context.Context, uuid string, siz
 		SizeGiB: &size,
 	})
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("modify file storage %s: %w", uuid, err)
 	}
 	return u.waitForFileStorageRunning(ctx, fs.UUID)
+}
+
+// CreateFileStorage creates a new file storage service with the given network attachment, a default share at /share-1 with
+// a permissive ACL ("*" read-write), and waits for the service to reach the running state.
+func (u *UpCloudService) CreateFileStorage(ctx context.Context, name string, net NetworkRef, sizeGiB int, encrypted bool) (*upcloud.FileStorage, error) {
+	fs, err := u.client.CreateFileStorage(ctx, &request.CreateFileStorageRequest{
+		Name:             name,
+		Zone:             net.Zone,
+		ConfiguredStatus: upcloud.FileStorageConfiguredStatusStarted,
+		SizeGiB:          sizeGiB,
+		Encrypted:        encrypted,
+		Networks: []upcloud.FileStorageNetwork{
+			{UUID: net.UUID, Name: net.Name, Family: "IPv4"},
+		},
+	})
+	if err != nil {
+		return nil, fmt.Errorf("create FileStorage: %w", err)
+	}
+
+	fs, err = u.waitForFileStorageRunning(ctx, fs.UUID)
+	if err != nil {
+		return nil, fmt.Errorf("wait for FileStorage running: %w", err)
+	}
+
+	if err := u.CreateFileStorageShareACL(ctx, fs.UUID, "/share-1"); err != nil {
+		return nil, fmt.Errorf("create FileStorage share ACL: %w", err)
+	}
+	return fs, nil
+}
+
+// CreateFileStorageShareACL creates an ACL entry on a file storage share allowing all
+// IP addresses ("*") read/write access.
+func (u *UpCloudService) CreateFileStorageShareACL(ctx context.Context, fsUUID, sharePath string) error {
+	shares, err := u.client.GetFileStorageShares(ctx, &request.GetFileStorageSharesRequest{ServiceUUID: fsUUID})
+	if err != nil {
+		return fmt.Errorf("list file storage shares: %w", err)
+	}
+
+	var shareName string
+	for _, s := range shares {
+		if s.Path == sharePath {
+			shareName = s.Name
+			break
+		}
+	}
+	if shareName == "" {
+		_, err = u.client.CreateFileStorageShare(ctx, &request.CreateFileStorageShareRequest{
+			ServiceUUID: fsUUID,
+			Name:        "default",
+			Path:        sharePath,
+			ACL: []upcloud.FileStorageShareACL{
+				{
+					Name:       "allow-all",
+					Target:     "*",
+					Permission: upcloud.FileStorageShareACLPermissionReadWrite,
+				},
+			},
+		})
+		if err != nil {
+			return fmt.Errorf("create file storage share %s: %w", sharePath, err)
+		}
+		return nil
+	}
+
+	_, err = u.client.CreateFileStorageShareACL(ctx, &request.CreateFileStorageShareACLRequest{
+		ServiceUUID: fsUUID,
+		ShareName:   shareName,
+		FileStorageShareACL: upcloud.FileStorageShareACL{
+			Name:       "allow-all",
+			Target:     "*",
+			Permission: upcloud.FileStorageShareACLPermissionReadWrite,
+		},
+	})
+	return err
+}
+
+// GetFileStorageNetworks returns the networks attached to a file storage service.
+func (u *UpCloudService) GetFileStorageNetworks(ctx context.Context, fsUUID string) ([]upcloud.FileStorageNetwork, error) {
+	return u.client.GetFileStorageNetworks(ctx, &request.GetFileStorageNetworksRequest{ServiceUUID: fsUUID})
+}
+
+// GetNetworkDetails returns the full network details for a given network UUID.
+func (u *UpCloudService) GetNetworkDetails(ctx context.Context, uuid string) (*upcloud.Network, error) {
+	return u.client.GetNetworkDetails(ctx, &request.GetNetworkDetailsRequest{UUID: uuid})
+}
+
+// GetNetworks lists all networks available to the account.
+func (u *UpCloudService) GetNetworks(ctx context.Context) (*upcloud.Networks, error) {
+	return u.client.GetNetworks(ctx)
 }
 
 // waitForFileStorageRunning waits for a file storage to reach the running state.
@@ -65,4 +159,12 @@ func (u *UpCloudService) waitForFileStorageRunning(ctx context.Context, uuid str
 		UUID:         uuid,
 		DesiredState: upcloud.FileStorageOperationalStateRunning,
 	})
+}
+
+// IsValidFileStorageUUID checks if a UUID has the prefix used for file storage services.
+func IsValidFileStorageUUID(s string) bool {
+	if _, err := uuid.Parse(s); err != nil {
+		return false
+	}
+	return strings.HasPrefix(s, fileStorageUUIDPrefix)
 }

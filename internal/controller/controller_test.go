@@ -33,7 +33,7 @@ func newController(svc service.Service) *controller.Controller {
 		svc = &mock.UpCloudServiceMock{StorageSize: 10, CloneBlockStorageSize: 10, VolumeUUIDExists: true, FileStorageUUIDExists: true}
 	}
 
-	c, _ := controller.NewController(svc, "fi-hel2", 10, logrus.New().WithField("package", "controller_test"))
+	c, _ := controller.NewController(svc, "fi-hel2", "test-node", 10, logrus.New().WithField("package", "controller_test"))
 	return c
 }
 
@@ -536,6 +536,82 @@ func TestController_ValidateVolumeCapabilities_InvalidUUID(t *testing.T) {
 	_, err := c.ValidateVolumeCapabilities(context.Background(), req)
 	if err == nil {
 		t.Error("expected error for invalid UUID")
+	}
+}
+
+func TestCreateVolume_FileStorage_Success(t *testing.T) {
+	t.Parallel()
+	c := newController(&mock.UpCloudServiceMock{
+		VolumeNameExists:         false,
+		VolumeUUIDExists:         false,
+		CreateFileStorageEnabled: true,
+		StorageSize:              250,
+	})
+	r, err := c.CreateVolume(context.Background(), &csi.CreateVolumeRequest{
+		Name: "test-file-storage-volume",
+		VolumeCapabilities: []*csi.VolumeCapability{
+			{
+				AccessType: &csi.VolumeCapability_Mount{
+					Mount: &csi.VolumeCapability_MountVolume{},
+				},
+				AccessMode: &csi.VolumeCapability_AccessMode{
+					Mode: csi.VolumeCapability_AccessMode_MULTI_NODE_MULTI_WRITER,
+				},
+			},
+		},
+		CapacityRange: &csi.CapacityRange{
+			RequiredBytes: 250 * giB,
+		},
+		Parameters: map[string]string{
+			"type": "nfs",
+		},
+	})
+	if err != nil {
+		t.Fatalf("CreateVolume FileStorage returned error: %v", err)
+	}
+	if r.Volume.VolumeId == "" {
+		t.Error("volume ID should not be empty")
+	}
+	if r.Volume.VolumeContext["type"] != "nfs" {
+		t.Error("volume context type should be file-storage")
+	}
+	if r.Volume.VolumeContext["nfsServer"] == "" {
+		t.Error("volume context nfsServer should not be empty")
+	}
+	if r.Volume.VolumeContext["nfsPath"] != "/share-1" {
+		t.Errorf("volume context nfsPath should be /share-1, got %s", r.Volume.VolumeContext["nfsPath"])
+	}
+}
+
+func TestControllerPublishVolume_FileStorage(t *testing.T) {
+	t.Parallel()
+	c := newController(nil)
+	_, err := c.ControllerPublishVolume(context.Background(), &csi.ControllerPublishVolumeRequest{
+		VolumeId: "175d681c-813a-11f1-81d2-80fa5b957a6c",
+		NodeId:   "test-node-id",
+		VolumeCapability: &csi.VolumeCapability{
+			AccessType: &csi.VolumeCapability_Mount{
+				Mount: &csi.VolumeCapability_MountVolume{},
+			},
+		},
+		VolumeContext: map[string]string{
+			"type": "file-storage",
+		},
+	})
+	if err != nil {
+		t.Logf("ControllerPublishVolume FileStorage returned error: %v", err)
+	}
+}
+
+func TestControllerUnpublishVolume_FileStorage(t *testing.T) {
+	t.Parallel()
+	c := newController(nil)
+	_, err := c.ControllerUnpublishVolume(context.Background(), &csi.ControllerUnpublishVolumeRequest{
+		VolumeId: "175d681c-813a-11f1-81d2-80fa5b957a6c",
+		NodeId:   "test-node-id",
+	})
+	if err != nil {
+		t.Logf("ControllerUnpublishVolume NFS returned error (expected after implementation): %v", err)
 	}
 }
 

@@ -347,6 +347,17 @@ storageClasses:  # @schema additionalProperties: false
       isDefault: false
       reclaimPolicy: Retain
       allowVolumeExpansion: true
+    - name: upcloud-file-storage
+      type: nfs
+      isDefault: false
+      reclaimPolicy: Delete
+      allowVolumeExpansion: true
+    - name: upcloud-file-storage-encrypted
+      type: nfs
+      encryption: data-at-rest
+      isDefault: false
+      reclaimPolicy: Delete
+      allowVolumeExpansion: true
 
 # VolumeSnapshotClass settings.
 volumeSnapshotClass:  # @schema additionalProperties: false

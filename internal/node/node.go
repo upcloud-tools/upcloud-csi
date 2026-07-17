@@ -3,18 +3,21 @@ package node
 import (
 	"context"
 	"errors"
+	"fmt"
 	"os"
 
 	"github.com/container-storage-interface/spec/lib/go/csi"
 	"github.com/sirupsen/logrus"
 	"github.com/upcloud-tools/upcloud-csi/internal/filesystem"
 	"github.com/upcloud-tools/upcloud-csi/internal/logger"
+	"github.com/upcloud-tools/upcloud-csi/internal/service"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
 
 const (
-	fileSystemExt4 = "ext4"
+	fileSystemExt4        = "ext4"
+	volumeTypeFileStorage = "nfs"
 )
 
 type Node struct {
@@ -44,11 +47,10 @@ func NewNode(name, zone string, maxVolumesPerNode int64, fs filesystem.Filesyste
 	}, nil
 }
 
-// NodeStageVolume mounts the volume to a staging path on the node. This is
-// called by the CO before NodePublishVolume and is used to temporary mount the
-// volume to a staging path. Once mounted, NodePublishVolume will make sure to
-// mount it to the appropriate path.
-func (n *Node) NodeStageVolume(ctx context.Context, req *csi.NodeStageVolumeRequest) (*csi.NodeStageVolumeResponse, error) {
+// NodeStageVolume mounts the volume to a staging path on the node. This is called by the CO before NodePublishVolume and is
+// used to temporary mount the volume to a staging path. Once mounted, NodePublishVolume will make sure to mount it to the
+// appropriate path. For NFS volumes the NFS share is mounted directly to the staging path (no block device staging).
+func (n *Node) NodeStageVolume(ctx context.Context, req *csi.NodeStageVolumeRequest) (*csi.NodeStageVolumeResponse, error) { //nolint:funlen // block and NFS paths kept together for clarity
 	if req.VolumeId == "" {
 		return nil, status.Error(codes.InvalidArgument, "volume ID must be provided")
 	}
@@ -59,6 +61,11 @@ func (n *Node) NodeStageVolume(ctx context.Context, req *csi.NodeStageVolumeRequ
 	}
 	if req.VolumeCapability == nil {
 		return nil, status.Error(codes.InvalidArgument, "volume vapability must be provided")
+	}
+
+	// Handle FileStorage volumes: mount NFS share directly to staging path
+	if req.VolumeContext["type"] == volumeTypeFileStorage {
+		return n.stageFileStorageVolume(ctx, req, log)
 	}
 
 	target := req.GetStagingTargetPath()
@@ -106,6 +113,43 @@ func (n *Node) NodeStageVolume(ctx context.Context, req *csi.NodeStageVolumeRequ
 		}
 	} else {
 		log.Info("source device is already mounted to the target path")
+	}
+
+	return &csi.NodeStageVolumeResponse{}, nil
+}
+
+var nfsMountOptions = []string{ //nolint: gochecknoglobals // readonly constant
+	"vers=4.1",
+	"nconnect=8",
+	"rsize=1048576",
+	"wsize=1048576",
+	"noatime",
+	"hard",
+}
+
+func (n *Node) stageFileStorageVolume(ctx context.Context, req *csi.NodeStageVolumeRequest, log *logrus.Entry) (*csi.NodeStageVolumeResponse, error) {
+	server := req.VolumeContext["nfsServer"]
+	path := req.VolumeContext["nfsPath"]
+	if server == "" || path == "" {
+		return nil, status.Error(codes.InvalidArgument, "NFS volume context missing nfsServer or nfsPath")
+	}
+
+	target := req.GetStagingTargetPath()
+	source := fmt.Sprintf("%s:%s", server, path)
+
+	log.WithFields(logrus.Fields{logger.MountSourceKey: source, logger.MountTargetKey: target}).Info("mounting NFS volume for staging")
+
+	mounted, err := n.fs.IsMounted(ctx, target)
+	if err != nil {
+		return nil, err
+	}
+
+	if !mounted {
+		if err := n.fs.Mount(ctx, source, target, "nfs", nfsMountOptions...); err != nil {
+			return nil, status.Error(codes.Internal, err.Error())
+		}
+	} else {
+		log.Info("NFS volume is already mounted to the target path")
 	}
 
 	return &csi.NodeStageVolumeResponse{}, nil
@@ -360,6 +404,12 @@ func (n *Node) NodeExpandVolume(ctx context.Context, req *csi.NodeExpandVolumeRe
 		logger.VolumeIDKey:    req.GetVolumeId(),
 		logger.MountTargetKey: req.GetVolumePath(),
 	})
+
+	// NFS volumes do not need node-side expansion (expansion is handled in ControllerExpandVolume)
+	if service.IsValidFileStorageUUID(req.VolumeId) {
+		log.Info("File Storage volume, no node-side expansion needed")
+		return &csi.NodeExpandVolumeResponse{}, nil
+	}
 
 	log.Info("expanding volume on node")
 

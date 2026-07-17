@@ -171,3 +171,38 @@ func (i *instrumentedService) ModifyFileStorage(ctx context.Context, uuid string
 	i.record("ModifyFileStorage", start, err)
 	return result, err
 }
+
+func (i *instrumentedService) CreateFileStorage(ctx context.Context, name string, net NetworkRef, sizeGiB int, encrypted bool) (*upcloud.FileStorage, error) {
+	start := time.Now()
+	result, err := i.inner.CreateFileStorage(ctx, name, net, sizeGiB, encrypted)
+	i.record("CreateFileStorage", start, err)
+	return result, err
+}
+
+func (i *instrumentedService) CreateFileStorageShareACL(ctx context.Context, fsUUID, sharePath string) error {
+	start := time.Now()
+	err := i.inner.CreateFileStorageShareACL(ctx, fsUUID, sharePath)
+	i.record("CreateFileStorageShareACL", start, err)
+	return err
+}
+
+func (i *instrumentedService) GetFileStorageNetworks(ctx context.Context, fsUUID string) ([]upcloud.FileStorageNetwork, error) {
+	start := time.Now()
+	result, err := i.inner.GetFileStorageNetworks(ctx, fsUUID)
+	i.record("GetFileStorageNetworks", start, err)
+	return result, err
+}
+
+func (i *instrumentedService) GetNetworks(ctx context.Context) (*upcloud.Networks, error) {
+	start := time.Now()
+	result, err := i.inner.GetNetworks(ctx)
+	i.record("GetNetworks", start, err)
+	return result, err
+}
+
+func (i *instrumentedService) GetNetworkDetails(ctx context.Context, uuid string) (*upcloud.Network, error) {
+	start := time.Now()
+	result, err := i.inner.GetNetworkDetails(ctx, uuid)
+	i.record("GetNetworkDetails", start, err)
+	return result, err
+}
