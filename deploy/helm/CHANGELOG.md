@@ -1,5 +1,10 @@
 # Helm chart changelog
 
+## [1.13.1] - 2026-07-18
+
+### Changed
+- Set FileStorage reclaimPolicy to Retain by default
+
 ## [1.13.0] - 2026-07-18
 
 ### Changed
