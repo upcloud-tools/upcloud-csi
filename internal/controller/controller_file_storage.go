@@ -79,7 +79,7 @@ func (c *Controller) createFileStorageVolume(ctx context.Context, req *csi.Creat
 
 	storageSize, err := validateCapacityRange(req.GetCapacityRange(), minFileStorageSize, maxFileStorageSize)
 	if err != nil {
-		return nil, status.Error(codes.OutOfRange, fmt.Sprintf("CreateVolume FileStorage: invalid capacity range: %s", err.Error()))
+		return nil, status.Error(codes.OutOfRange, fmt.Sprintf("invalid capacity range for file storage: %s", err.Error()))
 	}
 	storageSizeGB := int(storageSize / giB)
 
@@ -90,22 +90,22 @@ func (c *Controller) createFileStorageVolume(ctx context.Context, req *csi.Creat
 		return nil, err
 	}
 
-	log := logger.WithServerContext(ctx, c.log).WithFields(map[string]interface{}{
+	log := logger.WithServerContext(ctx, c.log).WithFields(map[string]any{
 		"name":      req.GetName(),
 		"size_gib":  storageSizeGB,
 		"network":   net.Name,
 		"encrypted": encrypted,
 	})
-	log.Info("creating FileStorage")
+	log.Info("creating file storage")
 
 	fs, err := c.svc.CreateFileStorage(ctx, req.GetName(), net, storageSizeGB, encrypted)
 	if err != nil {
-		return nil, status.Error(codes.Internal, fmt.Sprintf("create FileStorage volume: %s", err.Error()))
+		return nil, status.Error(codes.Internal, fmt.Sprintf("create file storage volume: %s", err.Error()))
 	}
 
 	fsIP := fileStorageServerFromFS(fs)
 	if fsIP == "" {
-		return nil, status.Error(codes.Internal, "FileStorage volume has no IP address assigned")
+		return nil, status.Error(codes.Internal, "file storage volume has no IP address assigned")
 	}
 
 	return &csi.CreateVolumeResponse{
@@ -128,8 +128,8 @@ func (c *Controller) createFileStorageVolume(ctx context.Context, req *csi.Creat
 	}, nil
 }
 
-// controllerExpandFileStorage expands a file storage volume to the requested size.
-func (c *Controller) controllerExpandFileStorage(ctx context.Context, log *logrus.Entry, req *csi.ControllerExpandVolumeRequest, fs *upcloud.FileStorage) (*csi.ControllerExpandVolumeResponse, error) {
+// expandFileStorage expands a file storage volume to the requested size.
+func (c *Controller) expandFileStorage(ctx context.Context, log *logrus.Entry, req *csi.ControllerExpandVolumeRequest, fs *upcloud.FileStorage) (*csi.ControllerExpandVolumeResponse, error) {
 	resizeBytes, err := validateCapacityRange(req.CapacityRange, minFileStorageSize, maxFileStorageSize)
 	if err != nil {
 		return nil, status.Errorf(codes.OutOfRange, "invalid capacity range: %v", err)

@@ -20,7 +20,7 @@ import (
 
 func Run(c config.Config) error {
 	l := logger.New(c.LogLevel).WithField(logger.HostKey, hostname())
-	healthServer, err := server.NewHealthServer(c.HealtServerAddress, l)
+	healthServer, err := server.NewHealthServer(c.HealthServerAddress, l)
 	if err != nil {
 		return err
 	}
@@ -66,7 +66,7 @@ func newPluginServer(c config.Config, l *logrus.Entry) (*server.PluginServer, er
 			return srv, err
 		}
 	default:
-		return srv, fmt.Errorf("unknow driver mode '%s'", c.Mode)
+		return srv, fmt.Errorf("unknown driver mode '%s'", c.Mode)
 	}
 	return srv, nil
 }

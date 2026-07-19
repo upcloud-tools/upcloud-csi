@@ -459,3 +459,321 @@ func TestUpCloudService_NewUpCloudServiceFromCredentials(t *testing.T) {
 		require.NoError(t, err)
 	})
 }
+
+func TestUpCloudService_GetBlockStorageByUUID(t *testing.T) {
+	t.Parallel()
+
+	t.Run("Success", func(t *testing.T) {
+		t.Parallel()
+		srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			fmt.Fprint(w, `{
+				"storage": {
+					"uuid": "015d681c-813a-11f1-81d2-80fa5b957a6c",
+					"size": 10,
+					"state": "online",
+					"type": "normal",
+					"zone": "fi-hel2",
+					"title": "test-vol",
+					"encrypted": "no"
+				}
+			}`)
+		}))
+		defer srv.Close()
+
+		c := service.NewUpCloudService(upsvc.New(client.New("", "", client.WithBaseURL(srv.URL))))
+		sd, err := c.GetBlockStorageByUUID(context.Background(), "015d681c-813a-11f1-81d2-80fa5b957a6c")
+		require.NoError(t, err)
+		assert.Equal(t, "015d681c-813a-11f1-81d2-80fa5b957a6c", sd.UUID)
+		assert.Equal(t, 10, sd.Size)
+	})
+
+	t.Run("NotFound", func(t *testing.T) {
+		t.Parallel()
+		srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.WriteHeader(http.StatusNotFound)
+			fmt.Fprint(w, `{"error": {"error_code": "NOT_FOUND", "error_status": 404}}`)
+		}))
+		defer srv.Close()
+
+		c := service.NewUpCloudService(upsvc.New(client.New("", "", client.WithBaseURL(srv.URL))))
+		_, err := c.GetBlockStorageByUUID(context.Background(), "nonexistent")
+		require.ErrorIs(t, err, service.ErrStorageNotFound)
+	})
+
+	t.Run("APIError", func(t *testing.T) {
+		t.Parallel()
+		srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.WriteHeader(http.StatusInternalServerError)
+			fmt.Fprint(w, `{"error": {"error_code": "INTERNAL_ERROR", "error_status": 500}}`)
+		}))
+		defer srv.Close()
+
+		c := service.NewUpCloudService(upsvc.New(client.New("", "", client.WithBaseURL(srv.URL))))
+		_, err := c.GetBlockStorageByUUID(context.Background(), "015d681c-813a-11f1-81d2-80fa5b957a6c")
+		require.Error(t, err)
+	})
+}
+
+func TestUpCloudService_GetBlockStorageByName(t *testing.T) {
+	t.Parallel()
+
+	t.Run("Found", func(t *testing.T) {
+		t.Parallel()
+		callCount := 0
+		srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			callCount++
+			if callCount == 1 {
+				// GET /storage/{type} - list storages
+				fmt.Fprint(w, `{
+					"storages": {
+						"storage": [
+							{
+								"uuid": "015d681c-813a-11f1-81d2-80fa5b957a6c",
+								"size": 10,
+								"state": "online",
+								"type": "normal",
+								"zone": "fi-hel2",
+								"title": "test-vol"
+							}
+						]
+					}
+				}`)
+				return
+			}
+			// GET /storage/{uuid} - storage details
+			fmt.Fprint(w, `{
+				"storage": {
+					"uuid": "015d681c-813a-11f1-81d2-80fa5b957a6c",
+					"size": 10,
+					"state": "online",
+					"type": "normal",
+					"zone": "fi-hel2",
+					"title": "test-vol",
+					"encrypted": "no"
+				}
+			}`)
+		}))
+		defer srv.Close()
+
+		c := service.NewUpCloudService(upsvc.New(client.New("", "", client.WithBaseURL(srv.URL))))
+		volumes, err := c.GetBlockStorageByName(context.Background(), "test-vol")
+		require.NoError(t, err)
+		require.Len(t, volumes, 1)
+		assert.Equal(t, "015d681c-813a-11f1-81d2-80fa5b957a6c", volumes[0].UUID)
+	})
+
+	t.Run("NotFound", func(t *testing.T) {
+		t.Parallel()
+		srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			fmt.Fprint(w, `{"storages": {"storage": []}}`)
+		}))
+		defer srv.Close()
+
+		c := service.NewUpCloudService(upsvc.New(client.New("", "", client.WithBaseURL(srv.URL))))
+		volumes, err := c.GetBlockStorageByName(context.Background(), "nonexistent")
+		require.NoError(t, err)
+		assert.Empty(t, volumes)
+	})
+}
+
+func TestUpCloudService_CreateBlockStorage(t *testing.T) {
+	t.Parallel()
+
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		fmt.Fprint(w, `{
+			"storage": {
+				"uuid": "015d681c-813a-11f1-81d2-80fa5b957a6c",
+				"size": 10,
+				"state": "online",
+				"type": "normal",
+				"zone": "fi-hel2",
+				"title": "test-vol"
+			}
+		}`)
+	}))
+	defer srv.Close()
+
+	c := service.NewUpCloudService(upsvc.New(client.New("", "", client.WithBaseURL(srv.URL))))
+	sd, err := c.CreateBlockStorage(context.Background(), &request.CreateStorageRequest{
+		Zone:  "fi-hel2",
+		Title: "test-vol",
+		Size:  10,
+	})
+	require.NoError(t, err)
+	assert.Equal(t, "015d681c-813a-11f1-81d2-80fa5b957a6c", sd.UUID)
+	assert.Equal(t, "online", sd.State)
+}
+
+func TestUpCloudService_DeleteBlockStorage(t *testing.T) {
+	t.Parallel()
+
+	t.Run("Success", func(t *testing.T) {
+		t.Parallel()
+		srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.WriteHeader(http.StatusNoContent)
+		}))
+		defer srv.Close()
+
+		c := service.NewUpCloudService(upsvc.New(client.New("", "", client.WithBaseURL(srv.URL))))
+		err := c.DeleteBlockStorage(context.Background(), "015d681c-813a-11f1-81d2-80fa5b957a6c")
+		require.NoError(t, err)
+	})
+
+	t.Run("NotFound", func(t *testing.T) {
+		t.Parallel()
+		srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.WriteHeader(http.StatusNotFound)
+			fmt.Fprint(w, `{"error": {"error_code": "NOT_FOUND", "error_status": 404}}`)
+		}))
+		defer srv.Close()
+
+		c := service.NewUpCloudService(upsvc.New(client.New("", "", client.WithBaseURL(srv.URL))))
+		err := c.DeleteBlockStorage(context.Background(), "nonexistent")
+		require.ErrorIs(t, err, service.ErrStorageNotFound)
+	})
+}
+
+func TestUpCloudService_RequireBlockStorageOnline(t *testing.T) {
+	t.Parallel()
+
+	t.Run("AlreadyOnline", func(t *testing.T) {
+		t.Parallel()
+		c := service.NewUpCloudService(upsvc.New(client.New("", "", client.WithBaseURL("http://localhost:1"))))
+		err := c.RequireBlockStorageOnline(context.Background(), &upcloud.Storage{State: upcloud.StorageStateOnline})
+		require.NoError(t, err)
+	})
+
+	t.Run("WaitsForOnline", func(t *testing.T) {
+		t.Parallel()
+		srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			fmt.Fprint(w, `{
+				"storage": {
+					"uuid": "015d681c-813a-11f1-81d2-80fa5b957a6c",
+					"size": 10,
+					"state": "online",
+					"type": "normal",
+					"zone": "fi-hel2",
+					"title": "test-vol"
+				}
+			}`)
+		}))
+		defer srv.Close()
+
+		c := service.NewUpCloudService(upsvc.New(client.New("", "", client.WithBaseURL(srv.URL))))
+		err := c.RequireBlockStorageOnline(context.Background(), &upcloud.Storage{
+			UUID:  "015d681c-813a-11f1-81d2-80fa5b957a6c",
+			State: upcloud.StorageStateMaintenance,
+		})
+		require.NoError(t, err)
+	})
+}
+
+func TestUpCloudService_GetServerByHostname(t *testing.T) {
+	t.Parallel()
+
+	t.Run("Found", func(t *testing.T) {
+		t.Parallel()
+		callCount := 0
+		srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			callCount++
+			if callCount == 1 {
+				// GET /server - list servers
+				fmt.Fprint(w, `{
+					"servers": {
+						"server": [
+							{
+								"uuid": "server-uuid-1",
+								"hostname": "test-node",
+								"zone": "fi-hel2",
+								"state": "started"
+							}
+						]
+					}
+				}`)
+				return
+			}
+			// GET /server/{uuid} - server details
+			fmt.Fprint(w, `{
+				"server": {
+					"uuid": "server-uuid-1",
+					"hostname": "test-node",
+					"zone": "fi-hel2",
+					"state": "started"
+				}
+			}`)
+		}))
+		defer srv.Close()
+
+		c := service.NewUpCloudService(upsvc.New(client.New("", "", client.WithBaseURL(srv.URL))))
+		sd, err := c.GetServerByHostname(context.Background(), "test-node")
+		require.NoError(t, err)
+		assert.Equal(t, "server-uuid-1", sd.UUID)
+		assert.Equal(t, "fi-hel2", sd.Zone)
+	})
+
+	t.Run("NotFound", func(t *testing.T) {
+		t.Parallel()
+		srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			fmt.Fprint(w, `{"servers": {"server": []}}`)
+		}))
+		defer srv.Close()
+
+		c := service.NewUpCloudService(upsvc.New(client.New("", "", client.WithBaseURL(srv.URL))))
+		_, err := c.GetServerByHostname(context.Background(), "nonexistent")
+		require.ErrorIs(t, err, service.ErrServerNotFound)
+	})
+}
+
+func TestUpCloudService_ResizeBlockDevice(t *testing.T) {
+	t.Parallel()
+
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// PATCH /storage/{uuid}
+		fmt.Fprint(w, `{
+			"storage": {
+				"uuid": "015d681c-813a-11f1-81d2-80fa5b957a6c",
+				"size": 20,
+				"state": "online",
+				"type": "normal",
+				"zone": "fi-hel2",
+				"title": "resized-vol"
+			}
+		}`)
+	}))
+	defer srv.Close()
+
+	c := service.NewUpCloudService(upsvc.New(client.New("", "", client.WithBaseURL(srv.URL))))
+	sd, err := c.ResizeBlockDevice(context.Background(), "015d681c-813a-11f1-81d2-80fa5b957a6c", 20)
+	require.NoError(t, err)
+	assert.Equal(t, 20, sd.Size)
+}
+
+func TestUpCloudService_GetBlockStorageBackupByName(t *testing.T) {
+	t.Parallel()
+
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		fmt.Fprint(w, `{
+			"storages": {
+				"storage": [
+					{
+						"uuid": "backup-uuid-1",
+						"title": "snappy",
+						"type": "backup",
+						"state": "online",
+						"size": 10,
+						"origin": "015d681c-813a-11f1-81d2-80fa5b957a6c",
+						"zone": "fi-hel2"
+					}
+				]
+			}
+		}`)
+	}))
+	defer srv.Close()
+
+	c := service.NewUpCloudService(upsvc.New(client.New("", "", client.WithBaseURL(srv.URL))))
+	s, err := c.GetBlockStorageBackupByName(context.Background(), "snappy")
+	require.NoError(t, err)
+	require.NotNil(t, s)
+	assert.Equal(t, "snappy", s.Title)
+	assert.Equal(t, "backup-uuid-1", s.UUID)
+}

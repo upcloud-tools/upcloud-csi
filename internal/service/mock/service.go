@@ -25,6 +25,7 @@ type UpCloudServiceMock struct {
 	StorageSize              int
 	StorageBackingUp         bool
 	SourceVolumeID           string
+	ServerUUIDs              []string
 }
 
 // -- Block Storage --
@@ -47,6 +48,9 @@ func (m *UpCloudServiceMock) GetBlockStorageByUUID(ctx context.Context, storageU
 
 	s := &upcloud.StorageDetails{
 		Storage: *newMockStorage(m.StorageSize),
+	}
+	if len(m.ServerUUIDs) > 0 {
+		s.ServerUUIDs = m.ServerUUIDs
 	}
 	return s, nil
 }

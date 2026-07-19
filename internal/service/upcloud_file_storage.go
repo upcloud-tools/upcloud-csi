@@ -15,7 +15,7 @@ import (
 const (
 	fileStorageStateTimeout time.Duration = 30 * time.Minute
 	// fileStorageUUIDPrefix is the prefix used for file storage UUIDs.
-	fileStorageUUIDPrefix   string        = "17"
+	fileStorageUUIDPrefix string = "17"
 )
 
 // GetFileStorageByUUID returns file storage details for the given UUID.

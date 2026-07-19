@@ -76,7 +76,7 @@ func WithServiceRequest(e *logrus.Entry, r requestable) *logrus.Entry {
 }
 
 func NewMiddleware(log *logrus.Entry) grpc.UnaryServerInterceptor {
-	return func(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (interface{}, error) {
+	return func(ctx context.Context, req any, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (any, error) {
 		var txID string
 		// Assign pre existing correlation ID from publish context or generate new one
 		if r, ok := req.(contextualPublisher); ok {

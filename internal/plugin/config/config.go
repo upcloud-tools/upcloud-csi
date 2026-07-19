@@ -14,7 +14,7 @@ const (
 	// system for the canonical, official name of this plugin.
 	DefaultDriverName string = "storage.csi.upcloud.com"
 	// DefaultAddress is the default address that the csi plugin will serve its http handler on.
-	DefaultHealtServerAddress string = "tcp://127.0.0.1:13071"
+	DefaultHealthServerAddress string = "tcp://127.0.0.1:13071"
 	// DefaultMetricsServerAddress is the default address for the Prometheus metrics HTTP server.
 	DefaultMetricsServerAddress string = "tcp://0.0.0.0:8090"
 	// DefaultPluginServerAddress is the default endpoint that the csi plugin will serve its GRPC handlers on.
@@ -48,7 +48,7 @@ type Config struct {
 	FilesystemTypes []string
 
 	PluginServerAddress  string
-	HealtServerAddress   string
+	HealthServerAddress  string
 	MetricsServerAddress string
 
 	Filesystem filesystem.Filesystem
@@ -64,7 +64,7 @@ func Parse(osArgs []string) (Config, error) {
 	flagSet.StringVar(&c.Password, "password", "", "UpCloud password")
 	flagSet.StringVar(&c.Token, "token", "", "UpCloud auth token. If defined, takes precedence over username and password.")
 	flagSet.StringVar(&c.DriverName, "driver-name", DefaultDriverName, "Name for the driver")
-	flagSet.StringVar(&c.HealtServerAddress, "address", DefaultHealtServerAddress, "Address to serve on")
+	flagSet.StringVar(&c.HealthServerAddress, "address", DefaultHealthServerAddress, "Address to serve on")
 	flagSet.StringVar(&c.MetricsServerAddress, "metrics-address", DefaultMetricsServerAddress, "Address to serve Prometheus metrics on")
 	flagSet.BoolVar(&c.PrintVersion, "version", false, "Print the version and exit.")
 	flagSet.StringVar(&c.Mode, "mode", DefaultDriverMode, "Driver mode, one of node, controller, or monolith.")

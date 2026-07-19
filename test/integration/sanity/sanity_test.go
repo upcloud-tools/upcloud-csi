@@ -76,7 +76,7 @@ func runTestDriver(endpoint *url.URL) error {
 			Password:            os.Getenv("UPCLOUD_TEST_PASSWORD"),
 			DriverName:          config.DefaultDriverName,
 			PluginServerAddress: endpoint.String(),
-			HealtServerAddress:  "http://127.0.0.1:8080",
+			HealthServerAddress: "http://127.0.0.1:8080",
 			NodeHost:            hostname,
 			Zone:                zone,
 			Filesystem:          mock.NewFilesystem(logger),

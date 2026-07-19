@@ -18,7 +18,7 @@ func TestHealthServer(t *testing.T) {
 
 	l := logger.New("info").WithField("package", "server_test")
 
-	const addr string = config.DefaultHealtServerAddress
+	const addr string = config.DefaultHealthServerAddress
 
 	srv, err := server.NewHealthServer(addr, l)
 	require.NoError(t, err)
