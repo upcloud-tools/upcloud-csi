@@ -30,28 +30,6 @@ spec:
   storageClassName: upcloud-file-storage
 ```
 
-Static provisioning is also supported — create a FileStorage manually and mount it as a `nfs:` PV:
-
-```yaml
-apiVersion: v1
-kind: PersistentVolume
-metadata:
-  name: my-file-storage-pv
-spec:
-  capacity:
-    storage: 250Gi
-  accessModes:
-    - ReadWriteMany
-  persistentVolumeReclaimPolicy: Retain
-  storageClassName: ""
-  nfs:
-    server: FILE_STORAGE_IP
-    path: /share-1
-  mountOptions:
-    - hard
-    - intr
-```
-
 | Operation | Status |
 |-----------|--------|
 | Create (dynamic provisioning) | ✅ |

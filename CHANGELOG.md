@@ -2,6 +2,17 @@
 
 All notable changes to this project will be documented in this file.
 
+## [3.1.0] - 2026-07-18
+
+### Added
+- feat: promote NFS File Storage support to stable
+- test(e2e): add `FS_EXPAND` e2e test for FileStorage volume resize
+- test(e2e): add `FS_CONCURRENT` e2e test for concurrent ReadWriteMany access
+- test(ci): add `FS_EXPAND` and `FS_CONCURRENT` to e2e CI matrix
+
+### Fixed
+- fix(e2e): PVC cleanup defer running at helper return instead of test end
+
 ## [3.0.0] - 2026-07-17
 
 ### Added

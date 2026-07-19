@@ -155,53 +155,6 @@ func (c *Client) WaitForPVCCapacity(ctx context.Context, pvcName, namespace stri
 	})
 }
 
-func (c *Client) CreateFileStoragePV(ctx context.Context, name, nfsServer, nfsPath string) (*v1.PersistentVolume, error) {
-	pv := &v1.PersistentVolume{
-		ObjectMeta: metav1.ObjectMeta{
-			Name: name,
-		},
-		Spec: v1.PersistentVolumeSpec{
-			Capacity: v1.ResourceList{
-				v1.ResourceStorage: resource.MustParse("250Gi"),
-			},
-			AccessModes: []v1.PersistentVolumeAccessMode{
-				v1.ReadWriteMany,
-			},
-			PersistentVolumeReclaimPolicy: v1.PersistentVolumeReclaimDelete,
-			PersistentVolumeSource: v1.PersistentVolumeSource{
-				NFS: &v1.NFSVolumeSource{
-					Server: nfsServer,
-					Path:   nfsPath,
-				},
-			},
-			MountOptions: []string{"hard", "intr"},
-		},
-	}
-	return c.k8s.CoreV1().PersistentVolumes().Create(ctx, pv, metav1.CreateOptions{})
-}
-
-func (c *Client) CreateFileStoragePVC(ctx context.Context, name, pvName string) (*v1.PersistentVolumeClaim, error) {
-	emptySC := ""
-	pvc := &v1.PersistentVolumeClaim{
-		ObjectMeta: metav1.ObjectMeta{
-			Name: name,
-		},
-		Spec: v1.PersistentVolumeClaimSpec{
-			AccessModes: []v1.PersistentVolumeAccessMode{
-				v1.ReadWriteMany,
-			},
-			Resources: v1.VolumeResourceRequirements{
-				Requests: v1.ResourceList{
-					v1.ResourceStorage: resource.MustParse("250Gi"),
-				},
-			},
-			VolumeName:       pvName,
-			StorageClassName: &emptySC,
-		},
-	}
-	return c.k8s.CoreV1().PersistentVolumeClaims(c.ns).Create(ctx, pvc, metav1.CreateOptions{})
-}
-
 func (c *Client) DeletePV(ctx context.Context, pvName string) error {
 	err := c.k8s.CoreV1().PersistentVolumes().Delete(ctx, pvName, metav1.DeleteOptions{})
 	if k8serrors.IsNotFound(err) {
