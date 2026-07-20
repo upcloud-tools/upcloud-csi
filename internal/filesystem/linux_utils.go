@@ -7,6 +7,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"slices"
 	"strings"
 	"time"
 )
@@ -80,7 +81,7 @@ func volumeIDToDiskID(volumeID string) (string, error) {
 func sfdiskOutputGetLastPartition(source, sfdiskOutput string) (string, error) {
 	outLines := strings.Split(sfdiskOutput, "\n")
 	var lastPartition string
-	for i := len(outLines) - 1; i >= 0; i-- {
+	for i := range slices.Backward(outLines) {
 		partition := strings.TrimSpace(outLines[i])
 		if strings.HasPrefix(partition, source) {
 			lastPartition = partition

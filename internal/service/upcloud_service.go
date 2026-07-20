@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"errors"
+	"fmt"
 	"sync"
 	"time"
 
@@ -81,21 +82,21 @@ func NewUpCloudServiceFromCredentials(username, password, token string, c ...cli
 	), nil
 }
 
-func (u *UpCloudService) waitForStorageOnline(ctx context.Context, uuid string) (*upcloud.StorageDetails, error) {
-	ctx, cancel := context.WithTimeout(ctx, storageStateTimeout)
-	defer cancel()
-	return u.client.WaitForStorageState(ctx, &request.WaitForStorageStateRequest{
-		UUID:         uuid,
-		DesiredState: upcloud.StorageStateOnline,
-	})
-}
+// GetServerByHostname looks up a server by its hostname. Returns
+// ErrServerNotFound if no server matches.
+func (u *UpCloudService) GetServerByHostname(ctx context.Context, hostname string) (*upcloud.ServerDetails, error) {
+	servers, err := u.client.GetServers(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to fetch servers: %w", err)
+	}
 
-func (u *UpCloudService) waitForServerOnline(ctx context.Context, uuid string) error {
-	ctx, cancel := context.WithTimeout(ctx, serverStateTimeout)
-	defer cancel()
-	_, err := u.client.WaitForServerState(ctx, &request.WaitForServerStateRequest{
-		UUID:         uuid,
-		DesiredState: upcloud.ServerStateStarted,
-	})
-	return err
+	for _, server := range servers.Servers {
+		if server.Hostname == hostname {
+			return u.client.GetServerDetails(ctx, &request.GetServerDetailsRequest{
+				UUID: server.UUID,
+			})
+		}
+	}
+
+	return nil, ErrServerNotFound
 }

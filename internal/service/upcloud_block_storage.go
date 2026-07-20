@@ -307,3 +307,22 @@ func IsValidBlockStorageUUID(s string) bool {
 	}
 	return strings.HasPrefix(s, blockStorageUUIDPrefix)
 }
+
+func (u *UpCloudService) waitForStorageOnline(ctx context.Context, uuid string) (*upcloud.StorageDetails, error) {
+	ctx, cancel := context.WithTimeout(ctx, storageStateTimeout)
+	defer cancel()
+	return u.client.WaitForStorageState(ctx, &request.WaitForStorageStateRequest{
+		UUID:         uuid,
+		DesiredState: upcloud.StorageStateOnline,
+	})
+}
+
+func (u *UpCloudService) waitForServerOnline(ctx context.Context, uuid string) error {
+	ctx, cancel := context.WithTimeout(ctx, serverStateTimeout)
+	defer cancel()
+	_, err := u.client.WaitForServerState(ctx, &request.WaitForServerStateRequest{
+		UUID:         uuid,
+		DesiredState: upcloud.ServerStateStarted,
+	})
+	return err
+}

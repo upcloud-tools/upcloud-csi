@@ -138,3 +138,17 @@ func isValidUUID(s string) bool {
 	_, err := uuid.Parse(s)
 	return err == nil
 }
+
+func upcloudLabels(labels []string) []upcloud.Label {
+	r := make([]upcloud.Label, 0, len(labels))
+	for _, l := range labels {
+		if l == "" {
+			continue
+		}
+		c := strings.SplitN(l, "=", 2)
+		if len(c) == 2 {
+			r = append(r, upcloud.Label{Key: c[0], Value: c[1]})
+		}
+	}
+	return r
+}
