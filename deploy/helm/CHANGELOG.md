@@ -1,5 +1,11 @@
 # Helm chart changelog
 
+## [1.14.2] - 2026-07-20
+
+### Changed
+- Bump min kubeVersion to `>=1.34.0` to match client-go v0.36.2
+- Bump csi-provisioner sidecar to v6.3.0
+
 ## [1.14.1] - 2026-07-20
 
 ### Changed
