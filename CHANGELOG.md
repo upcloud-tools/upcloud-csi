@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
+## [3.2.1] - 2026-07-20
+
+### Changed
+- chore(deps): bump google.golang.org/grpc from 1.82.0 to 1.82.1
+
 ## [3.2.0] - 2026-07-20
 
 ### Changed

@@ -1,5 +1,11 @@
 # Helm chart changelog
 
+## [1.14.1] - 2026-07-20
+
+### Changed
+- Include LICENSE and README in chart
+- Update .helmignore to exclude tests
+
 ## [1.14.0] - 2026-07-20
 
 ### Changed
