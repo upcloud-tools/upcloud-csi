@@ -81,7 +81,7 @@ func newNodePluginServer(c config.Config, l *logrus.Entry) (*server.PluginServer
 	if err != nil {
 		return nil, err
 	}
-	identity := identity.NewIdentity(c.DriverName, l)
+	identity := identity.NewIdentity(c.DriverName, GetVersion(), l)
 	pluginServer, err := server.NewNodePluginServer(c.PluginServerAddress, csiNode, identity, l)
 	if err != nil {
 		return nil, err
@@ -103,7 +103,7 @@ func newControllerPluginServer(c config.Config, l *logrus.Entry) (*server.Plugin
 	if err != nil {
 		return nil, err
 	}
-	identity := identity.NewIdentity(c.DriverName, l)
+	identity := identity.NewIdentity(c.DriverName, GetVersion(), l)
 	pluginServer, err := server.NewControllerPluginServer(c.PluginServerAddress, csiController, identity, l)
 	if err != nil {
 		return nil, err
@@ -128,7 +128,7 @@ func newMonolithPluginServer(c config.Config, l *logrus.Entry) (*server.PluginSe
 	if err != nil {
 		return nil, err
 	}
-	identity := identity.NewIdentity(c.DriverName, l)
+	identity := identity.NewIdentity(c.DriverName, GetVersion(), l)
 	pluginServer, err := server.NewPluginServer(c.PluginServerAddress, csiController, csiNode, identity, l)
 	if err != nil {
 		return nil, err

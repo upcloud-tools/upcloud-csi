@@ -28,7 +28,7 @@ func TestPluginServer(t *testing.T) {
 		_ = os.Remove(tmpSocket)
 	}()
 
-	srv, err := server.NewPluginServer(addr, nil, nil, identity.NewIdentity(config.DefaultDriverName, l), l)
+	srv, err := server.NewPluginServer(addr, nil, nil, identity.NewIdentity(config.DefaultDriverName, "test", l), l)
 	require.NoError(t, err)
 
 	go func() {

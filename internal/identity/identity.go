@@ -10,19 +10,21 @@ import (
 
 type Identity struct {
 	csi.UnimplementedIdentityServer
-	driverName string
-	ready      bool
-	log        *logrus.Entry
+	driverName    string
+	driverVersion string
+	ready         bool
+	log           *logrus.Entry
 }
 
-func NewIdentity(driverName string, l *logrus.Entry) *Identity {
-	return &Identity{driverName: driverName, ready: true, log: l}
+func NewIdentity(driverName, driverVersion string, l *logrus.Entry) *Identity {
+	return &Identity{driverName: driverName, driverVersion: driverVersion, ready: true, log: l}
 }
 
 // GetPluginInfo returns metadata of the plugin.
 func (i *Identity) GetPluginInfo(ctx context.Context, req *csi.GetPluginInfoRequest) (*csi.GetPluginInfoResponse, error) {
 	return &csi.GetPluginInfoResponse{
-		Name: i.driverName,
+		Name:          i.driverName,
+		VendorVersion: i.driverVersion,
 	}, nil
 }
 

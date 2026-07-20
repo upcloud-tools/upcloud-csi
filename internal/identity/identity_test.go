@@ -15,9 +15,10 @@ func TestIdentity_GetPluginInfo(t *testing.T) {
 	t.Parallel()
 
 	l := logger.New("error")
-	id := identity.NewIdentity("test", l.WithField("package", "identity_test"))
+	id := identity.NewIdentity("test", "1.0.0", l.WithField("package", "identity_test"))
 	want := csi.GetPluginInfoResponse{
-		Name: "test",
+		Name:          "test",
+		VendorVersion: "1.0.0",
 	}
 	got, err := id.GetPluginInfo(context.TODO(), nil)
 	require.NoError(t, err)
@@ -28,7 +29,7 @@ func TestIdentity_GetPluginCapabilities(t *testing.T) {
 	t.Parallel()
 
 	l := logger.New("error")
-	id := identity.NewIdentity("test", l.WithField("package", "identity_test"))
+	id := identity.NewIdentity("test", "1.0.0", l.WithField("package", "identity_test"))
 	want := csi.GetPluginCapabilitiesResponse{
 		Capabilities: []*csi.PluginCapability{
 			{
@@ -63,7 +64,7 @@ func TestIdentity_Probe(t *testing.T) {
 	t.Parallel()
 
 	l := logger.New("error")
-	id := identity.NewIdentity("test", l.WithField("package", "identity_test"))
+	id := identity.NewIdentity("test", "1.0.0", l.WithField("package", "identity_test"))
 	got, err := id.Probe(context.TODO(), nil)
 	require.NoError(t, err)
 	require.True(t, got.Ready.Value)
