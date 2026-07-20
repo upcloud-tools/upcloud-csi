@@ -2,6 +2,25 @@
 
 All notable changes to this project will be documented in this file.
 
+## [3.2.0] - 2026-07-20
+
+### Changed
+- refactor: code quality improvements. No new features.
+
+### Fixed
+- fix(mock): generate block storage and server UUIDs with correct prefixes
+- fix(typo): HealtServerAddress → HealthServerAddress
+- fix(typo): vapabilities → capabilities in error message
+- fix(typo): unknow → unknown in driver mode error
+
+### Removed
+- chore: remove resolved TODOs (pagination implemented, clean version comment, etc.)
+
+### Tests
+- test(controller): add unit tests for all extracted helpers
+- test(node): raise coverage from 25.1% to 82.2%
+- test(service): add tests for block storage lookups, creation, deletion, resize, backups, servers
+
 ## [3.1.0] - 2026-07-18
 
 ### Added

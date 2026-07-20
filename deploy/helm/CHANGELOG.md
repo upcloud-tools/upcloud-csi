@@ -1,5 +1,10 @@
 # Helm chart changelog
 
+## [1.14.0] - 2026-07-20
+
+### Changed
+- Bump app version to `v3.2.0`
+
 ## [1.13.1] - 2026-07-18
 
 ### Changed
