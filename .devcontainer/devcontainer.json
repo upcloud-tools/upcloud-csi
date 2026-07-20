@@ -1,6 +1,6 @@
 {
     "name": "upcloud-csi",
-    "image": "mcr.microsoft.com/devcontainers/go:1.26",
+    "image": "mcr.microsoft.com/devcontainers/go:1.26.5",
     "features": {
         "ghcr.io/devcontainers/features/helm:1": {},
         "ghcr.io/devcontainers/features/github-cli:1": {},
