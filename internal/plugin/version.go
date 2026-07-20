@@ -9,7 +9,6 @@ import (
 // ldflags like so:
 //   go build -ldflags "-X github.com/upcloud-tools/upcloud-csi/internal/plugin.version=0.0.1"
 
-// TODO look at cleaner way to set these :(.
 var (
 	gitTreeState = "not a git tree" //nolint: gochecknoglobals // set by build
 	commit       string             //nolint: gochecknoglobals // set by build

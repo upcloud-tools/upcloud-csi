@@ -113,9 +113,8 @@ func displayByteString(bytes int64) string {
 	return result + unit
 }
 
-// TODO reword...
 // validateCapabilities validates the requested capabilities.
-// It returns a list of violations which may be empty if no violatons were found.
+// It returns a list of violations which may be empty if no violations were found.
 func validateCapabilities(capacities []*csi.VolumeCapability) []string {
 	violations := sets.NewString()
 	for _, capacity := range capacities {

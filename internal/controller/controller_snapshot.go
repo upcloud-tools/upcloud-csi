@@ -83,8 +83,6 @@ func (c *Controller) DeleteSnapshot(ctx context.Context, req *csi.DeleteSnapshot
 
 // ListSnapshots returns the information about all snapshots on the storage system within the given parameters regardless of
 // how they were created. ListSnapshots should not list a snapshot that is being created but has not been cut successfully yet.
-//
-// TODO OPTIONAL: implement starting token / pagination.
 func (c *Controller) ListSnapshots(ctx context.Context, req *csi.ListSnapshotsRequest) (*csi.ListSnapshotsResponse, error) {
 	log := logger.WithServerContext(ctx, c.log).WithFields(logrus.Fields{
 		logger.ListStartingTokenKey: req.GetStartingToken(),

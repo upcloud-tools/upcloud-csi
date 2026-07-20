@@ -232,7 +232,6 @@ func (c *Controller) ValidateVolumeCapabilities(ctx context.Context, req *csi.Va
 }
 
 // ListVolumes returns a list of all requested volumes.
-// TODO OPTIONAL: implement starting token / pagination.
 func (c *Controller) ListVolumes(ctx context.Context, req *csi.ListVolumesRequest) (*csi.ListVolumesResponse, error) {
 	log := logger.WithServerContext(ctx, c.log).WithFields(logrus.Fields{
 		logger.ListStartingTokenKey: req.GetStartingToken(),

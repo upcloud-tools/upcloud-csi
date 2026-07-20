@@ -61,7 +61,6 @@ func (i *Identity) Probe(ctx context.Context, req *csi.ProbeRequest) (*csi.Probe
 
 	return &csi.ProbeResponse{
 		Ready: &wrappers.BoolValue{
-			// TODO: should we check e.g. that network is available or that all the cli tools are available ?
 			Value: i.ready,
 		},
 	}, nil

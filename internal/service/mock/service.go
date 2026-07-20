@@ -14,6 +14,9 @@ const (
 	mockNetworkName = "mock-network"
 	mockNetworkUUID = "mock-net-uuid"
 	mockZone        = "fi-hel2"
+
+	blockStoragePrefix = "01"
+	serverPrefix       = "00"
 )
 
 type UpCloudServiceMock struct {
@@ -35,10 +38,15 @@ func newMockStorage(size int, label ...upcloud.Label) *upcloud.Storage {
 
 	return &upcloud.Storage{
 		Size:      size,
-		UUID:      id.String(),
+		UUID:      blockStoragePrefix + id.String()[2:],
 		Labels:    label,
 		Encrypted: 0,
 	}
+}
+
+func newServerUUID() string {
+	id, _ := uuid.NewUUID()
+	return serverPrefix + id.String()[2:]
 }
 
 func (m *UpCloudServiceMock) GetBlockStorageByUUID(ctx context.Context, storageUUID string) (*upcloud.StorageDetails, error) {
@@ -69,24 +77,22 @@ func (m *UpCloudServiceMock) GetBlockStorageByName(ctx context.Context, storageN
 }
 
 func (m *UpCloudServiceMock) CreateBlockStorage(ctx context.Context, csr *request.CreateStorageRequest) (*upcloud.StorageDetails, error) {
-	id, _ := uuid.NewUUID()
 	storage := newMockStorage(m.StorageSize)
 	storage.Encrypted = csr.Encrypted
 	s := &upcloud.StorageDetails{
 		Storage:     *storage,
-		ServerUUIDs: upcloud.ServerUUIDSlice{id.String()}, // TODO change UUID prefix
+		ServerUUIDs: upcloud.ServerUUIDSlice{newServerUUID()},
 	}
 
 	return s, nil
 }
 
 func (m *UpCloudServiceMock) CloneBlockStorage(ctx context.Context, csr *request.CloneStorageRequest, label ...upcloud.Label) (*upcloud.StorageDetails, error) {
-	id, _ := uuid.NewUUID()
 	storage := newMockStorage(m.CloneBlockStorageSize, label...)
 	storage.Encrypted = csr.Encrypted
 	s := &upcloud.StorageDetails{
 		Storage:     *storage,
-		ServerUUIDs: upcloud.ServerUUIDSlice{id.String()}, // TODO change UUID prefix
+		ServerUUIDs: upcloud.ServerUUIDSlice{newServerUUID()},
 	}
 
 	return s, nil
@@ -112,10 +118,9 @@ func (m *UpCloudServiceMock) ListBlockStorage(ctx context.Context, zone string) 
 }
 
 func (m *UpCloudServiceMock) GetServerByHostname(ctx context.Context, hostname string) (*upcloud.ServerDetails, error) {
-	id, _ := uuid.NewUUID()
 	srv := &upcloud.ServerDetails{
 		Server: upcloud.Server{
-			UUID: id.String(),
+			UUID: newServerUUID(),
 		},
 	}
 	if m.CreateFileStorageEnabled {
