@@ -2,8 +2,8 @@
 # Documented: https://helm.sh/docs/topics/charts/#the-helmignore-file
 .git
 .gitignore
-*.md
 *.swp
 *.swo
 *~
 .DS_Store
+tests/

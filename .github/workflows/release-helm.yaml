@@ -84,6 +84,9 @@ jobs:
       - name: Get release notes
         run: make helm-release-notes > .release_notes
 
+      - name: Copy LICENSE and README into chart
+        run: cp LICENSE README.md ${{ env.CHART_DIR }}/
+
       - name: Package chart
         run: |
           mkdir -p dist
