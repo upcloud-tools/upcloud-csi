@@ -1,0 +1,70 @@
+# Example: NFS File Storage (ReadWriteMany) with UpCloud File Storage
+# Multiple pods can share this PVC concurrently.
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: nfs-file-storage-claim
+spec:
+  accessModes:
+    - ReadWriteMany
+  resources:
+    requests:
+      storage: 250Gi
+  storageClassName: upcloud-file-storage
+---
+# Two pods share the same NFS volume to demonstrate ReadWriteMany
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nfs-app-a
+  labels:
+    app: nfs-app-a
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: nfs-app-a
+  template:
+    metadata:
+      labels:
+        app: nfs-app-a
+    spec:
+      containers:
+        - name: writer
+          image: busybox
+          command: ["sh", "-c", "while true; do echo \"$(hostname) $(date)\" >> /data/shared.log; sleep 5; done"]
+          volumeMounts:
+            - mountPath: "/data"
+              name: nfs-volume
+      volumes:
+        - name: nfs-volume
+          persistentVolumeClaim:
+            claimName: nfs-file-storage-claim
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nfs-app-b
+  labels:
+    app: nfs-app-b
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: nfs-app-b
+  template:
+    metadata:
+      labels:
+        app: nfs-app-b
+    spec:
+      containers:
+        - name: reader
+          image: busybox
+          command: ["sh", "-c", "tail -f /data/shared.log"]
+          volumeMounts:
+            - mountPath: "/data"
+              name: nfs-volume
+      volumes:
+        - name: nfs-volume
+          persistentVolumeClaim:
+            claimName: nfs-file-storage-claim

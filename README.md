@@ -35,6 +35,10 @@ Additional security tooling:
 
 See [at organization level](https://github.com/upcloud-tools) for the org-wide security policy.
 
+## Examples
+
+Usage examples for every use case are in the [`example/`](example/) directory.
+
 ## Deployment
 
 > **UpCloud Kubernetes clusters** ship with the official UpCloud CSI driver pre-installed as raw manifests.
