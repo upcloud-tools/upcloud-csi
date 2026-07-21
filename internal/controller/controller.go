@@ -57,7 +57,21 @@ func NewController(svc service.Service, zone, nodeHost string, maxVolumesPerNode
 func (c *Controller) CreateVolume(ctx context.Context, req *csi.CreateVolumeRequest) (*csi.CreateVolumeResponse, error) {
 	log := logger.WithServerContext(ctx, c.log).WithField(logger.VolumeNameKey, req.GetName())
 
-	if req.Parameters["type"] == volumeTypeFileStorage {
+	if req.Parameters[volumeContextTypeKey] == volumeTypeFileStorage {
+		if err := validateFileStorageCreateVolumeRequest(req, c.zone); err != nil {
+			return nil, err
+		}
+
+		fileStorages, err := c.svc.GetFileStorages(ctx)
+		if err != nil {
+			return nil, status.Error(codes.Internal, err.Error())
+		}
+		for _, fs := range fileStorages {
+			if fs.Name == req.GetName() && fs.Zone == c.zone {
+				return createFileStorageExistsResponse(req, &fs, log)
+			}
+		}
+
 		return c.createFileStorageVolume(ctx, req)
 	}
 
@@ -128,7 +142,7 @@ func (c *Controller) ControllerPublishVolume(ctx context.Context, req *csi.Contr
 		return nil, err
 	}
 
-	if req.VolumeContext["type"] == volumeTypeFileStorage {
+	if req.VolumeContext[volumeContextTypeKey] == volumeTypeFileStorage {
 		logger.WithServerContext(ctx, c.log).WithField(logger.VolumeIDKey, req.GetVolumeId()).Info("NFS volume, publish is a no-op")
 		return &csi.ControllerPublishVolumeResponse{}, nil
 	}
@@ -399,7 +413,7 @@ func validateCreateVolumeRequest(r *csi.CreateVolumeRequest, zone string) error 
 	}
 	if r.GetAccessibilityRequirements() != nil {
 		for _, t := range r.AccessibilityRequirements.Requisite {
-			region, ok := t.Segments["region"]
+			region, ok := t.Segments[topologyRegionKey]
 			if !ok {
 				continue // nothing to do
 			}

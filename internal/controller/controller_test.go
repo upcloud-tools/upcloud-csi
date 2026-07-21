@@ -573,7 +573,7 @@ func TestCreateVolume_FileStorage_Success(t *testing.T) {
 		t.Error("volume ID should not be empty")
 	}
 	if r.Volume.VolumeContext["type"] != "nfs" {
-		t.Error("volume context type should be file-storage")
+		t.Error("volume context type should be nfs")
 	}
 	if r.Volume.VolumeContext["nfsServer"] == "" {
 		t.Error("volume context nfsServer should not be empty")

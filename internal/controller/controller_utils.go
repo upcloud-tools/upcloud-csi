@@ -9,6 +9,8 @@ import (
 	"github.com/UpCloudLtd/upcloud-go-api/v8/upcloud"
 	"github.com/container-storage-interface/spec/lib/go/csi"
 	"github.com/google/uuid"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 	"k8s.io/apimachinery/pkg/util/sets"
 )
 
@@ -18,6 +20,13 @@ const (
 	miB
 	giB
 	tiB
+)
+
+const (
+	topologyRegionKey    = "region"
+	volumeContextTypeKey = "type"
+	nfsServerKey         = "nfsServer"
+	nfsPathKey           = "nfsPath"
 )
 
 var (
@@ -87,6 +96,55 @@ func validateCapacityRange(cr *csi.CapacityRange, minBytes, maxBytes int64) (int
 }
 
 // displayByteString takes a byte representation of storage size and returns a human-readable string: (1 GiB).
+// validateFileStorageCapabilities validates capabilities for file storage volumes.
+// File storage (NFS) only supports Mount access type with MULTI_NODE_MULTI_WRITER access mode.
+func validateFileStorageCapabilities(caps []*csi.VolumeCapability) []string {
+	violations := sets.NewString()
+	for _, cap := range caps {
+		if cap.GetAccessMode().GetMode() != csi.VolumeCapability_AccessMode_MULTI_NODE_MULTI_WRITER {
+			violations.Insert(fmt.Sprintf("unsupported access mode %s", cap.GetAccessMode().GetMode().String()))
+		}
+		switch cap.GetAccessType().(type) {
+		case *csi.VolumeCapability_Mount:
+		default:
+			violations.Insert("only mount access type is supported for file storage")
+		}
+	}
+	return violations.List()
+}
+
+// validateFileStorageCreateVolumeRequest validates a CreateVolume request for file storage volumes.
+func validateFileStorageCreateVolumeRequest(r *csi.CreateVolumeRequest, zone string) error {
+	if r.GetName() == "" {
+		return status.Error(codes.InvalidArgument, "CreateVolume Name cannot be empty")
+	}
+
+	if len(r.GetVolumeCapabilities()) == 0 {
+		return status.Error(codes.InvalidArgument, "CreateVolume VolumeCapabilities cannot be empty")
+	}
+
+	if violations := validateFileStorageCapabilities(r.VolumeCapabilities); len(violations) > 0 {
+		return status.Errorf(codes.InvalidArgument, "CreateVolume failed with the following violations: %s", strings.Join(violations, ", "))
+	}
+
+	if r.GetVolumeContentSource() != nil {
+		return status.Error(codes.InvalidArgument, "volume content source is not supported for file storage")
+	}
+
+	if r.GetAccessibilityRequirements() != nil {
+		for _, t := range r.AccessibilityRequirements.Requisite {
+			region, ok := t.Segments[topologyRegionKey]
+			if !ok {
+				continue
+			}
+			if region != zone {
+				return status.Errorf(codes.ResourceExhausted, "volume can be only created in region: %q, got: %q", zone, region)
+			}
+		}
+	}
+	return nil
+}
+
 func displayByteString(bytes int64) string {
 	output := float64(bytes)
 	unit := ""

@@ -29,6 +29,7 @@ type UpCloudServiceMock struct {
 	StorageBackingUp         bool
 	SourceVolumeID           string
 	ServerUUIDs              []string
+	FileStorageName          string
 }
 
 // -- Block Storage --
@@ -218,9 +219,11 @@ func (m *UpCloudServiceMock) GetFileStorageByUUID(ctx context.Context, uuid stri
 }
 
 func (m *UpCloudServiceMock) GetFileStorages(ctx context.Context) ([]upcloud.FileStorage, error) {
-	return []upcloud.FileStorage{
-		*newMockFileStorage(m.StorageSize),
-	}, nil
+	fs := newMockFileStorage(m.StorageSize)
+	if m.FileStorageName != "" {
+		fs.Name = m.FileStorageName
+	}
+	return []upcloud.FileStorage{*fs}, nil
 }
 
 func (m *UpCloudServiceMock) DeleteFileStorage(ctx context.Context, uuid string) error {

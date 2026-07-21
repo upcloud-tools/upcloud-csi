@@ -488,6 +488,171 @@ func TestControllerPublishVolume_NFSPassthrough(t *testing.T) {
 	assert.NotNil(t, resp)
 }
 
+func TestCreateVolume_FileStorage(t *testing.T) {
+	t.Parallel()
+
+	validCap := []*csi.VolumeCapability{
+		{
+			AccessMode: &csi.VolumeCapability_AccessMode{Mode: csi.VolumeCapability_AccessMode_MULTI_NODE_MULTI_WRITER},
+			AccessType: &csi.VolumeCapability_Mount{Mount: &csi.VolumeCapability_MountVolume{}},
+		},
+	}
+
+	t.Run("fresh creation", func(t *testing.T) {
+		t.Parallel()
+		c := testController(&mock.UpCloudServiceMock{CreateFileStorageEnabled: true, StorageSize: 250})
+		resp, err := c.CreateVolume(context.Background(), &csi.CreateVolumeRequest{
+			Name:               "fresh-fs",
+			Parameters:         map[string]string{"type": "nfs"},
+			VolumeCapabilities: validCap,
+			CapacityRange:      &csi.CapacityRange{RequiredBytes: 250 * giB},
+		})
+		require.NoError(t, err)
+		require.NotNil(t, resp)
+		assert.NotEmpty(t, resp.Volume.VolumeId)
+		assert.Equal(t, int64(250*giB), resp.Volume.CapacityBytes)
+	})
+
+	t.Run("idempotent: same name returns existing volume", func(t *testing.T) {
+		t.Parallel()
+		c := testController(&mock.UpCloudServiceMock{
+			StorageSize:     250,
+			FileStorageName: "existing-fs",
+		})
+		resp, err := c.CreateVolume(context.Background(), &csi.CreateVolumeRequest{
+			Name:               "existing-fs",
+			Parameters:         map[string]string{"type": "nfs"},
+			VolumeCapabilities: validCap,
+			CapacityRange:      &csi.CapacityRange{RequiredBytes: 250 * giB},
+		})
+		require.NoError(t, err)
+		require.NotNil(t, resp)
+		assert.Equal(t, int64(250*giB), resp.Volume.CapacityBytes)
+		assert.Contains(t, resp.Volume.VolumeContext, "type")
+		assert.Equal(t, "nfs", resp.Volume.VolumeContext["type"])
+	})
+
+	t.Run("idempotent: size mismatch returns AlreadyExists", func(t *testing.T) {
+		t.Parallel()
+		c := testController(&mock.UpCloudServiceMock{
+			StorageSize:     250,
+			FileStorageName: "size-mismatch-fs",
+		})
+		_, err := c.CreateVolume(context.Background(), &csi.CreateVolumeRequest{
+			Name:               "size-mismatch-fs",
+			Parameters:         map[string]string{"type": "nfs"},
+			VolumeCapabilities: validCap,
+			CapacityRange:      &csi.CapacityRange{RequiredBytes: 500 * giB},
+		})
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "AlreadyExists")
+	})
+
+	t.Run("rejects invalid access mode", func(t *testing.T) {
+		t.Parallel()
+		c := testController(nil)
+		_, err := c.CreateVolume(context.Background(), &csi.CreateVolumeRequest{
+			Name:       "invalid-mode-fs",
+			Parameters: map[string]string{"type": "nfs"},
+			VolumeCapabilities: []*csi.VolumeCapability{
+				{
+					AccessMode: &csi.VolumeCapability_AccessMode{Mode: csi.VolumeCapability_AccessMode_SINGLE_NODE_WRITER},
+					AccessType: &csi.VolumeCapability_Mount{Mount: &csi.VolumeCapability_MountVolume{}},
+				},
+			},
+			CapacityRange: &csi.CapacityRange{RequiredBytes: 250 * giB},
+		})
+		require.Error(t, err)
+	})
+
+	t.Run("rejects block access type", func(t *testing.T) {
+		t.Parallel()
+		c := testController(nil)
+		_, err := c.CreateVolume(context.Background(), &csi.CreateVolumeRequest{
+			Name:       "block-access-fs",
+			Parameters: map[string]string{"type": "nfs"},
+			VolumeCapabilities: []*csi.VolumeCapability{
+				{
+					AccessMode: &csi.VolumeCapability_AccessMode{Mode: csi.VolumeCapability_AccessMode_MULTI_NODE_MULTI_WRITER},
+					AccessType: &csi.VolumeCapability_Block{Block: &csi.VolumeCapability_BlockVolume{}},
+				},
+			},
+			CapacityRange: &csi.CapacityRange{RequiredBytes: 250 * giB},
+		})
+		require.Error(t, err)
+	})
+
+	t.Run("rejects volume content source", func(t *testing.T) {
+		t.Parallel()
+		c := testController(nil)
+		_, err := c.CreateVolume(context.Background(), &csi.CreateVolumeRequest{
+			Name:       "content-source-fs",
+			Parameters: map[string]string{"type": "nfs"},
+			VolumeCapabilities: []*csi.VolumeCapability{
+				{
+					AccessMode: &csi.VolumeCapability_AccessMode{Mode: csi.VolumeCapability_AccessMode_MULTI_NODE_MULTI_WRITER},
+					AccessType: &csi.VolumeCapability_Mount{Mount: &csi.VolumeCapability_MountVolume{}},
+				},
+			},
+			VolumeContentSource: &csi.VolumeContentSource{
+				Type: &csi.VolumeContentSource_Snapshot{
+					Snapshot: &csi.VolumeContentSource_SnapshotSource{SnapshotId: "snap-1"},
+				},
+			},
+			CapacityRange: &csi.CapacityRange{RequiredBytes: 250 * giB},
+		})
+		require.Error(t, err)
+	})
+
+	t.Run("rejects empty capabilities", func(t *testing.T) {
+		t.Parallel()
+		c := testController(nil)
+		_, err := c.CreateVolume(context.Background(), &csi.CreateVolumeRequest{
+			Name:          "empty-caps-fs",
+			Parameters:    map[string]string{"type": "nfs"},
+			CapacityRange: &csi.CapacityRange{RequiredBytes: 250 * giB},
+		})
+		require.Error(t, err)
+	})
+
+	t.Run("rejects empty name", func(t *testing.T) {
+		t.Parallel()
+		c := testController(nil)
+		_, err := c.CreateVolume(context.Background(), &csi.CreateVolumeRequest{
+			Name:       "",
+			Parameters: map[string]string{"type": "nfs"},
+			VolumeCapabilities: []*csi.VolumeCapability{
+				{
+					AccessMode: &csi.VolumeCapability_AccessMode{Mode: csi.VolumeCapability_AccessMode_MULTI_NODE_MULTI_WRITER},
+					AccessType: &csi.VolumeCapability_Mount{Mount: &csi.VolumeCapability_MountVolume{}},
+				},
+			},
+		})
+		require.Error(t, err)
+	})
+
+	t.Run("rejects unsupported capabilities", func(t *testing.T) {
+		t.Parallel()
+		c := testController(nil)
+		_, err := c.CreateVolume(context.Background(), &csi.CreateVolumeRequest{
+			Name:       "empty-caps-fs",
+			Parameters: map[string]string{"type": "nfs"},
+			VolumeCapabilities: []*csi.VolumeCapability{
+				{
+					AccessMode: &csi.VolumeCapability_AccessMode{Mode: csi.VolumeCapability_AccessMode_MULTI_NODE_MULTI_WRITER},
+					AccessType: &csi.VolumeCapability_Mount{Mount: &csi.VolumeCapability_MountVolume{}},
+				},
+				{
+					AccessMode: &csi.VolumeCapability_AccessMode{Mode: csi.VolumeCapability_AccessMode_SINGLE_NODE_WRITER},
+					AccessType: &csi.VolumeCapability_Mount{Mount: &csi.VolumeCapability_MountVolume{}},
+				},
+			},
+			CapacityRange: &csi.CapacityRange{RequiredBytes: 250 * giB},
+		})
+		require.Error(t, err)
+	})
+}
+
 func TestControllerUnpublishVolume_Validation(t *testing.T) {
 	t.Parallel()
 

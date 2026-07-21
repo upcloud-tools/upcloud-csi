@@ -71,12 +71,40 @@ func (c *Controller) discoverClusterNetwork(ctx context.Context) (service.Networ
 	return service.NetworkRef{}, status.Errorf(codes.Internal, "network %s not found in network list", netUUID)
 }
 
+// createFileStorageExistsResponse returns an idempotent response when a file storage with the same name already exists.
+// Returns AlreadyExists if the requested size doesn't match the existing volume.
+func createFileStorageExistsResponse(req *csi.CreateVolumeRequest, fs *upcloud.FileStorage, log *logrus.Entry) (*csi.CreateVolumeResponse, error) {
+	storageSize, err := validateCapacityRange(req.GetCapacityRange(), minFileStorageSize, maxFileStorageSize)
+	if err != nil {
+		return nil, status.Error(codes.OutOfRange, fmt.Sprintf("invalid capacity range: %s", err.Error()))
+	}
+	if int64(fs.SizeGiB)*giB != storageSize {
+		return nil, status.Errorf(codes.AlreadyExists, "existing file storage volume %q has size %d GiB, requested %d GiB", fs.Name, fs.SizeGiB, storageSize/giB)
+	}
+	log.WithField(logger.VolumeIDKey, fs.UUID).Info("file storage volume already exists")
+	fsIP := fileStorageServerFromFS(fs)
+	return &csi.CreateVolumeResponse{
+		Volume: &csi.Volume{
+			VolumeId:      fs.UUID,
+			CapacityBytes: int64(fs.SizeGiB) * giB,
+			AccessibleTopology: []*csi.Topology{
+				{
+					Segments: map[string]string{
+						topologyRegionKey: fs.Zone,
+					},
+				},
+			},
+			VolumeContext: map[string]string{
+				volumeContextTypeKey: volumeTypeFileStorage,
+				nfsServerKey:         fsIP,
+				nfsPathKey:           fileStorageSharePath,
+			},
+		},
+	}, nil
+}
+
 // createFileStorageVolume handles dynamic provisioning of FileStorage volumes.
 func (c *Controller) createFileStorageVolume(ctx context.Context, req *csi.CreateVolumeRequest) (*csi.CreateVolumeResponse, error) {
-	if req.GetName() == "" {
-		return nil, status.Error(codes.InvalidArgument, "CreateVolume Name cannot be empty")
-	}
-
 	storageSize, err := validateCapacityRange(req.GetCapacityRange(), minFileStorageSize, maxFileStorageSize)
 	if err != nil {
 		return nil, status.Error(codes.OutOfRange, fmt.Sprintf("invalid capacity range for file storage: %s", err.Error()))
@@ -115,14 +143,14 @@ func (c *Controller) createFileStorageVolume(ctx context.Context, req *csi.Creat
 			AccessibleTopology: []*csi.Topology{
 				{
 					Segments: map[string]string{
-						"region": net.Zone,
+						topologyRegionKey: net.Zone,
 					},
 				},
 			},
 			VolumeContext: map[string]string{
-				"type":      volumeTypeFileStorage,
-				"nfsServer": fsIP,
-				"nfsPath":   fileStorageSharePath,
+				volumeContextTypeKey: volumeTypeFileStorage,
+				nfsServerKey:         fsIP,
+				nfsPathKey:           fileStorageSharePath,
 			},
 		},
 	}, nil

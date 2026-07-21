@@ -117,7 +117,7 @@ func (c *Controller) createBlockStorageVolume(ctx context.Context, req *csi.Crea
 			AccessibleTopology: []*csi.Topology{
 				{
 					Segments: map[string]string{
-						"region": c.zone,
+						topologyRegionKey: c.zone,
 					},
 				},
 			},
