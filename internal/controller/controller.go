@@ -332,6 +332,9 @@ func (c *Controller) ControllerExpandVolume(ctx context.Context, req *csi.Contro
 	if volumeID == "" {
 		return nil, status.Error(codes.InvalidArgument, "volume ID missing in request")
 	}
+	if req.CapacityRange == nil {
+		return nil, status.Error(codes.InvalidArgument, "capacity_range is required")
+	}
 	log := logger.WithServerContext(ctx, c.log).WithField(logger.VolumeIDKey, req.GetVolumeId())
 
 	volume, fileStorage, _, err := c.lookupVolume(ctx, volumeID)

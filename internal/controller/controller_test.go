@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"reflect"
+	"strings"
 	"testing"
 
 	"github.com/UpCloudLtd/upcloud-go-api/v8/upcloud"
@@ -555,6 +556,40 @@ type modifyFileStorageErrorMock struct {
 
 func (m *modifyFileStorageErrorMock) ModifyFileStorage(ctx context.Context, uuid string, size int) (*upcloud.FileStorage, error) {
 	return nil, errors.New("modify failed")
+}
+
+func TestController_ExpandVolume_NilCapacityRange(t *testing.T) {
+	t.Parallel()
+
+	t.Run("block storage nil capacity_range", func(t *testing.T) {
+		t.Parallel()
+		c := newController(nil)
+		_, err := c.ControllerExpandVolume(context.Background(), &csi.ControllerExpandVolumeRequest{
+			VolumeId: "015d681c-813a-11f1-81d2-80fa5b957a6c",
+		})
+		if err == nil {
+			t.Error("expected error for nil capacity_range")
+			return
+		}
+		if !strings.Contains(err.Error(), "capacity_range is required") {
+			t.Errorf("expected error containing 'capacity_range is required', got: %v", err)
+		}
+	})
+
+	t.Run("file storage nil capacity_range", func(t *testing.T) {
+		t.Parallel()
+		c := newController(nil)
+		_, err := c.ControllerExpandVolume(context.Background(), &csi.ControllerExpandVolumeRequest{
+			VolumeId: "175d681c-813a-11f1-81d2-80fa5b957a6c",
+		})
+		if err == nil {
+			t.Error("expected error for nil capacity_range")
+			return
+		}
+		if !strings.Contains(err.Error(), "capacity_range is required") {
+			t.Errorf("expected error containing 'capacity_range is required', got: %v", err)
+		}
+	})
 }
 
 func TestController_ExpandVolume_FileStorage_Error(t *testing.T) {
