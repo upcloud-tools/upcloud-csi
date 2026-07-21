@@ -209,17 +209,16 @@ func (c *Controller) ControllerModifyVolume(context.Context, *csi.ControllerModi
 	return nil, status.Error(codes.Unimplemented, "")
 }
 
-// ValidateVolumeCapabilities checks if the volume capabilities are valid.
+// ValidateVolumeCapabilities checks if the volume capabilities are supported by the volume.
 func (c *Controller) ValidateVolumeCapabilities(ctx context.Context, req *csi.ValidateVolumeCapabilitiesRequest) (*csi.ValidateVolumeCapabilitiesResponse, error) {
 	if req.VolumeId == "" {
 		return nil, status.Error(codes.InvalidArgument, "volume ID must be provided")
 	}
-	log := logger.WithServerContext(ctx, c.log).WithField(logger.VolumeIDKey, req.GetVolumeId())
-
-	if req.VolumeCapabilities == nil {
+	if len(req.VolumeCapabilities) == 0 {
 		return nil, status.Error(codes.InvalidArgument, "volume capabilities must be provided")
 	}
 
+	log := logger.WithServerContext(ctx, c.log).WithField(logger.VolumeIDKey, req.GetVolumeId())
 	log.Info("getting volume by uuid")
 
 	_, _, accessMode, err := c.lookupVolume(ctx, req.VolumeId)
@@ -230,14 +229,16 @@ func (c *Controller) ValidateVolumeCapabilities(ctx context.Context, req *csi.Va
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
-	// if it's not supported (i.e: wrong region), we shouldn't override it
+	if violations := validateVolumeCapabilitiesAgainstVolume(req.VolumeCapabilities, accessMode); len(violations) > 0 {
+		log.WithField("violations", violations).Info("unsupported capabilities")
+		return &csi.ValidateVolumeCapabilitiesResponse{
+			Message: fmt.Sprintf("unsupported capabilities: %s", strings.Join(violations, ", ")),
+		}, nil
+	}
+
 	resp := &csi.ValidateVolumeCapabilitiesResponse{
 		Confirmed: &csi.ValidateVolumeCapabilitiesResponse_Confirmed{
-			VolumeCapabilities: []*csi.VolumeCapability{
-				{
-					AccessMode: accessMode,
-				},
-			},
+			VolumeCapabilities: req.VolumeCapabilities,
 		},
 	}
 
@@ -291,10 +292,13 @@ func (c *Controller) ListVolumes(ctx context.Context, req *csi.ListVolumesReques
 	}
 
 	log.Infof("found %d storages", len(entries))
-	return &csi.ListVolumesResponse{
-		Entries:   entries,
-		NextToken: fmt.Sprint(listNext),
-	}, nil
+	resp := &csi.ListVolumesResponse{
+		Entries: entries,
+	}
+	if listNext > 0 {
+		resp.NextToken = fmt.Sprint(listNext)
+	}
+	return resp, nil
 }
 
 // GetCapacity returns the capacity of the storage pool.

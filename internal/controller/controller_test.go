@@ -361,45 +361,123 @@ func TestController_ControllerUnpublishVolume(t *testing.T) {
 
 func TestController_ValidateVolumeCapabilities(t *testing.T) {
 	t.Parallel()
-	type args struct {
-		req *csi.ValidateVolumeCapabilitiesRequest
+
+	blockVolID := "015d681c-813a-11f1-81d2-80fa5b957a6c"
+	fileVolID := "175d681c-813a-11f1-81d2-80fa5b957a6c"
+
+	validMount := func() *csi.VolumeCapability {
+		return &csi.VolumeCapability{
+			AccessType: &csi.VolumeCapability_Mount{Mount: &csi.VolumeCapability_MountVolume{}},
+		}
 	}
+	validBlock := func() *csi.VolumeCapability {
+		return &csi.VolumeCapability{
+			AccessType: &csi.VolumeCapability_Block{Block: &csi.VolumeCapability_BlockVolume{}},
+		}
+	}
+	withMode := func(c *csi.VolumeCapability, mode csi.VolumeCapability_AccessMode_Mode) *csi.VolumeCapability {
+		c.AccessMode = &csi.VolumeCapability_AccessMode{Mode: mode}
+		return c
+	}
+
 	tests := []struct {
-		name    string
-		args    args
-		want    *csi.VolumeCapability_AccessMode
-		wantErr bool
+		name        string
+		volumeID    string
+		caps        []*csi.VolumeCapability
+		wantErr     bool
+		wantConfirm bool
 	}{
 		{
-			name: "Test ValidateVolumeCapabilities",
-			args: args{
-				&csi.ValidateVolumeCapabilitiesRequest{
-					VolumeId: "015d681c-813a-11f1-81d2-80fa5b957a6c",
-					VolumeCapabilities: []*csi.VolumeCapability{
-						{
-							AccessType: &csi.VolumeCapability_Mount{
-								Mount: &csi.VolumeCapability_MountVolume{},
-							},
-						},
-					},
-				},
+			name:        "block valid SINGLE_NODE_WRITER + Mount",
+			volumeID:    blockVolID,
+			caps:        []*csi.VolumeCapability{withMode(validMount(), csi.VolumeCapability_AccessMode_SINGLE_NODE_WRITER)},
+			wantConfirm: true,
+		},
+		{
+			name:        "block invalid MULTI_NODE_MULTI_WRITER + Mount",
+			volumeID:    blockVolID,
+			caps:        []*csi.VolumeCapability{withMode(validMount(), csi.VolumeCapability_AccessMode_MULTI_NODE_MULTI_WRITER)},
+			wantConfirm: false,
+		},
+		{
+			name:        "file storage valid MULTI_NODE_MULTI_WRITER + Mount",
+			volumeID:    fileVolID,
+			caps:        []*csi.VolumeCapability{withMode(validMount(), csi.VolumeCapability_AccessMode_MULTI_NODE_MULTI_WRITER)},
+			wantConfirm: true,
+		},
+		{
+			name:        "file storage invalid SINGLE_NODE_WRITER + Mount",
+			volumeID:    fileVolID,
+			caps:        []*csi.VolumeCapability{withMode(validMount(), csi.VolumeCapability_AccessMode_SINGLE_NODE_WRITER)},
+			wantConfirm: false,
+		},
+		{
+			name:        "file storage block access type rejected",
+			volumeID:    fileVolID,
+			caps:        []*csi.VolumeCapability{withMode(validBlock(), csi.VolumeCapability_AccessMode_MULTI_NODE_MULTI_WRITER)},
+			wantConfirm: false,
+		},
+		{
+			name:     "block storage with multiple capabilities, one invalid",
+			volumeID: blockVolID,
+			caps: []*csi.VolumeCapability{
+				withMode(validMount(), csi.VolumeCapability_AccessMode_SINGLE_NODE_WRITER),
+				withMode(validMount(), csi.VolumeCapability_AccessMode_MULTI_NODE_MULTI_WRITER),
 			},
-			want:    &csi.VolumeCapability_AccessMode{Mode: csi.VolumeCapability_AccessMode_SINGLE_NODE_WRITER},
-			wantErr: false,
+			wantConfirm: false,
+		},
+		{
+			name:        "missing volume ID",
+			volumeID:    "",
+			caps:        []*csi.VolumeCapability{withMode(validMount(), csi.VolumeCapability_AccessMode_SINGLE_NODE_WRITER)},
+			wantErr:     true,
+			wantConfirm: false,
+		},
+		{
+			name:        "empty capabilities",
+			volumeID:    blockVolID,
+			caps:        nil,
+			wantErr:     true,
+			wantConfirm: false,
+		},
+		{
+			name:        "invalid UUID",
+			volumeID:    "invalid-uuid",
+			caps:        []*csi.VolumeCapability{withMode(validMount(), csi.VolumeCapability_AccessMode_SINGLE_NODE_WRITER)},
+			wantErr:     true,
+			wantConfirm: false,
 		},
 	}
-	for _, testCase := range tests {
-		tt := testCase
-		t.Run(tt.name, func(t *testing.T) {
+
+	for _, tc := range tests {
+		tc := tc
+		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 			c := newController(nil)
-			got, err := c.ValidateVolumeCapabilities(context.Background(), tt.args.req)
-			if (err != nil) != tt.wantErr {
-				t.Errorf("ValidateVolumeCapabilities() error = %v, wantErr %v", err, tt.wantErr)
+			got, err := c.ValidateVolumeCapabilities(context.Background(), &csi.ValidateVolumeCapabilitiesRequest{
+				VolumeId:           tc.volumeID,
+				VolumeCapabilities: tc.caps,
+			})
+			if tc.wantErr {
+				if err == nil {
+					t.Error("expected error, got nil")
+				}
 				return
 			}
-			if got.Confirmed.VolumeCapabilities[0].AccessMode.GetMode() != tt.want.GetMode() {
-				t.Errorf("ValidateVolumeCapabilities() got = %v, want %v", got, tt.want)
+			if err != nil {
+				t.Errorf("unexpected error: %v", err)
+				return
+			}
+			if tc.wantConfirm && got.Confirmed == nil {
+				t.Error("expected confirmed capabilities, got nil")
+			}
+			if !tc.wantConfirm && got.Confirmed != nil {
+				t.Errorf("expected unconfirmed, got confirmed: %v", got.Confirmed)
+			}
+			if tc.wantConfirm && got.Confirmed != nil {
+				if len(got.Confirmed.VolumeCapabilities) != len(tc.caps) {
+					t.Errorf("expected %d confirmed capabilities, got %d", len(tc.caps), len(got.Confirmed.VolumeCapabilities))
+				}
 			}
 		})
 	}
@@ -434,31 +512,6 @@ type blockStorageNotFoundMock struct {
 
 func (m *blockStorageNotFoundMock) DeleteBlockStorage(ctx context.Context, uuid string) error {
 	return service.ErrStorageNotFound
-}
-
-func TestController_ValidateVolumeCapabilities_FileStorage(t *testing.T) {
-	t.Parallel()
-	c := newController(nil)
-	req := &csi.ValidateVolumeCapabilitiesRequest{
-		VolumeId: "175d681c-813a-11f1-81d2-80fa5b957a6c",
-		VolumeCapabilities: []*csi.VolumeCapability{
-			{
-				AccessType: &csi.VolumeCapability_Mount{
-					Mount: &csi.VolumeCapability_MountVolume{},
-				},
-			},
-		},
-	}
-	wantMode := csi.VolumeCapability_AccessMode_MULTI_NODE_MULTI_WRITER
-	got, err := c.ValidateVolumeCapabilities(context.Background(), req)
-	if err != nil {
-		t.Errorf("ValidateVolumeCapabilities() error = %v", err)
-		return
-	}
-	if got.Confirmed.VolumeCapabilities[0].AccessMode.GetMode() != wantMode {
-		t.Errorf("ValidateVolumeCapabilities() got mode = %v, want %v",
-			got.Confirmed.VolumeCapabilities[0].AccessMode.GetMode(), wantMode)
-	}
 }
 
 func TestController_ExpandVolume_FileStorage(t *testing.T) {
@@ -517,25 +570,6 @@ func TestController_ExpandVolume_FileStorage_Error(t *testing.T) {
 	})
 	if err == nil {
 		t.Error("expected error when ModifyFileStorage fails")
-	}
-}
-
-func TestController_ValidateVolumeCapabilities_InvalidUUID(t *testing.T) {
-	t.Parallel()
-	c := newController(nil)
-	req := &csi.ValidateVolumeCapabilitiesRequest{
-		VolumeId: "invalid-uuid",
-		VolumeCapabilities: []*csi.VolumeCapability{
-			{
-				AccessType: &csi.VolumeCapability_Mount{
-					Mount: &csi.VolumeCapability_MountVolume{},
-				},
-			},
-		},
-	}
-	_, err := c.ValidateVolumeCapabilities(context.Background(), req)
-	if err == nil {
-		t.Error("expected error for invalid UUID")
 	}
 }
 

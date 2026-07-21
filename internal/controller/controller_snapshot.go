@@ -128,10 +128,13 @@ func (c *Controller) ListSnapshots(ctx context.Context, req *csi.ListSnapshotsRe
 		})
 	}
 	log.Infof("found %d snapshots", len(entries))
-	return &csi.ListSnapshotsResponse{
-		Entries:   entries,
-		NextToken: fmt.Sprint(listNext),
-	}, nil
+	resp := &csi.ListSnapshotsResponse{
+		Entries: entries,
+	}
+	if listNext > 0 {
+		resp.NextToken = fmt.Sprint(listNext)
+	}
+	return resp, nil
 }
 
 // GetSnapshot returns a specific snapshot by ID.

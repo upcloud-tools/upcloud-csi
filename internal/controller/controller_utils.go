@@ -192,6 +192,29 @@ func validateCapabilities(capacities []*csi.VolumeCapability) []string {
 	return violations.List()
 }
 
+// validateVolumeCapabilitiesAgainstVolume checks if the requested capabilities are supported by the volume's access mode.
+// Returns a list of violations.
+func validateVolumeCapabilitiesAgainstVolume(caps []*csi.VolumeCapability, volumeAccessMode *csi.VolumeCapability_AccessMode) []string {
+	violations := sets.NewString()
+	for _, cap := range caps {
+		if cap.GetAccessMode() != nil && cap.GetAccessMode().GetMode() != volumeAccessMode.GetMode() {
+			violations.Insert(fmt.Sprintf("unsupported access mode %s (volume supports %s)",
+				cap.GetAccessMode().GetMode().String(), volumeAccessMode.GetMode().String()))
+		}
+
+		switch cap.GetAccessType().(type) {
+		case *csi.VolumeCapability_Block:
+			if volumeAccessMode.GetMode() == csi.VolumeCapability_AccessMode_MULTI_NODE_MULTI_WRITER {
+				violations.Insert("block access type not supported for file storage")
+			}
+		case *csi.VolumeCapability_Mount:
+		default:
+			violations.Insert("unsupported access type")
+		}
+	}
+	return violations.List()
+}
+
 func isValidUUID(s string) bool {
 	_, err := uuid.Parse(s)
 	return err == nil
