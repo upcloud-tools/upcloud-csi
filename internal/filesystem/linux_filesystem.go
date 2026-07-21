@@ -14,6 +14,10 @@ import (
 	"golang.org/x/sys/unix"
 )
 
+// ErrNotMounted is returned when a target is not mounted.
+// It is used instead of returning nil, nil for pointer+error returns.
+var ErrNotMounted = errors.New("filesystem: not mounted")
+
 const (
 	udevDiskByIDPath        = "/dev/disk/by-id"
 	diskPrefix              = "virtio-"
@@ -269,6 +273,61 @@ func (m *LinuxFilesystem) IsMounted(ctx context.Context, target string) (bool, e
 	}
 
 	return targetFound, nil
+}
+
+// GetMountInfo returns mount information for the given target path.
+// Returns nil if the target is not mounted.
+func (m *LinuxFilesystem) GetMountInfo(ctx context.Context, target string) (*MountInfo, error) {
+	if target == "" {
+		return nil, errors.New("target is not specified for checking the mount")
+	}
+
+	findmntArgs := []string{"-o", "SOURCE,TARGET,PROPAGATION,FSTYPE,OPTIONS", "-M", target, "-J"}
+
+	out, err := runCommand(ctx, logger.WithServerContext(ctx, m.log), "findmnt", findmntArgs...)
+	if err != nil {
+		if strings.TrimSpace(string(out)) == "" {
+			return nil, ErrNotMounted
+		}
+		return nil, fmt.Errorf("checking mounted failed: %w cmd: %q output: %s", err, "findmnt", formatCmdError(out))
+	}
+
+	if len(out) == 0 {
+		return nil, ErrNotMounted
+	}
+
+	type fileSystem struct {
+		Source      string `json:"source"`
+		Target      string `json:"target"`
+		Propagation string `json:"propagation"`
+		FsType      string `json:"fstype"`
+		Options     string `json:"options"`
+	}
+
+	type findmntResponse struct {
+		FileSystems []fileSystem `json:"filesystems"`
+	}
+
+	var resp *findmntResponse
+	err = json.Unmarshal(out, &resp)
+	if err != nil {
+		return nil, fmt.Errorf("couldn't unmarshal data: %q: %w", string(out), err)
+	}
+
+	for _, fs := range resp.FileSystems {
+		if fs.Target == target {
+			if fs.Propagation != "shared" {
+				return nil, fmt.Errorf("mount propagation for target %q is not enabled", target)
+			}
+			return &MountInfo{
+				Source:  fs.Source,
+				FsType:  fs.FsType,
+				Options: fs.Options,
+			}, nil
+		}
+	}
+
+	return nil, ErrNotMounted
 }
 
 // createPartitionTableIfNotExists creates new partition table if one does not exists.

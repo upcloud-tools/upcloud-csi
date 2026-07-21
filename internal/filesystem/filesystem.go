@@ -13,9 +13,17 @@ type VolumeStatistics struct {
 	UsedInodes int64
 }
 
+// MountInfo contains information about a mounted filesystem.
+type MountInfo struct {
+	Source  string
+	FsType  string
+	Options string
+}
+
 type Filesystem interface {
 	Format(ctx context.Context, source, fsType string, mkfsArgs []string) error
 	IsMounted(ctx context.Context, target string) (bool, error)
+	GetMountInfo(ctx context.Context, target string) (*MountInfo, error)
 	Mount(ctx context.Context, source, target, fsType string, opts ...string) error
 	Unmount(ctx context.Context, path string) error
 	Statistics(volumePath string) (VolumeStatistics, error)

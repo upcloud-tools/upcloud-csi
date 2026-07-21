@@ -42,6 +42,15 @@ func (m *MockFilesystem) Mount(ctx context.Context, source, target, fsType strin
 	return nil
 }
 
+func (m *MockFilesystem) GetMountInfo(ctx context.Context, target string) (*filesystem.MountInfo, error) {
+	if _, err := os.Stat(target); os.IsNotExist(err) {
+		m.log.Debugf("Mock GetMountInfo(%s) -> nil, ErrNotMounted", target)
+		return nil, filesystem.ErrNotMounted
+	}
+	m.log.Debugf("Mock GetMountInfo(%s) -> {source: %s, fstype: ext4}, nil", target, target)
+	return &filesystem.MountInfo{Source: target, FsType: "ext4", Options: ""}, nil
+}
+
 func (m *MockFilesystem) Unmount(ctx context.Context, path string) error {
 	m.log.Debugf("Mock Unmount(%s) -> nil", path)
 	return nil

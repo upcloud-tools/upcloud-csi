@@ -177,7 +177,7 @@ func TestNode_NodeStageVolume(t *testing.T) {
 		t.Parallel()
 		n := newNode(t, nil)
 		_, err := n.NodeStageVolume(context.Background(), &csi.NodeStageVolumeRequest{
-			VolumeId:          "f67db1ca-825b-40aa-a6f4-390ac6ff1b91",
+			VolumeId:          "015d681c-813a-11f1-81d2-80fa5b957a6c",
 			StagingTargetPath: t.TempDir() + "/staging",
 			VolumeCapability: &csi.VolumeCapability{
 				AccessType: &csi.VolumeCapability_Mount{
@@ -186,6 +186,52 @@ func TestNode_NodeStageVolume(t *testing.T) {
 			},
 		})
 		assert.NoError(t, err)
+	})
+}
+
+func TestNode_NodeStageVolume_Idempotency(t *testing.T) {
+	t.Parallel()
+
+	t.Run("already staged with same fsType returns OK", func(t *testing.T) {
+		t.Parallel()
+		n := newNode(t, nil)
+		target := t.TempDir() + "/staging"
+		// Create target path so mock reports it as mounted with ext4
+		require.NoError(t, os.MkdirAll(target, 0o750))
+
+		resp, err := n.NodeStageVolume(context.Background(), &csi.NodeStageVolumeRequest{
+			VolumeId:          "015d681c-813a-11f1-81d2-80fa5b957a6c",
+			StagingTargetPath: target,
+			VolumeCapability: &csi.VolumeCapability{
+				AccessType: &csi.VolumeCapability_Mount{
+					Mount: &csi.VolumeCapability_MountVolume{},
+				},
+			},
+		})
+		require.NoError(t, err)
+		assert.NotNil(t, resp)
+	})
+
+	t.Run("already staged with different fsType returns AlreadyExists", func(t *testing.T) {
+		t.Parallel()
+		n := newNode(t, nil)
+		target := t.TempDir() + "/staging"
+		// Create target path so mock reports it as mounted with ext4
+		require.NoError(t, os.MkdirAll(target, 0o750))
+
+		_, err := n.NodeStageVolume(context.Background(), &csi.NodeStageVolumeRequest{
+			VolumeId:          "015d681c-813a-11f1-81d2-80fa5b957a6c",
+			StagingTargetPath: target,
+			VolumeCapability: &csi.VolumeCapability{
+				AccessType: &csi.VolumeCapability_Mount{
+					Mount: &csi.VolumeCapability_MountVolume{
+						FsType: "xfs",
+					},
+				},
+			},
+		})
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "AlreadyExists")
 	})
 }
 
@@ -240,7 +286,7 @@ func TestNode_NodePublishVolume(t *testing.T) {
 		t.Parallel()
 		n := newNode(t, nil)
 		resp, err := n.NodePublishVolume(context.Background(), &csi.NodePublishVolumeRequest{
-			VolumeId:          "f67db1ca-825b-40aa-a6f4-390ac6ff1b91",
+			VolumeId:          "015d681c-813a-11f1-81d2-80fa5b957a6c",
 			StagingTargetPath: "/staging",
 			TargetPath:        t.TempDir() + "/publish",
 			VolumeCapability: &csi.VolumeCapability{
@@ -387,7 +433,7 @@ func TestNode_NodeExpandVolume(t *testing.T) {
 		t.Parallel()
 		n := newNode(t, nil)
 		resp, err := n.NodeExpandVolume(context.Background(), &csi.NodeExpandVolumeRequest{
-			VolumeId:   "f67db1ca-825b-40aa-a6f4-390ac6ff1b91",
+			VolumeId:   "015d681c-813a-11f1-81d2-80fa5b957a6c",
 			VolumePath: t.TempDir(),
 			VolumeCapability: &csi.VolumeCapability{
 				AccessType: &csi.VolumeCapability_Block{},
@@ -401,7 +447,7 @@ func TestNode_NodeExpandVolume(t *testing.T) {
 		t.Parallel()
 		n := newNode(t, nil)
 		_, err := n.NodeExpandVolume(context.Background(), &csi.NodeExpandVolumeRequest{
-			VolumeId:   "f67db1ca-825b-40aa-a6f4-390ac6ff1b91",
+			VolumeId:   "015d681c-813a-11f1-81d2-80fa5b957a6c",
 			VolumePath: t.TempDir(),
 			VolumeCapability: &csi.VolumeCapability{
 				AccessType: &csi.VolumeCapability_Mount{
@@ -440,6 +486,10 @@ func (m *errDeviceFsMock) Format(ctx context.Context, source, fsType string, mkf
 
 func (m *errDeviceFsMock) IsMounted(ctx context.Context, target string) (bool, error) {
 	return m.inner.IsMounted(ctx, target)
+}
+
+func (m *errDeviceFsMock) GetMountInfo(ctx context.Context, target string) (*filesystem.MountInfo, error) {
+	return m.inner.GetMountInfo(ctx, target)
 }
 
 func (m *errDeviceFsMock) Mount(ctx context.Context, source, target, fsType string, opts ...string) error {

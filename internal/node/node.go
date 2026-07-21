@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"strings"
 
 	"github.com/container-storage-interface/spec/lib/go/csi"
 	"github.com/sirupsen/logrus"
@@ -70,6 +71,7 @@ func (n *Node) NodeStageVolume(ctx context.Context, req *csi.NodeStageVolumeRequ
 
 	target := req.GetStagingTargetPath()
 	log = log.WithField(logger.MountTargetKey, target)
+
 	// No need to stage raw block device.
 	if _, ok := req.VolumeCapability.GetAccessType().(*csi.VolumeCapability_Block); ok {
 		log.Info("raw block device requested")
@@ -91,28 +93,39 @@ func (n *Node) NodeStageVolume(ctx context.Context, req *csi.NodeStageVolumeRequ
 	}
 	log = log.WithFields(logrus.Fields{logger.MountSourceKey: source, "fs_type": fsType, "mount_options": options})
 
+	// Check if already mounted first for idempotency (CSI spec: already staged → OK)
+	log.Info("checking if target is already mounted")
+	mountInfo, err := n.fs.GetMountInfo(ctx, target)
+	if err != nil {
+		if !errors.Is(err, filesystem.ErrNotMounted) {
+			return nil, status.Error(codes.Internal, err.Error())
+		}
+	}
+
+	if mountInfo != nil {
+		existingFsType := strings.ToLower(mountInfo.FsType)
+		requestedFsType := strings.ToLower(fsType)
+		if existingFsType == requestedFsType {
+			log.Info("volume is already staged with matching filesystem")
+			return &csi.NodeStageVolumeResponse{}, nil
+		}
+		return nil, status.Errorf(codes.AlreadyExists,
+			"volume already staged with different filesystem type: existing=%s, requested=%s",
+			existingFsType, requestedFsType)
+	}
+
 	log.Info("formatting the source volume for staging")
 	if err := n.fs.Format(ctx, source, fsType, []string{}); err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
-	log.Info("check if target is already mounted")
-	mounted, err := n.fs.IsMounted(ctx, target)
+	partition, err := n.fs.GetDeviceLastPartition(ctx, source)
 	if err != nil {
-		return nil, err
+		return nil, status.Error(codes.Internal, err.Error())
 	}
-
-	if !mounted {
-		partition, err := n.fs.GetDeviceLastPartition(ctx, source)
-		if err != nil {
-			return nil, status.Error(codes.Internal, err.Error())
-		}
-		log.WithField("partition", partition).Info("mounting partition for staging")
-		if err := n.fs.Mount(ctx, partition, target, fsType, options...); err != nil {
-			return nil, status.Error(codes.Internal, err.Error())
-		}
-	} else {
-		log.Info("source device is already mounted to the target path")
+	log.WithField("partition", partition).Info("mounting partition for staging")
+	if err := n.fs.Mount(ctx, partition, target, fsType, options...); err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
 	}
 
 	return &csi.NodeStageVolumeResponse{}, nil
