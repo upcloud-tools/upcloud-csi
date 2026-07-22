@@ -853,6 +853,18 @@ func TestDriver_CreateSnapshot(t *testing.T) {
 			},
 			wantErr: true,
 		},
+		{
+			name: "file storage source volume rejected",
+			args: args{
+				req: &csi.CreateSnapshotRequest{
+					SourceVolumeId: "175d681c-813a-11f1-81d2-80fa5b957a6c",
+					Name:           snapshotName,
+				},
+				volExists:    true,
+				volBackingUp: false,
+			},
+			wantErr: true,
+		},
 	}
 
 	for _, tt := range tests {

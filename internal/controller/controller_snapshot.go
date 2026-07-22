@@ -24,6 +24,9 @@ func (c *Controller) CreateSnapshot(ctx context.Context, req *csi.CreateSnapshot
 	if req.GetSourceVolumeId() == "" {
 		return nil, status.Error(codes.InvalidArgument, "snapshot source volume ID must be provided")
 	}
+	if isValidFileStorageUUID(req.GetSourceVolumeId()) {
+		return nil, status.Error(codes.InvalidArgument, "snapshots are not supported for file storage volumes")
+	}
 
 	log := logger.WithServerContext(ctx, c.log)
 	log.Info("getting storage backup by name")
