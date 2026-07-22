@@ -2,6 +2,24 @@
 
 All notable changes to this project will be documented in this file.
 
+## [3.3.0] - 2026-07-22
+
+### Added
+- feat: add raw-block volume support to NodeGetVolumeStats
+- feat: add GetMountInfo and GetBlockDeviceSize to Filesystem interface
+- test(node): add idempotency tests for NodeStageVolume
+
+### Fixed
+- fix(node): NodeStageVolume checks mount before formatting (idempotent, prevents data loss)
+- fix(identity): return vendor_version in GetPluginInfo
+- fix(controller): file storage CreateVolume now validates capabilities and is idempotent
+- fix(controller): ValidateVolumeCapabilities now checks requested capabilities against volume type
+- fix(controller): ListVolumes and ListSnapshots return empty NextToken when exhausted
+- fix(controller): ControllerExpandVolume requires capacity_range as per CSI spec
+- fix(controller): ControllerExpandVolume returns correct NodeExpansionRequired for raw-block
+- fix(controller): CreateSnapshot rejects file storage source volumes with clear error
+- fix(controller): ControllerPublishVolume returns InvalidArgument instead of Unimplemented for readonly volumes
+
 ## [3.2.1] - 2026-07-20
 
 ### Changed

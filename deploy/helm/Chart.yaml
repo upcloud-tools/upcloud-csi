@@ -2,8 +2,8 @@ apiVersion: v2
 name: upcloud-csi
 description: CSI driver for UpCloud block storage
 type: application
-version: "1.14.2"
-appVersion: "v3.2.1"
+version: "1.15.0"
+appVersion: "v3.3.0"
 kubeVersion: ">=1.34.0"
 keywords:
   - csi
@@ -25,5 +25,4 @@ annotations:
     - name: Support
       url: https://github.com/upcloud-tools/upcloud-csi/issues
   artifacthub.io/changes: |
-    - "bump min kubeVersion to >=1.34.0"
-    - "bump csi-provisioner to v6.3.0"
+    - "bump app version to v3.3.0"
