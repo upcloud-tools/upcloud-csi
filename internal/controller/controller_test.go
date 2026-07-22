@@ -592,6 +592,113 @@ func TestController_ExpandVolume_NilCapacityRange(t *testing.T) {
 	})
 }
 
+func TestController_ExpandVolume_NodeExpansionRequired(t *testing.T) {
+	t.Parallel()
+	blockVol := "015d681c-813a-11f1-81d2-80fa5b957a6c"
+
+	t.Run("published block device returns NodeExpansionRequired=false", func(t *testing.T) {
+		t.Parallel()
+		c := newController(&mock.UpCloudServiceMock{
+			VolumeUUIDExists: true,
+			StorageSize:      10,
+			ServerUUIDs:      []string{"server-1"},
+		})
+		r, err := c.ControllerExpandVolume(context.Background(), &csi.ControllerExpandVolumeRequest{
+			VolumeId:      blockVol,
+			CapacityRange: &csi.CapacityRange{RequiredBytes: 30 * giB},
+			VolumeCapability: &csi.VolumeCapability{
+				AccessType: &csi.VolumeCapability_Block{},
+			},
+		})
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if r.NodeExpansionRequired {
+			t.Error("expected NodeExpansionRequired=false for published block device")
+		}
+	})
+
+	t.Run("unpublished block device returns NodeExpansionRequired=false", func(t *testing.T) {
+		t.Parallel()
+		c := newController(&mock.UpCloudServiceMock{
+			VolumeUUIDExists: true,
+			StorageSize:      10,
+		})
+		r, err := c.ControllerExpandVolume(context.Background(), &csi.ControllerExpandVolumeRequest{
+			VolumeId:      blockVol,
+			CapacityRange: &csi.CapacityRange{RequiredBytes: 30 * giB},
+			VolumeCapability: &csi.VolumeCapability{
+				AccessType: &csi.VolumeCapability_Block{},
+			},
+		})
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if r.NodeExpansionRequired {
+			t.Error("expected NodeExpansionRequired=false for unpublished block device")
+		}
+	})
+
+	t.Run("published filesystem volume returns NodeExpansionRequired=true", func(t *testing.T) {
+		t.Parallel()
+		c := newController(&mock.UpCloudServiceMock{
+			VolumeUUIDExists: true,
+			StorageSize:      10,
+			ServerUUIDs:      []string{"server-1"},
+		})
+		r, err := c.ControllerExpandVolume(context.Background(), &csi.ControllerExpandVolumeRequest{
+			VolumeId:      blockVol,
+			CapacityRange: &csi.CapacityRange{RequiredBytes: 30 * giB},
+		})
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if !r.NodeExpansionRequired {
+			t.Error("expected NodeExpansionRequired=true for published filesystem volume")
+		}
+	})
+
+	t.Run("unpublished filesystem volume returns NodeExpansionRequired=true", func(t *testing.T) {
+		t.Parallel()
+		c := newController(&mock.UpCloudServiceMock{
+			VolumeUUIDExists: true,
+			StorageSize:      10,
+		})
+		r, err := c.ControllerExpandVolume(context.Background(), &csi.ControllerExpandVolumeRequest{
+			VolumeId:      blockVol,
+			CapacityRange: &csi.CapacityRange{RequiredBytes: 30 * giB},
+		})
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if !r.NodeExpansionRequired {
+			t.Error("expected NodeExpansionRequired=true for unpublished filesystem volume")
+		}
+	})
+
+	t.Run("already at target size block device returns NodeExpansionRequired=false", func(t *testing.T) {
+		t.Parallel()
+		c := newController(&mock.UpCloudServiceMock{
+			VolumeUUIDExists: true,
+			StorageSize:      30,
+			ServerUUIDs:      []string{"server-1"},
+		})
+		r, err := c.ControllerExpandVolume(context.Background(), &csi.ControllerExpandVolumeRequest{
+			VolumeId:      blockVol,
+			CapacityRange: &csi.CapacityRange{RequiredBytes: 30 * giB},
+			VolumeCapability: &csi.VolumeCapability{
+				AccessType: &csi.VolumeCapability_Block{},
+			},
+		})
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if r.NodeExpansionRequired {
+			t.Error("expected NodeExpansionRequired=false for already-at-target block device")
+		}
+	})
+}
+
 func TestController_ExpandVolume_FileStorage_Error(t *testing.T) {
 	t.Parallel()
 	svc := &modifyFileStorageErrorMock{UpCloudServiceMock: mock.UpCloudServiceMock{VolumeUUIDExists: true, FileStorageUUIDExists: true}}

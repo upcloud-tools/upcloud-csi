@@ -38,9 +38,16 @@ func (c *Controller) expandBlockStorage(ctx context.Context, log *logrus.Entry, 
 		"new_size": resizeGigaBytes,
 	})
 
+	isBlockDevice := false
+	if req.GetVolumeCapability() != nil {
+		if _, ok := req.VolumeCapability.AccessType.(*csi.VolumeCapability_Block); ok {
+			isBlockDevice = true
+		}
+	}
+
 	if resizeGigaBytes <= int64(volume.Size) {
 		log.Info("skipping volume resizeStorage because current volume size exceeds requested volume size")
-		return &csi.ControllerExpandVolumeResponse{CapacityBytes: int64(volume.Size * giB), NodeExpansionRequired: true}, nil
+		return &csi.ControllerExpandVolumeResponse{CapacityBytes: int64(volume.Size * giB), NodeExpansionRequired: !isBlockDevice}, nil
 	}
 
 	if len(volume.ServerUUIDs) > 0 {
@@ -51,15 +58,8 @@ func (c *Controller) expandBlockStorage(ctx context.Context, log *logrus.Entry, 
 		}
 		return &csi.ControllerExpandVolumeResponse{
 			CapacityBytes:         resizeGigaBytes * giB,
-			NodeExpansionRequired: true,
+			NodeExpansionRequired: !isBlockDevice,
 		}, nil
-	}
-
-	isBlockDevice := false
-	if req.GetVolumeCapability() != nil {
-		if _, ok := req.VolumeCapability.AccessType.(*csi.VolumeCapability_Block); ok {
-			isBlockDevice = true
-		}
 	}
 
 	// Volume is not published (no ServerUUIDs). Use ResizeBlockDevice (ModifyStorage + wait, no ResizeStorageFilesystem)
