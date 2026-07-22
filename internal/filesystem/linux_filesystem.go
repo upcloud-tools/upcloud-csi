@@ -8,6 +8,8 @@ import (
 	"os"
 	"os/exec"
 	"strings"
+	"syscall"
+	"unsafe"
 
 	"github.com/sirupsen/logrus"
 	"github.com/upcloud-tools/upcloud-csi/internal/logger"
@@ -328,6 +330,24 @@ func (m *LinuxFilesystem) GetMountInfo(ctx context.Context, target string) (*Mou
 	}
 
 	return nil, ErrNotMounted
+}
+
+// GetBlockDeviceSize returns the size of a block device in bytes using the BLKGETSIZE64 ioctl.
+func (m *LinuxFilesystem) GetBlockDeviceSize(ctx context.Context, devicePath string) (int64, error) {
+	fd, err := unix.Open(devicePath, unix.O_RDONLY, 0)
+	if err != nil {
+		return 0, fmt.Errorf("open block device %s: %w", devicePath, err)
+	}
+
+	var size uint64
+	if _, _, errno := syscall.Syscall(syscall.SYS_IOCTL, uintptr(fd), unix.BLKGETSIZE64, uintptr(unsafe.Pointer(&size))); errno != 0 { //nolint:gosec // need unsafe.Pointer for ioctl
+		_ = unix.Close(fd)
+		return 0, fmt.Errorf("ioctl BLKGETSIZE64 on %s: %w", devicePath, errno)
+	}
+	if err := unix.Close(fd); err != nil {
+		return 0, fmt.Errorf("close block device %s: %w", devicePath, err)
+	}
+	return int64(size), nil
 }
 
 // createPartitionTableIfNotExists creates new partition table if one does not exists.

@@ -356,8 +356,7 @@ func (n *Node) NodeGetInfo(ctx context.Context, req *csi.NodeGetInfoRequest) (*c
 	}, nil
 }
 
-// NodeGetVolumeStats returns the volume capacity statistics available for
-// the given volume.
+// NodeGetVolumeStats returns the volume capacity statistics available for the given volume.
 func (n *Node) NodeGetVolumeStats(ctx context.Context, req *csi.NodeGetVolumeStatsRequest) (*csi.NodeGetVolumeStatsResponse, error) {
 	if req.VolumeId == "" {
 		return nil, status.Error(codes.InvalidArgument, "volume ID must be provided")
@@ -368,6 +367,18 @@ func (n *Node) NodeGetVolumeStats(ctx context.Context, req *csi.NodeGetVolumeSta
 		return nil, status.Error(codes.InvalidArgument, "volume path must be provided")
 	}
 	log := logger.WithServerContext(ctx, n.log).WithField(logger.VolumeIDKey, req.GetVolumeId()).WithField("volume_path", volumePath)
+
+	if size, err := n.fs.GetBlockDeviceSize(ctx, volumePath); err == nil {
+		log.Info("volume is a block device, returning device size")
+		return &csi.NodeGetVolumeStatsResponse{
+			Usage: []*csi.VolumeUsage{
+				{
+					Total: size,
+					Unit:  csi.VolumeUsage_BYTES,
+				},
+			},
+		}, nil
+	}
 
 	log.Info("check if volume path is already mounted")
 	mounted, err := n.fs.IsMounted(ctx, volumePath)

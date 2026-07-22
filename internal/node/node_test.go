@@ -110,6 +110,28 @@ func TestNode_NodeGetVolumeStats(t *testing.T) {
 		require.NoError(t, err)
 		assert.NotEmpty(t, resp.Usage)
 	})
+
+	t.Run("raw block device path returns device size", func(t *testing.T) {
+		t.Parallel()
+		l := logrus.New().WithField("package", "node_test")
+		blockPath := t.TempDir() + "/block-dev"
+		blockSize := int64(5 * 1024 * 1024 * 1024) // 5 GiB
+		fs := mock.NewFilesystem(l.Logger)
+		mfs := fs.(*mock.MockFilesystem)
+		mfs.BlockDevicePaths[blockPath] = blockSize
+		n := newNode(t, fs)
+		resp, err := n.NodeGetVolumeStats(context.Background(), &csi.NodeGetVolumeStatsRequest{
+			VolumeId:   "vol-1",
+			VolumePath: blockPath,
+		})
+		require.NoError(t, err)
+		require.NotEmpty(t, resp.Usage)
+		assert.Len(t, resp.Usage, 1, "block device should return only one usage entry (bytes)")
+		assert.Equal(t, blockSize, resp.Usage[0].Total)
+		assert.Equal(t, csi.VolumeUsage_BYTES, resp.Usage[0].Unit)
+		assert.Zero(t, resp.Usage[0].Available, "block device should not report available bytes")
+		assert.Zero(t, resp.Usage[0].Used, "block device should not report used bytes")
+	})
 }
 
 func TestNode_NodeStageVolume(t *testing.T) {
@@ -490,6 +512,10 @@ func (m *errDeviceFsMock) IsMounted(ctx context.Context, target string) (bool, e
 
 func (m *errDeviceFsMock) GetMountInfo(ctx context.Context, target string) (*filesystem.MountInfo, error) {
 	return m.inner.GetMountInfo(ctx, target)
+}
+
+func (m *errDeviceFsMock) GetBlockDeviceSize(ctx context.Context, devicePath string) (int64, error) {
+	return m.inner.GetBlockDeviceSize(ctx, devicePath)
 }
 
 func (m *errDeviceFsMock) Mount(ctx context.Context, source, target, fsType string, opts ...string) error {

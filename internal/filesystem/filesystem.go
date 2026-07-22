@@ -24,6 +24,7 @@ type Filesystem interface {
 	Format(ctx context.Context, source, fsType string, mkfsArgs []string) error
 	IsMounted(ctx context.Context, target string) (bool, error)
 	GetMountInfo(ctx context.Context, target string) (*MountInfo, error)
+	GetBlockDeviceSize(ctx context.Context, devicePath string) (int64, error)
 	Mount(ctx context.Context, source, target, fsType string, opts ...string) error
 	Unmount(ctx context.Context, path string) error
 	Statistics(volumePath string) (VolumeStatistics, error)

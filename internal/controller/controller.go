@@ -444,7 +444,7 @@ func validateControllerPublishVolumeRequest(r *csi.ControllerPublishVolumeReques
 		return status.Error(codes.InvalidArgument, "volume capability must be provided")
 	}
 	if r.GetReadonly() {
-		return status.Error(codes.Unimplemented, "read only Volumes are not supported")
+		return status.Error(codes.InvalidArgument, "read only Volumes are not supported")
 	}
 	return nil
 }

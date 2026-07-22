@@ -12,11 +12,12 @@ import (
 )
 
 type MockFilesystem struct {
-	log *logrus.Logger
+	log              *logrus.Logger
+	BlockDevicePaths map[string]int64 // paths that simulate block devices with their size in bytes
 }
 
 func NewFilesystem(log *logrus.Logger) filesystem.Filesystem {
-	return &MockFilesystem{log: log}
+	return &MockFilesystem{log: log, BlockDevicePaths: make(map[string]int64)}
 }
 
 func (m *MockFilesystem) Format(ctx context.Context, source, fsType string, mkfsArgs []string) error {
@@ -49,6 +50,15 @@ func (m *MockFilesystem) GetMountInfo(ctx context.Context, target string) (*file
 	}
 	m.log.Debugf("Mock GetMountInfo(%s) -> {source: %s, fstype: ext4}, nil", target, target)
 	return &filesystem.MountInfo{Source: target, FsType: "ext4", Options: ""}, nil
+}
+
+func (m *MockFilesystem) GetBlockDeviceSize(ctx context.Context, devicePath string) (int64, error) {
+	if size, ok := m.BlockDevicePaths[devicePath]; ok {
+		m.log.Debugf("Mock GetBlockDeviceSize(%s) -> %d bytes", devicePath, size)
+		return size, nil
+	}
+	m.log.Debugf("Mock GetBlockDeviceSize(%s) -> err (not a block device)", devicePath)
+	return 0, fmt.Errorf("%s is not a block device", devicePath)
 }
 
 func (m *MockFilesystem) Unmount(ctx context.Context, path string) error {
