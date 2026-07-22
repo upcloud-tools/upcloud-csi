@@ -23,7 +23,7 @@ require (
 require github.com/kubernetes-csi/csi-test/v5 v5.5.0
 
 require (
-	github.com/UpCloudLtd/upcloud-go-api/v8 v8.38.0
+	github.com/UpCloudLtd/upcloud-go-api/v8 v8.39.0
 	github.com/prometheus/client_golang v1.23.2
 )
 
@@ -35,6 +35,7 @@ require (
 
 require (
 	github.com/Masterminds/semver/v3 v3.4.0 // indirect
+	github.com/UpCloudLtd/httplog v0.0.0-20260624214043-23b0cab8e085 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
 	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc // indirect
