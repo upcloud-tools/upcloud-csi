@@ -1,5 +1,8 @@
 # Example: NFS File Storage (ReadWriteMany) with UpCloud File Storage
 # Multiple pods can share this PVC concurrently.
+#
+# The CSI driver automatically applies optimized NFS mount options as documented on the UpCloud website:
+#   vers=4.1, nconnect=8, rsize=1048576, wsize=1048576, noatime, hard
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:

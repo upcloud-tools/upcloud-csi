@@ -39,6 +39,19 @@ spec:
 | Expand (resize) | ✅ |
 | ControllerPublish / Unpublish | ✅ (no-op for NFS) |
 
+### NFS Mount Options
+
+The CSI driver applies optimized mount options for all File Storage volumes as documented on the UpCloud website:
+
+- `vers=4.1` — NFS version 4.1 (required for pNFS parallel I/O)
+- `nconnect=8` — 8 concurrent connections for higher throughput
+- `rsize=1048576` — 1 MiB read request size
+- `wsize=1048576` — 1 MiB write request size
+- `noatime` — skip access-time updates, reduces metadata operations
+- `hard` — indefinitely retry operations after server reboot (prevents silent data loss)
+
+These match UpCloud's recommended mount options and are applied automatically by the node plugin.
+
 ### Helm Chart
 Full-featured Helm chart, published as an OCI artifact to `ghcr.io/upcloud-tools/charts`. Includes:
 
