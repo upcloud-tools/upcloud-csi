@@ -2,7 +2,8 @@ name: Lint Golang
 
 on:
   push:
-    branches: ["main"]
+    branches:
+      - main
     paths:
       - "**/*.go"
       - go.mod
@@ -11,6 +12,7 @@ on:
   pull_request:
 
 env:
+  GOLANGCI_LINT_VERSION: v2.12.2
   GO_VERSION: '1.26.5'
 
 permissions:
@@ -44,5 +46,6 @@ jobs:
         name: Run golangci-lint
         uses: golangci/golangci-lint-action@ba0d7d2ec06a0ea1cb5fa41b2e4a3ab91d21278a # v9.3.0
         with:
-          version: v2.12.2
-          args: --timeout 5m
+          version: ${{ env.GOLANGCI_LINT_VERSION }}
+          args: --timeout=5m
+          only-new-issues: true

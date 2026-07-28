@@ -2,7 +2,8 @@ name: trivy
 
 on:
   push:
-    branches: ["main"]
+    branches:
+      - main
     paths:
       - "**/*.go"
       - go.mod

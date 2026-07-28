@@ -2,7 +2,8 @@ name: Release Helm chart
 
 on:
   push:
-    branches: [main]
+    branches:
+      - main
     paths:
       - deploy/helm/Chart.yaml
   workflow_dispatch:

@@ -1,6 +1,8 @@
 version: 2
 updates:
   - package-ecosystem: gomod
+    commit-message:
+      prefix: chore(deps)
     directory: /
     schedule:
       interval: daily
@@ -13,10 +15,10 @@ updates:
           - google.golang.org/grpc
           - google.golang.org/genproto
 
-  - package-ecosystem: "github-actions"
+  - package-ecosystem: github-actions
     commit-message:
       prefix: chore(actions)
-    directory: "/"
+    directory: /
     schedule:
       interval: weekly
       day: monday
@@ -27,8 +29,8 @@ updates:
       interval: weekly
       day: monday
 
-  - package-ecosystem: "devcontainers" # https://containers.dev/guide/dependabot
-    directory: "/"
+  - package-ecosystem: devcontainers # https://containers.dev/guide/dependabot
+    directory: /
     schedule:
       interval: weekly
       day: monday

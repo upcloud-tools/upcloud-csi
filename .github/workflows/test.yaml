@@ -2,7 +2,8 @@ name: UpCloud CSI driver test
 
 on:
   push:
-    branches: ["main"]
+    branches:
+      - main
     paths:
       - 'internal/**'
       - 'cmd/**'
@@ -53,3 +54,7 @@ jobs:
       - if: steps.filter.outputs.go == 'true'
         name: Test Driver
         run: sudo make test
+
+      - if: steps.filter.outputs.go == 'true'
+        name: govulncheck
+        run: make govulncheck
