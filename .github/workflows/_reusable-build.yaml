@@ -41,7 +41,7 @@ jobs:
 
       - name: Build image
         id: build-image
-        uses: aardbol/buildah-build@19b13acaef86fdcd664ee434704193633b5eee8b # v3.0.2
+        uses: aardbol/buildah-build@14762338941c54f8835374e1844663c745dadb2a # v3.0.3
         with:
           image: ${{ github.repository }}${{ inputs.image_suffix }}
           tags: ${{ inputs.tags }}
