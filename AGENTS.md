@@ -5,7 +5,7 @@
 - Pin to a specific release like `ubuntu-24.04`. Never use `ubuntu-latest`.
 - Pin every action by commit SHA with a comment containing the readable version, e.g. `actions/checkout@df4cb1c0... # v6.0.3`.
 - Do NOT add install steps for tools that ship with the base image (`kubectl`, `docker`, `git`, `curl`, etc.). Check the [current image contents](https://github.com/actions/runner-images/blob/main/images/ubuntu/Ubuntu2404-Readme.md) before adding an install step.
-- Container builds use `buildah` via `redhat-actions/buildah-build` + `redhat-actions/push-to-registry`. Containerfile at `cmd/upcloud-csi-plugin/Containerfile`.
+- Container builds use `buildah` binary on runner image.
 
 ## Versioning and changelogs
 
@@ -18,7 +18,7 @@
 
 ## Go
 
-- Version: `1.26` (must match `go.mod` and Containerfile)
+- Version: `1.26` (must match `go.mod` and `build-image.sh`)
 - Test: `make test` runs `go vet ./... && go test -race ./...`
 - Lint: `golangci-lint` with config in `.golangci.yml`. Run via `cd test/e2e && golangci-lint run --timeout=2m ./testruns/` or pre-commit.
 

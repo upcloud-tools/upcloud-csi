@@ -8,7 +8,7 @@ on:
       - "**/*.go"
       - go.mod
       - go.sum
-      - cmd/upcloud-csi-plugin/Containerfile
+      - build-image.sh
       - '.github/workflows/trivy-scan.yaml'
       - '.trivyignore.yaml'
   pull_request:
@@ -39,7 +39,7 @@ jobs:
               - '**/*.go'
               - go.mod
               - go.sum
-              - 'cmd/upcloud-csi-plugin/Containerfile'
+              - 'build-image.sh'
               - '.github/workflows/trivy-scan.yaml'
               - '.trivyignore.yaml'
 
