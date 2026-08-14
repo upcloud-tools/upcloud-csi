@@ -45,11 +45,7 @@ jobs:
 
       - if: steps.filter.outputs.source == 'true' || github.event_name != 'pull_request'
         name: Log in to GHCR
-        uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f # v4.6.0
-        with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
+        uses: ./.github/actions/ghcr-login
 
       - if: steps.filter.outputs.source == 'true' || github.event_name != 'pull_request'
         name: Run Trivy vulnerability scanner (filesystem)
