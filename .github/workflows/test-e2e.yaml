@@ -6,9 +6,6 @@ permissions:
   contents: read
   packages: read
 
-env:
-  GO_VERSION: '1.26.5'
-
 jobs:
   build-image:
     uses: ./.github/workflows/_reusable-build.yaml

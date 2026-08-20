@@ -13,9 +13,6 @@ on:
       - '.github/workflows/_reusable-build.yaml'
   pull_request:
 
-env:
-  GO_VERSION: '1.26.5'
-
 permissions:
   contents: read
 
@@ -42,7 +39,7 @@ jobs:
       - if: steps.filter.outputs.go == 'true'
         uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
         with:
-          go-version: ${{ env.GO_VERSION }}
+          go-version-file: go.mod
 
       - if: steps.filter.outputs.go == 'true'
         name: Install filesystem tools

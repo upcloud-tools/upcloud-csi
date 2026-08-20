@@ -3,9 +3,6 @@ name: UpCloud CSI driver integration test
 on:
   workflow_dispatch:
 
-env:
-  GO_VERSION: '1.26.5'
-
 permissions:
   contents: read
 
@@ -17,7 +14,7 @@ jobs:
 
       - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
         with:
-          go-version: ${{ env.GO_VERSION }}
+          go-version-file: go.mod
 
       - name: Test Driver Integration
         env:
