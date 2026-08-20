@@ -7,8 +7,9 @@
 
 UpCloud [CSI](https://github.com/container-storage-interface/spec) Driver provides support for UpCloud Block and File Storage in Kubernetes >=v1.34.0.
 
-This is an **independent** community fork of the official UpCloud CSI driver, maintained separately with a focus on
-features, security, and fast iteration.
+> [!NOTE]
+> This is an **independent** community fork of the official UpCloud CSI driver, maintained separately with a focus on
+> features, security, and fast iteration.
 
 ## Features
 
@@ -51,7 +52,8 @@ kubectl delete deployment csi-upcloud-snapshot-controller -n kube-system --ignor
 kubectl delete csidriver storage.csi.upcloud.com --ignore-not-found
 ```
 
-> **Warning:** The commands below delete VolumeSnapshots and VolumeSnapshotContents
+> [!WARNING]
+> The commands below delete VolumeSnapshots and VolumeSnapshotContents
 > across all namespaces. This is a destructive operation — make sure no data depends
 > on those snapshots before proceeding.
 
