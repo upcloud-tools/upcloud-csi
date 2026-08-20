@@ -15,6 +15,7 @@ on:
 
 env:
   REGISTRY: ghcr.io
+  GO_VERSION: '1.26.5'
 
 permissions:
   contents: read
@@ -31,32 +32,45 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           ref: ${{ inputs.checkout_ref || github.ref }}
+          fetch-depth: 0
+
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version: ${{ env.GO_VERSION }}
 
       - name: Log in to GHCR
-        uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f # v4.6.0
-        with:
-          registry: ${{ env.REGISTRY }}
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
+        uses: ./.github/actions/ghcr-login
+
+      - name: Compute build metadata
+        id: meta
+        run: |
+          VERSION=$(git describe --tags)
+          COMMIT=$(git log --format="%h" -n 1)
+          TREE_STATE=$(git diff --quiet && echo 'clean' || echo 'dirty')
+          IMAGE="${{ env.REGISTRY }}/${{ github.repository }}${{ inputs.image_suffix }}"
+          echo "version=${VERSION}" >> "${GITHUB_OUTPUT}"
+          echo "commit=${COMMIT}" >> "${GITHUB_OUTPUT}"
+          echo "tree_state=${TREE_STATE}" >> "${GITHUB_OUTPUT}"
+          echo "image=${IMAGE}" >> "${GITHUB_OUTPUT}"
 
       - name: Build image
         id: build-image
-        uses: aardbol/buildah-build@14762338941c54f8835374e1844663c745dadb2a # v3.0.3
-        with:
-          image: ${{ github.repository }}${{ inputs.image_suffix }}
-          tags: ${{ inputs.tags }}
-          context: .
-          containerfiles: cmd/upcloud-csi-plugin/Containerfile
-          platforms: linux/amd64
-          extra-args: --pull=always
+        env:
+          VERSION: ${{ steps.meta.outputs.version }}
+          COMMIT: ${{ steps.meta.outputs.commit }}
+          TREE_STATE: ${{ steps.meta.outputs.tree_state }}
+          IMAGE: ${{ steps.meta.outputs.image }}
+          IMAGE_TAG: ${{ inputs.tags }}
+        run: ./build-image.sh
 
       - name: Push image
         id: push-image
-        uses: aardbol-actions/push-to-registry@5402e3869fc3a6b2c0de9f078dbfe87f82f2fe76 # v3.0.3
-        with:
-          image: ${{ steps.build-image.outputs.image }}
-          tags: ${{ inputs.tags }}
-          registry: ${{ env.REGISTRY }}
+        run: |
+          DIGESTFILE=$(mktemp)
+          buildah push --digestfile "${DIGESTFILE}" \
+            "${{ steps.meta.outputs.image }}:${{ inputs.tags }}" \
+            "docker://${{ steps.meta.outputs.image }}:${{ inputs.tags }}"
+          echo "digest=$(cat "${DIGESTFILE}")" >> "${GITHUB_OUTPUT}"
 
       - name: Build summary
         run: |
@@ -64,6 +78,6 @@ jobs:
           echo "" >> "$GITHUB_STEP_SUMMARY"
           echo "| Field | Value |" >> "$GITHUB_STEP_SUMMARY"
           echo "|---|---|" >> "$GITHUB_STEP_SUMMARY"
-          echo "| Image | \`${{ steps.build-image.outputs.image }}\` |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Image | \`${{ steps.meta.outputs.image }}\` |" >> "$GITHUB_STEP_SUMMARY"
           echo "| Tags | \`${{ inputs.tags }}\` |" >> "$GITHUB_STEP_SUMMARY"
           echo "| Digest | \`${{ steps.push-image.outputs.digest }}\` |" >> "$GITHUB_STEP_SUMMARY"

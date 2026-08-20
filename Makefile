@@ -1,6 +1,7 @@
 TAG ?= $(shell git describe --tags)
 COMMIT = $(shell git log --format="%h" -n 1)
 TREE_STATE = $(shell git diff --quiet && echo 'clean' || echo 'dirty')
+TARGETARCH ?= amd64
 
 CONTAINER_REPO ?= ghcr.io/upcloud-tools/upcloud-csi-test
 IMAGE_TAG ?= $(shell git rev-parse HEAD)
@@ -8,12 +9,8 @@ IMAGE_TAG ?= $(shell git rev-parse HEAD)
 
 .PHONY: container-build
 container-build:
-	buildah build --platform linux/amd64 \
-		--build-arg VERSION=$(TAG) \
-		--build-arg COMMIT=$(COMMIT) \
-		--build-arg TREE_STATE=$(TREE_STATE) \
-		-t $(CONTAINER_REPO):$(IMAGE_TAG) \
-		-f cmd/upcloud-csi-plugin/Containerfile .
+	TARGETARCH=$(TARGETARCH) VERSION=$(TAG) COMMIT=$(COMMIT) TREE_STATE=$(TREE_STATE) \
+	IMAGE=$(CONTAINER_REPO) IMAGE_TAG=$(IMAGE_TAG) ./build-image.sh
 
 .PHONY: push-image
 push-image: container-build

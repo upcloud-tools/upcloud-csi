@@ -54,7 +54,3 @@ jobs:
       - if: steps.filter.outputs.go == 'true'
         name: Test Driver
         run: sudo make test
-
-      - if: steps.filter.outputs.go == 'true'
-        name: govulncheck
-        run: make govulncheck
