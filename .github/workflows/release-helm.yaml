@@ -11,6 +11,11 @@ on:
     paths:
       - deploy/helm/Chart.yaml
   workflow_dispatch:
+    inputs:
+      skip-e2e:
+        description: Skip e2e tests
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -61,7 +66,7 @@ jobs:
   # has been bumped as well. The release-app action will then run the E2E tests instead.
   e2e:
     needs: detect
-    if: ${{ needs.detect.outputs.skip == 'false' && needs.detect.outputs.app_version_bumped == 'false' }}
+    if: needs.detect.outputs.skip == 'false' && needs.detect.outputs.app_version_bumped == 'false' && !inputs['skip-e2e']
     uses: ./.github/workflows/_reusable-e2e.yaml
     secrets: inherit
 
