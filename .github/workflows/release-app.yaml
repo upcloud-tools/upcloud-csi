@@ -30,26 +30,11 @@ jobs:
     timeout-minutes: 5
     runs-on: ubuntu-24.04
     outputs:
-      skip: ${{ steps.detect.outputs.skip }}
+      skip: ${{ steps.detect.outputs.app_release_exists }}
       app_version: ${{ steps.detect.outputs.app_version }}
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-
-      - name: Detect appVersion bump
-        id: detect
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          app_version=$(yq .appVersion "$CHART_DIR/Chart.yaml")
-          echo "app_version=$app_version" >> "$GITHUB_OUTPUT"
-
-          if gh release view "$app_version" > /dev/null 2>&1; then
-            echo "Release $app_version already exists. Skipping."
-            echo "skip=true" >> "$GITHUB_OUTPUT"
-            exit 0
-          fi
-
-          echo "skip=false" >> "$GITHUB_OUTPUT"
+      - id: detect
+        uses: ./.github/actions/detect-versions
 
   build-image:
     needs: detect
@@ -115,7 +100,6 @@ jobs:
         uses: anchore/sbom-action@e22c389904149dbc22b58101806040fa8d37a610 # v0.24.0
         with:
           image: ${{ env.REGISTRY }}/${{ github.repository }}:${{ needs.detect.outputs.app_version }}
-          format: spdx-json
           output-file: sbom.spdx.json
           upload-artifact: false
           upload-release-assets: false
