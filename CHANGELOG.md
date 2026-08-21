@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [3.4.0] - 2026-08-20
+
+### Changed
+- chore: bump Go to 1.26.6
+- ci: improve workflows and use make targets
+
 ## [3.3.0] - 2026-07-22
 
 ### Added
