@@ -1,9 +1,21 @@
 name: OpenSSF Scorecard
 
+concurrency:
+  group: ${{ github.workflow }}
+  cancel-in-progress: false
+
 on:
   push:
     branches:
       - main
+    paths:
+      - '**/*.go'
+      - go.mod
+      - go.sum
+      - build-image.sh
+      - '.github/workflows/**'
+      - '.golangci.yml'
+      - '.trivyignore.yaml'
   schedule:
     - cron: "00 06 * * 1"
 

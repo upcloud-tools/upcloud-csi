@@ -8,30 +8,34 @@ on:
       - deploy/helm/Chart.yaml
   workflow_dispatch:
 
+concurrency:
+  group: ${{ github.workflow }}
+  cancel-in-progress: false
+
 permissions:
   contents: read
   packages: read
 
 env:
   REGISTRY: ghcr.io
+  CHART_DIR: deploy/helm
 
 jobs:
   detect:
+    timeout-minutes: 5
     runs-on: ubuntu-24.04
     outputs:
       skip: ${{ steps.detect.outputs.skip }}
       app_version: ${{ steps.detect.outputs.app_version }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          fetch-depth: 0
 
       - name: Detect appVersion bump
         id: detect
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          app_version=$(yq .appVersion deploy/helm/Chart.yaml)
+          app_version=$(yq .appVersion "$CHART_DIR/Chart.yaml")
           echo "app_version=$app_version" >> "$GITHUB_OUTPUT"
 
           if gh release view "$app_version" > /dev/null 2>&1; then
@@ -50,8 +54,8 @@ jobs:
       tags: ${{ github.sha }}
     secrets: inherit
     permissions:
-          contents: read
-          packages: write
+      contents: read
+      packages: write
 
   e2e:
     needs: build-image
@@ -98,6 +102,20 @@ jobs:
           DIGEST=$(oras resolve "$IMAGE")
           cosign sign --yes "${{ env.REGISTRY }}/${{ github.repository }}@${DIGEST}"
 
+      - name: Generate SBOM
+        uses: anchore/sbom-action@e22c389904149dbc22b58101806040fa8d37a610 # v0.24.0
+        with:
+          image: ${{ env.REGISTRY }}/${{ github.repository }}:${{ needs.detect.outputs.app_version }}
+          format: spdx-json
+          output-file: sbom.spdx.json
+          upload-artifact: false
+          upload-release-assets: false
+
+      - name: Attest SBOM
+        run: |
+          IMAGE="${{ env.REGISTRY }}/${{ github.repository }}:${{ needs.detect.outputs.app_version }}"
+          cosign attest --yes --type spdx --predicate sbom.spdx.json "$IMAGE"
+
       - name: Get release notes
         run: make release-notes TAG="${{ needs.detect.outputs.app_version }}" > .release_notes
 
@@ -108,11 +126,5 @@ jobs:
           gh release create "${{ needs.detect.outputs.app_version }}" \
             --notes-file .release_notes \
             --title "${{ needs.detect.outputs.app_version }}" \
+            --target ${{ github.sha }} \
             --draft
-
-      - name: Create git tag
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git tag "${{ needs.detect.outputs.app_version }}"
-          git push origin "${{ needs.detect.outputs.app_version }}"

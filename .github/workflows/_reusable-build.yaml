@@ -1,14 +1,6 @@
 on:
   workflow_call:
     inputs:
-      checkout_ref:
-        required: false
-        type: string
-        default: ''
-      image_suffix:
-        required: false
-        type: string
-        default: ''
       tags:
         required: true
         type: string
@@ -18,7 +10,6 @@ env:
 
 permissions:
   contents: read
-  packages: read
 
 jobs:
   build:
@@ -30,7 +21,6 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          ref: ${{ inputs.checkout_ref || github.ref }}
           fetch-depth: 0
 
       - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
@@ -46,29 +36,29 @@ jobs:
           VERSION=$(git describe --tags)
           COMMIT=$(git log --format="%h" -n 1)
           TREE_STATE=$(git diff --quiet && echo 'clean' || echo 'dirty')
-          IMAGE="${{ env.REGISTRY }}/${{ github.repository }}${{ inputs.image_suffix }}"
+          IMAGE="${{ env.REGISTRY }}/${{ github.repository }}"
           echo "version=${VERSION}" >> "${GITHUB_OUTPUT}"
           echo "commit=${COMMIT}" >> "${GITHUB_OUTPUT}"
           echo "tree_state=${TREE_STATE}" >> "${GITHUB_OUTPUT}"
           echo "image=${IMAGE}" >> "${GITHUB_OUTPUT}"
 
       - name: Build image
-        id: build-image
         env:
-          VERSION: ${{ steps.meta.outputs.version }}
+          TAG: ${{ steps.meta.outputs.version }}
           COMMIT: ${{ steps.meta.outputs.commit }}
           TREE_STATE: ${{ steps.meta.outputs.tree_state }}
-          IMAGE: ${{ steps.meta.outputs.image }}
+          CONTAINER_REPO: ${{ steps.meta.outputs.image }}
           IMAGE_TAG: ${{ inputs.tags }}
-        run: ./build-image.sh
+        run: make container-build
 
       - name: Push image
         id: push-image
+        env:
+          CONTAINER_REPO: ${{ steps.meta.outputs.image }}
+          IMAGE_TAG: ${{ inputs.tags }}
         run: |
           DIGESTFILE=$(mktemp)
-          buildah push --digestfile "${DIGESTFILE}" \
-            "${{ steps.meta.outputs.image }}:${{ inputs.tags }}" \
-            "docker://${{ steps.meta.outputs.image }}:${{ inputs.tags }}"
+          make push-image DIGEST_FILE="${DIGESTFILE}"
           echo "digest=$(cat "${DIGESTFILE}")" >> "${GITHUB_OUTPUT}"
 
       - name: Build summary
