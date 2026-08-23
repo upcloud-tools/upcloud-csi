@@ -20,6 +20,22 @@ annotations:
   artifacthub.io/maintainers: |
     - name: aardbol
   artifacthub.io/category: storage
+  artifacthub.io/crds: |
+    - kind: VolumeSnapshotClass
+      version: v1
+      name: volumesnapshotclasses.snapshot.storage.k8s.io
+      displayName: VolumeSnapshotClass
+      description: VolumeSnapshotClass specifies parameters that a underlying storage system uses when creating a volume snapshot.
+    - kind: VolumeSnapshotContent
+      version: v1
+      name: volumesnapshotcontents.snapshot.storage.k8s.io
+      displayName: VolumeSnapshotContent
+      description: VolumeSnapshotContent represents the actual on-disk snapshot object in the underlying storage system.
+    - kind: VolumeSnapshot
+      version: v1
+      name: volumesnapshots.snapshot.storage.k8s.io
+      displayName: VolumeSnapshot
+      description: VolumeSnapshot is a user's request for either creating a point-in-time snapshot of a persistent volume, or binding to a pre-existing snapshot.
   artifacthub.io/license: MIT
   artifacthub.io/links: |
     - name: Support
