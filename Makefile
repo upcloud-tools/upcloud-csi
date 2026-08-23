@@ -197,7 +197,7 @@ helm-release-notes:
 		'/^## \['$(HELM_CHART_VERSION)'\]/ { flag = 1; next } \
 		/^## \[/ { if ( flag ) { exit; } } \
 		flag { if ( n ) { print prev; } n++; prev = $$0 }' \
-		deploy/helm/CHANGELOG.md
+		$(HELM_CHART_DIR)/CHANGELOG.md
 
 HELM_CHART_DIR = deploy/helm
 
