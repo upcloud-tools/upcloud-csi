@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## [3.4.1] - 2026-08-27
+
+### Changed
+- chore(deps): bump google.golang.org/grpc from 1.83.0 to 1.83.1
+- chore(deps): bump k8s.io/api, k8s.io/apimachinery, and k8s.io/client-go from 0.36.3 to 0.36.4
+- chore(deps): bump github.com/sirupsen/logrus from 1.10.0 to 1.10.1
+
 ## [3.4.0] - 2026-08-20
 
 ### Changed
