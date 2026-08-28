@@ -1,59 +1,64 @@
 on:
   workflow_call:
     inputs:
+      k8s_version:
+        required: true
+        type: string
       image_tag:
         required: false
         type: string
         default: latest
+    secrets:
+      KUBE_CONFIG:
+        required: true
+      UPCLOUD_TOKEN:
+        required: true
+      UPCLOUD_KUBERNETES_CLUSTER_ID:
+        required: true
 
 permissions:
   contents: read
 
 env:
   REGISTRY: ghcr.io
+  UPCTL_VERSION: "3.36.0"
 
 jobs:
   deploy:
-    runs-on: [self-hosted, linux, upcloud-csi]
+    timeout-minutes: 5
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-
-      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
-        with:
-          go-version-file: go.mod
 
       - name: Configure kubeconfig
         run: |
           mkdir -p ~/.kube
           echo "${{ secrets.KUBE_CONFIG }}" | base64 -d > ~/.kube/config
 
-      - name: Install build tools
-        if: runner.environment == 'self-hosted'
-        run: |
-          command -v make >/dev/null 2>&1 || {
-            sudo apt-get update
-            sudo apt-get install -y --no-install-recommends make
-          }
-
-      - name: Install helm
-        if: runner.environment == 'self-hosted'
-        uses: azure/setup-helm@9bc31f4ebc9c6b171d7bfbaa5d006ae7abdb4310 # v5.0.1
+      - name: Install upctl
+        uses: upcloud-tools/gha-actions/install-upctl@f2881d6a065803a93a5af104f83413f4b6f31ca0 # main
         with:
-          version: 3.21.2
+          upctl-version: ${{ env.UPCTL_VERSION }}
+          cache-enabled: "true"
 
-      - name: Install kubectl
-        if: runner.environment == 'self-hosted'
-        uses: azure/setup-kubectl@829323503d1be3d00ca8346e5391ca0b07a9ab0d # v5.1.0
-        with:
-          version: 1.36.2
+      - name: Scale up node group (k8s ${{ inputs.k8s_version }})
+        env:
+          UPCLOUD_TOKEN: ${{ secrets.UPCLOUD_TOKEN }}
+        run: upctl kubernetes node-group scale ${{ secrets.UPCLOUD_KUBERNETES_CLUSTER_ID }} --name default --count 2
 
-      - name: Deploy CSI driver via Helm
-        run: |
-          make deploy-test \
-            HELM_OPTS="--set image.repository=${{ env.REGISTRY }}/${{ github.repository }} --set image.tag=${{ inputs.image_tag }}"
+      - name: Wait for nodes to be Ready
+        run: kubectl wait --for=create --for=condition=Ready node --all --timeout=300s
+
+      - name: Deploy CSI driver via Helm (k8s ${{ inputs.k8s_version }})
+        env:
+          CONTAINER_REPO: ${{ env.REGISTRY }}/${{ github.repository }}
+          IMAGE_TAG: ${{ inputs.image_tag }}
+        run: make deploy-test
+
   e2e:
+    timeout-minutes: 10
     needs: deploy
-    runs-on: [self-hosted, linux, upcloud-csi]
+    runs-on: ubuntu-24.04
     strategy:
       fail-fast: false
       matrix:
@@ -65,31 +70,29 @@ jobs:
         with:
           go-version-file: go.mod
 
-      - name: Install build tools
-        if: runner.environment == 'self-hosted'
-        run: |
-          command -v make >/dev/null 2>&1 || {
-            sudo apt-get update
-            sudo apt-get install -y --no-install-recommends make
-          }
-
-      - name: Install helm
-        if: runner.environment == 'self-hosted'
-        uses: azure/setup-helm@9bc31f4ebc9c6b171d7bfbaa5d006ae7abdb4310 # v5.0.1
-        with:
-          version: 3.21.2
-
-      - name: Install kubectl
-        if: runner.environment == 'self-hosted'
-        uses: azure/setup-kubectl@829323503d1be3d00ca8346e5391ca0b07a9ab0d # v5.1.0
-        with:
-          version: 1.36.2
-
       - name: Configure kubeconfig
         run: |
           mkdir -p ~/.kube
           echo "${{ secrets.KUBE_CONFIG }}" | base64 -d > ~/.kube/config
 
-      - name: Run ${{ matrix.test-case }} e2e test
-        id: test
+      - name: Run ${{ matrix.test-case }} e2e test (k8s ${{ inputs.k8s_version }})
         run: make test-e2e-ci ${{ matrix.test-case }}=y
+
+  cleanup:
+    if: always()
+    needs: e2e
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Install upctl
+        uses: upcloud-tools/gha-actions/install-upctl@f2881d6a065803a93a5af104f83413f4b6f31ca0 # main
+        with:
+          upctl-version: ${{ env.UPCTL_VERSION }}
+          cache-enabled: "true"
+
+      - name: Scale down node group (k8s ${{ inputs.k8s_version }})
+        env:
+          UPCLOUD_TOKEN: ${{ secrets.UPCLOUD_TOKEN }}
+        run: upctl kubernetes node-group scale ${{ secrets.UPCLOUD_KUBERNETES_CLUSTER_ID }} --name default --count 0
