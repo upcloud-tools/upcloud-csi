@@ -92,6 +92,14 @@ jobs:
           upctl-version: ${{ env.UPCTL_VERSION }}
           cache-enabled: "true"
 
+      - name: Configure kubeconfig
+        run: |
+          mkdir -p ~/.kube
+          echo "${{ secrets.KUBE_CONFIG }}" | base64 -d > ~/.kube/config
+
+      - name: Uninstall CSI driver (k8s ${{ inputs.k8s_version }})
+        run: make undeploy-test
+
       - name: Scale down node group (k8s ${{ inputs.k8s_version }})
         env:
           UPCLOUD_TOKEN: ${{ secrets.UPCLOUD_TOKEN }}

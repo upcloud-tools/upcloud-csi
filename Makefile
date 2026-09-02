@@ -58,6 +58,13 @@ install-cert-manager:
 create-e2e-clusterissuer:
 	kubectl apply -f test/e2e/clusterissuer.yaml
 
+# Best-effort teardown of any cluster-scoped resources left behind by a prior run.
+# Without this, a fresh `helm upgrade --install` refuses to adopt the existing object and the deploy fails.
+.PHONY: undeploy-test
+undeploy-test:
+	helm uninstall upcloud-csi --namespace kube-system --ignore-not-found || true
+	kubectl delete csidriver storage.csi.upcloud.com --ignore-not-found || true
+
 # Deploy the driver for e2e testing: cert-manager, ClusterIssuer, then the chart with NetworkPolicy enforcement enabled and the locally built image.
 # CONTAINER_REPO: image repository under test
 # IMAGE_TAG: image tag to deploy
