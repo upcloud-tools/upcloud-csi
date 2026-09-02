@@ -58,12 +58,15 @@ install-cert-manager:
 create-e2e-clusterissuer:
 	kubectl apply -f test/e2e/clusterissuer.yaml
 
-# Best-effort teardown of any cluster-scoped resources left behind by a prior run.
-# Without this, a fresh `helm upgrade --install` refuses to adopt the existing object and the deploy fails.
+# Best-effort teardown of any resources left behind by a prior run. A previous helm install can fail after the API server
+# has created cluster-scoped objects (CSIDriver, VolumeSnapshotClass, StorageClass, ClusterRoles, ...) but before
+# Helm records the release, leaving them orphaned without Helm ownership metadata. `helm uninstall` covers the release case;
+# rendering the chart and deleting the resulting manifests by name removes any orphans regardless of ownership.
 .PHONY: undeploy-test
 undeploy-test:
 	helm uninstall upcloud-csi --namespace kube-system --ignore-not-found || true
-	kubectl delete csidriver storage.csi.upcloud.com --ignore-not-found || true
+	helm template upcloud-csi $(HELM_CHART_DIR) --namespace kube-system 2>/dev/null \
+	  | kubectl delete --ignore-not-found -f - || true
 
 # Deploy the driver for e2e testing: cert-manager, ClusterIssuer, then the chart with NetworkPolicy enforcement enabled and the locally built image.
 # CONTAINER_REPO: image repository under test
