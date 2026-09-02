@@ -1,5 +1,10 @@
 # Helm chart changelog
 
+## [1.18.0] - 2026-09-03
+
+### Changed
+- Lower minimum `kubeVersion` to `>=1.31.0` to widen supported Kubernetes versions
+
 ## [1.17.0] - 2026-09-02
 
 ### Changed
