@@ -51,6 +51,12 @@ spec:
           protocol: TCP
         - port: 6443
           protocol: TCP
+    - to:
+        - ipBlock:
+            cidr: 169.254.169.254/32
+      ports:
+        - port: 80
+          protocol: TCP
 ---
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
@@ -93,6 +99,12 @@ spec:
             cidr: 0.0.0.0/0
       ports:
         - port: 443
+          protocol: TCP
+    - to:
+        - ipBlock:
+            cidr: 169.254.169.254/32
+      ports:
+        - port: 80
           protocol: TCP
 ---
 apiVersion: networking.k8s.io/v1

@@ -58,15 +58,13 @@ install-cert-manager:
 create-e2e-clusterissuer:
 	kubectl apply -f test/e2e/clusterissuer.yaml
 
-# Deploy the driver for e2e testing: cert-manager, ClusterIssuer, then the chart
-# with NetworkPolicy enforcement enabled and the locally built image.
+# Deploy the driver for e2e testing: cert-manager, ClusterIssuer, then the chart with NetworkPolicy enforcement enabled and the locally built image.
 # CONTAINER_REPO: image repository under test
 # IMAGE_TAG: image tag to deploy
 .PHONY: deploy-test
 deploy-test: install-cert-manager create-e2e-clusterissuer
 	helm upgrade --install upcloud-csi $(HELM_CHART_DIR) --namespace kube-system \
 		--set networkPolicy.enabled=true \
-		--set clusterZone=de-fra1 \
 		--set image.repository=$(CONTAINER_REPO) \
 		--set image.tag=$(IMAGE_TAG) \
 		--set image.pullPolicy=Always \

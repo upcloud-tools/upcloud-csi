@@ -1,6 +1,8 @@
 package plugin
 
 import (
+	"net/http"
+	"net/http/httptest"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -60,4 +62,35 @@ func TestNewPluginServer(t *testing.T) {
 	require.Contains(t, srv.GetServiceInfo(), "csi.v1.Node")
 	require.Contains(t, srv.GetServiceInfo(), "csi.v1.Identity")
 	require.Contains(t, srv.GetServiceInfo(), "csi.v1.Controller")
+}
+
+func TestResolveConfigZoneFromMetadata(t *testing.T) {
+	t.Parallel()
+
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		_, _ = w.Write([]byte(zoneID))
+	}))
+	t.Cleanup(ts.Close)
+
+	cfg, _, err := resolveConfigZone(config.Config{}, logger.New("error").WithField("package", "plugin"), ts.URL)
+	require.NoError(t, err)
+	require.Equal(t, zoneID, cfg.Zone)
+}
+
+func TestResolveConfigZoneKeepsConfiguredZone(t *testing.T) {
+	t.Parallel()
+
+	cfg, _, err := resolveConfigZone(config.Config{Zone: zoneID}, logger.New("error").WithField("package", "plugin"), "http://127.0.0.1:1/metadata")
+	require.NoError(t, err)
+	require.Equal(t, zoneID, cfg.Zone)
+}
+
+func TestResolveConfigZoneMetadataError(t *testing.T) {
+	t.Parallel()
+
+	ts := httptest.NewServer(http.NotFoundHandler())
+	ts.Close()
+
+	_, _, err := resolveConfigZone(config.Config{}, logger.New("error").WithField("package", "plugin"), ts.URL)
+	require.ErrorContains(t, err, "resolving zone from instance metadata")
 }

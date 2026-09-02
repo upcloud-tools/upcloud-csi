@@ -7,10 +7,6 @@ fullnameOverride: ""
 # -- Common labels added to all resources.
 commonLabels: {}
 
-# -- UpCloud zone (e.g. de-fra1). Passed to both controller and node pods.
-# The controller discovers it automatically if empty.
-clusterZone: ""  # @schema type:string
-
 # -- Default log verbosity, overridable per component.
 logLevel: 5
 

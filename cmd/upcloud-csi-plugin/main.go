@@ -25,7 +25,7 @@ func main() {
 		os.Exit(0)
 	}
 	if err := plugin.Run(config); err != nil && !errors.Is(err, http.ErrServerClosed) {
-		l := logger.New(config.LogLevel).WithField(logger.ZoneKey, config.Zone)
+		l := logger.New(config.LogLevel)
 		l.Error(err)
 	}
 }

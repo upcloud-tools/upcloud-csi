@@ -1,4 +1,4 @@
-.PHONY: test 
+.PHONY: test
 test: check-test-env
 	go test -timeout 1h -v ./... --ginkgo.fail-fast
 

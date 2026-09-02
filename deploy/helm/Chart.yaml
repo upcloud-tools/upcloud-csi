@@ -2,8 +2,8 @@ apiVersion: v2
 name: upcloud-csi
 description: CSI driver for UpCloud block storage with additional features like online volume resizing and ReadWriteMany storage (NFS)
 type: application
-version: "1.16.2"
-appVersion: "v3.4.1"
+version: "1.17.0"
+appVersion: "v3.5.0"
 kubeVersion: ">=1.34.0"
 keywords:
   - csi
@@ -41,4 +41,9 @@ annotations:
     - name: Support
       url: https://github.com/upcloud-tools/upcloud-csi/issues
   artifacthub.io/changes: |
-    - "bump app version to v3.4.1 (dependency updates)"
+    - kind: added
+      description: Auto-discover zone from UpCloud instance metadata in all driver modes
+    - kind: removed
+      description: clusterZone value; zone is now auto-discovered from instance metadata
+    - kind: changed
+      description: Bump app version to v3.5.0

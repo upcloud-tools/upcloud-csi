@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file.
 
+## [3.5.0] - 2026-09-02
+
+### Added
+- feat: auto-discover UpCloud zone from instance metadata in all driver modes
+
+### Changed
+- feat: remove `--zone` config flag; zone is resolved from instance metadata at startup instead
+
 ## [3.4.1] - 2026-08-27
 
 ### Changed

@@ -1,5 +1,11 @@
 # Helm chart changelog
 
+## [1.17.0] - 2026-09-02
+
+### Changed
+- Remove `clusterZone` value and `--zone` flag injection; the driver auto-discovers its zone from UpCloud instance metadata
+- Bump app version to `v3.5.0`
+
 ## [1.16.2] - 2026-08-27
 
 ### Changed

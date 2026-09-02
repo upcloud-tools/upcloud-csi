@@ -1,6 +1,6 @@
 # Developing the CSI driver
 
-CSI driver's primary goal is to conform to [Container Storage Interface (CSI)](https://github.com/container-storage-interface/spec/blob/6bdbaa0472f5a1dc0e0e1f3738c65b4cac951d1f/spec.md) specification by implementing required gRPC endpoints. Unsupported endpoints should return an `CALL_NOT_IMPLEMENTED` error.  
+CSI driver's primary goal is to conform to [Container Storage Interface (CSI)](https://github.com/container-storage-interface/spec/blob/6bdbaa0472f5a1dc0e0e1f3738c65b4cac951d1f/spec.md) specification by implementing required gRPC endpoints. Unsupported endpoints should return an `CALL_NOT_IMPLEMENTED` error.
 Depending on [CO](https://www.vmware.com/topics/glossary/content/container-orchestration.html), endpoints are called directly or by sidecar containers (see [values.yaml](deploy/helm/values.yaml) for available sidecars).
 
 ## Requirements
@@ -33,7 +33,7 @@ Project's application can be found under `cmd` directory:
 - `upcloud-csi-plugin` is monolith CSI driver that can be run as controller or node driver (or both).
 
 ### Plugin
-Required CSI interfaces are implemented in `controller`, `node` and `ìdentity` packages. 
+Required CSI interfaces are implemented in `controller`, `node` and `ìdentity` packages.
 Plugin's gRPC server uses these packages to expose endpoints described in following interfaces:
 - [csi.IdentityServer](https://pkg.go.dev/github.com/container-storage-interface/spec@v1.12.0/lib/go/csi#IdentityServer)
 - [csi.ControllerServer](https://pkg.go.dev/github.com/container-storage-interface/spec@v1.12.0/lib/go/csi#ControllerServer)
@@ -53,12 +53,12 @@ $ make test-integration
 ```
 
 ## Logging
-Driver uses structured logging which level can be set using `--log-level` flag. Only errors are logged by default. OS level commands are logged using `DEBUG` level which also logs gRPC request and response objects. Debug level is only suitable for debugging purposes.  
-Logging keys are defined in [driver/log.go](driver/log.go) to keep keys consistent across driver.  
+Driver uses structured logging which level can be set using `--log-level` flag. Only errors are logged by default. OS level commands are logged using `DEBUG` level which also logs gRPC request and response objects. Debug level is only suitable for debugging purposes.
+Logging keys are defined in [driver/log.go](driver/log.go) to keep keys consistent across driver.
 Correlation ID (`correlation_id`) is attached to log messages using request interceptor (aka middleware) so that driver operations can be tracked across controller and node.
 
 ## Tooling
-CSI driver's controller functionality can be tested locally but node functions requires that driver is run in UpCloud VM so that driver can see attached disks. 
+CSI driver's controller functionality can be tested locally but node functions requires that driver is run in UpCloud VM so that driver can see attached disks.
 
 Following example commands expects that driver is running and using endpoint `/tmp/csi.sock` e.g:
 ```shell
@@ -97,4 +97,3 @@ $ csc -e unix:///tmp/csi.sock controller get-capabilities
 ## Releasing
 
 See [RELEASING.md](RELEASING.md).
-

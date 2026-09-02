@@ -59,7 +59,6 @@ func Parse(osArgs []string) (Config, error) {
 	c := Config{}
 	flagSet.StringVar(&c.PluginServerAddress, "endpoint", DefaultPluginServerAddress, "CSI endpoint")
 	flagSet.StringVar(&c.NodeHost, "nodehost", "", "Node's hostname. This should match server's `hostname` in the hub.upcloud.com.")
-	flagSet.StringVar(&c.Zone, "zone", "", "The zone in which the driver will be hosted, e.g. de-fra1. Defaults to `nodeHost` zone.")
 	flagSet.StringVar(&c.Username, "username", "", "UpCloud username")
 	flagSet.StringVar(&c.Password, "password", "", "UpCloud password")
 	flagSet.StringVar(&c.Token, "token", "", "UpCloud auth token. If defined, takes precedence over username and password.")

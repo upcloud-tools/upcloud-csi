@@ -2,7 +2,6 @@ package plugin
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"os"
 	"time"
@@ -46,11 +45,13 @@ func newPluginServer(c config.Config, l *logrus.Entry) (*server.PluginServer, er
 			return nil, err
 		}
 	}
+	const metadataRegionEndpoint = "http://169.254.169.254/metadata/v1/region"
+	c, l, err = resolveConfigZone(c, l, metadataRegionEndpoint)
+	if err != nil {
+		return nil, err
+	}
 	switch c.Mode {
 	case config.DriverModeController:
-		if err := validateControllerConfig(c); err != nil {
-			return srv, err
-		}
 		if srv, err = newControllerPluginServer(c, l); err != nil {
 			return srv, err
 		}
@@ -59,9 +60,6 @@ func newPluginServer(c config.Config, l *logrus.Entry) (*server.PluginServer, er
 			return srv, err
 		}
 	case config.DriverModeMonolith:
-		if err := validateControllerConfig(c); err != nil {
-			return srv, err
-		}
 		if srv, err = newMonolithPluginServer(c, l); err != nil {
 			return srv, err
 		}
@@ -71,11 +69,27 @@ func newPluginServer(c config.Config, l *logrus.Entry) (*server.PluginServer, er
 	return srv, nil
 }
 
-func newNodePluginServer(c config.Config, l *logrus.Entry) (*server.PluginServer, error) {
-	l = l.WithField(logger.NodeIDKey, c.NodeHost)
+// resolveConfigZone fills in the zone from the UpCloud instance metadata service when the
+// configuration leaves it empty, attaching it to the logger.
+// Returns the config and logger unchanged when a zone is already configured.
+func resolveConfigZone(c config.Config, l *logrus.Entry, endpoint string) (config.Config, *logrus.Entry, error) {
 	if c.Zone != "" {
-		l = l.WithField(logger.ZoneKey, c.Zone)
+		return c, l, nil
 	}
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+	zone, err := node.ResolveZone(ctx, endpoint)
+	if err != nil {
+		return c, l, fmt.Errorf("resolving zone from instance metadata: %w", err)
+	}
+	c.Zone = zone
+	l = l.WithField(logger.ZoneKey, zone)
+	l.Infof("resolved zone %q from instance metadata", zone)
+	return c, l, nil
+}
+
+func newNodePluginServer(c config.Config, l *logrus.Entry) (*server.PluginServer, error) {
+	l = l.WithField(logger.NodeIDKey, c.NodeHost).WithField(logger.ZoneKey, c.Zone)
 
 	csiNode, err := node.NewNode(c.NodeHost, c.Zone, int64(config.MaxVolumesPerNode), c.Filesystem, l)
 	if err != nil {
@@ -97,7 +111,6 @@ func newControllerPluginServer(c config.Config, l *logrus.Entry) (*server.Plugin
 
 	apiReqs, apiDur := server.UpCloudMetrics()
 	instrumentedSvc := service.NewInstrumentedService(svc, apiReqs, apiDur)
-	autoConfigureZone(instrumentedSvc, &c)
 	l = l.WithField(logger.ZoneKey, c.Zone)
 	csiController, err := controller.NewController(instrumentedSvc, c.Zone, c.NodeHost, config.MaxVolumesPerNode, l, c.Labels...)
 	if err != nil {
@@ -118,7 +131,6 @@ func newMonolithPluginServer(c config.Config, l *logrus.Entry) (*server.PluginSe
 	}
 	apiReqs, apiDur := server.UpCloudMetrics()
 	instrumentedSvc := service.NewInstrumentedService(svc, apiReqs, apiDur)
-	autoConfigureZone(instrumentedSvc, &c)
 	l = l.WithField(logger.NodeIDKey, c.NodeHost).WithField(logger.ZoneKey, c.Zone)
 	csiController, err := controller.NewController(instrumentedSvc, c.Zone, c.NodeHost, config.MaxVolumesPerNode, l, c.Labels...)
 	if err != nil {
@@ -136,27 +148,9 @@ func newMonolithPluginServer(c config.Config, l *logrus.Entry) (*server.PluginSe
 	return pluginServer, nil
 }
 
-func autoConfigureZone(svc service.Service, c *config.Config) {
-	if c.Zone == "" {
-		// if zone is not provided, try to use nodeHost to auto-configure zone
-		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-		defer cancel()
-		if srv, err := svc.GetServerByHostname(ctx, c.NodeHost); err == nil {
-			c.Zone = srv.Zone
-		}
-	}
-}
-
 func hostname() string {
 	if n, err := os.Hostname(); err == nil {
 		return n
 	}
 	return ""
-}
-
-func validateControllerConfig(c config.Config) error {
-	if c.Zone == "" && c.NodeHost == "" {
-		return errors.New("controller required that zone or valid node host is set")
-	}
-	return nil
 }

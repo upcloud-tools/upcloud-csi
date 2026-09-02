@@ -41,7 +41,6 @@ helm upgrade upcloud-csi oci://ghcr.io/upcloud-tools/charts/upcloud-csi \
 
 | Key | Type | Default | Description |
 | --- | --- | --- | --- |
-| `clusterZone` | string | `""` | UpCloud zone (e.g. `de-fra1`). Auto-discovered when empty. |
 | `logLevel` | int | `5` | Default log verbosity (0–10). |
 | `credentials.createSecret` | bool | `false` | Create a `Secret` from `credentials.token`. |
 | `credentials.secretName` | string | `upcloud` | Name of the credentials `Secret` (created or referenced). |
