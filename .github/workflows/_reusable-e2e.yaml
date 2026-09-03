@@ -25,8 +25,8 @@ env:
 
 jobs:
   deploy:
-    timeout-minutes: 5
-    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    runs-on: [self-hosted, linux]
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
@@ -58,7 +58,7 @@ jobs:
   e2e:
     timeout-minutes: 10
     needs: deploy
-    runs-on: ubuntu-24.04
+    runs-on: [self-hosted, linux]
     strategy:
       fail-fast: false
       matrix:
@@ -81,7 +81,7 @@ jobs:
   cleanup:
     if: ${{ needs.e2e.result == 'success' }}
     needs: e2e
-    runs-on: ubuntu-24.04
+    runs-on: [self-hosted, linux]
     timeout-minutes: 5
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
