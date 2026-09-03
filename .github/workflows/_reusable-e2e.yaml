@@ -79,7 +79,7 @@ jobs:
         run: make test-e2e-ci ${{ matrix.test-case }}=y
 
   cleanup:
-    if: always()
+    if: ${{ needs.e2e.result == 'success' }}
     needs: e2e
     runs-on: ubuntu-24.04
     timeout-minutes: 5
