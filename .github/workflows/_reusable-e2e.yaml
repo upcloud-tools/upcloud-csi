@@ -22,6 +22,7 @@ permissions:
 env:
   REGISTRY: ghcr.io
   UPCTL_VERSION: "3.36.0"
+  HELM_VERSION: "v3.18.0"
 
 jobs:
   deploy:
@@ -30,10 +31,31 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
-      - name: Configure kubeconfig
+      - name: Install dependencies
+        if: ${{ runner.environment == 'self-hosted' }}
         run: |
-          mkdir -p ~/.kube
-          echo "${{ secrets.KUBE_CONFIG }}" | base64 -d > ~/.kube/config
+          if command -v sudo >/dev/null 2>&1; then SUDO=sudo; else SUDO=; fi
+          $SUDO apt-get update
+          $SUDO apt-get install -y make curl gettext-base
+
+      - name: Resolve kubectl version (k8s ${{ inputs.k8s_version }})
+        if: ${{ runner.environment == 'self-hosted' }}
+        run: echo "KUBECTL_VERSION=$(curl -fsSL "https://dl.k8s.io/release/stable-${{ inputs.k8s_version }}.txt")" >> "$GITHUB_ENV"
+
+      - name: Install kubectl
+        if: ${{ runner.environment == 'self-hosted' }}
+        uses: Azure/setup-kubectl@829323503d1be3d00ca8346e5391ca0b07a9ab0d # v5.1.0
+        with:
+          version: ${{ env.KUBECTL_VERSION }}
+
+      - name: Install helm
+        if: ${{ runner.environment == 'self-hosted' }}
+        uses: Azure/setup-helm@9bc31f4ebc9c6b171d7bfbaa5d006ae7abdb4310 # v5.0.1
+        with:
+          version: ${{ env.HELM_VERSION }}
+
+      - name: Configure kubeconfig
+        run: mkdir -p ~/.kube && echo "${{ secrets.KUBE_CONFIG }}" | base64 -d > ~/.kube/config
 
       - name: Install upctl
         uses: upcloud-tools/gha-actions/install-upctl@f2881d6a065803a93a5af104f83413f4b6f31ca0 # main
@@ -71,9 +93,14 @@ jobs:
           go-version-file: go.mod
 
       - name: Configure kubeconfig
+        run: mkdir -p ~/.kube && echo "${{ secrets.KUBE_CONFIG }}" | base64 -d > ~/.kube/config
+
+      - name: Install dependencies
+        if: ${{ runner.environment == 'self-hosted' }}
         run: |
-          mkdir -p ~/.kube
-          echo "${{ secrets.KUBE_CONFIG }}" | base64 -d > ~/.kube/config
+          if command -v sudo >/dev/null 2>&1; then SUDO=sudo; else SUDO=; fi
+          $SUDO apt-get update
+          $SUDO apt-get install -y make curl gettext-base
 
       - name: Run ${{ matrix.test-case }} e2e test (k8s ${{ inputs.k8s_version }})
         run: make test-e2e-ci ${{ matrix.test-case }}=y
@@ -93,9 +120,30 @@ jobs:
           cache-enabled: "true"
 
       - name: Configure kubeconfig
+        run: mkdir -p ~/.kube && echo "${{ secrets.KUBE_CONFIG }}" | base64 -d > ~/.kube/config
+
+      - name: Install dependencies
+        if: ${{ runner.environment == 'self-hosted' }}
         run: |
-          mkdir -p ~/.kube
-          echo "${{ secrets.KUBE_CONFIG }}" | base64 -d > ~/.kube/config
+          if command -v sudo >/dev/null 2>&1; then SUDO=sudo; else SUDO=; fi
+          $SUDO apt-get update
+          $SUDO apt-get install -y make curl gettext-base
+
+      - name: Resolve kubectl version (k8s ${{ inputs.k8s_version }})
+        if: ${{ runner.environment == 'self-hosted' }}
+        run: echo "KUBECTL_VERSION=$(curl -fsSL "https://dl.k8s.io/release/stable-${{ inputs.k8s_version }}.txt")" >> "$GITHUB_ENV"
+
+      - name: Install kubectl
+        if: ${{ runner.environment == 'self-hosted' }}
+        uses: Azure/setup-kubectl@829323503d1be3d00ca8346e5391ca0b07a9ab0d # v5.1.0
+        with:
+          version: ${{ env.KUBECTL_VERSION }}
+
+      - name: Install helm
+        if: ${{ runner.environment == 'self-hosted' }}
+        uses: Azure/setup-helm@9bc31f4ebc9c6b171d7bfbaa5d006ae7abdb4310 # v5.0.1
+        with:
+          version: ${{ env.HELM_VERSION }}
 
       - name: Uninstall CSI driver (k8s ${{ inputs.k8s_version }})
         run: make undeploy-test
