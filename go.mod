@@ -3,7 +3,7 @@ module github.com/upcloud-tools/upcloud-csi
 go 1.26.6
 
 require (
-	github.com/container-storage-interface/spec v1.12.0
+	github.com/container-storage-interface/spec v1.13.0
 	github.com/golang/protobuf v1.5.4
 	github.com/google/uuid v1.6.0
 	github.com/onsi/ginkgo/v2 v2.32.1
@@ -20,7 +20,7 @@ require (
 	k8s.io/client-go v0.36.4
 )
 
-require github.com/kubernetes-csi/csi-test/v5 v5.5.0
+require github.com/kubernetes-csi/csi-test/v5 v5.6.0
 
 require (
 	github.com/UpCloudLtd/upcloud-go-api/v8 v8.40.0
@@ -57,7 +57,7 @@ require (
 	github.com/prometheus/common v0.70.1 // indirect
 	github.com/prometheus/procfs v0.21.1 // indirect
 	github.com/x448/float16 v0.8.4 // indirect
-	go.uber.org/mock v0.5.2 // indirect
+	go.uber.org/mock v0.6.0 // indirect
 	go.yaml.in/yaml/v2 v2.4.4 // indirect
 	go.yaml.in/yaml/v3 v3.0.5 // indirect
 	golang.org/x/mod v0.38.0 // indirect
