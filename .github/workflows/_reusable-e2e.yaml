@@ -45,6 +45,11 @@ jobs:
       - name: Wait for nodes to be Ready
         run: kubectl wait --for=create --for=condition=Ready node --all --timeout=300s
 
+      - name: Create UpCloud token secret
+        env:
+          UPCLOUD_TOKEN: ${{ secrets.UPCLOUD_TOKEN }}
+        run: kubectl create secret generic upcloud --namespace kube-system --from-literal=token="$UPCLOUD_TOKEN" --dry-run=client -o yaml | kubectl apply -f -
+
       - name: Deploy CSI driver via Helm (k8s ${{ inputs.k8s_version }})
         env:
           CONTAINER_REPO: ${{ env.REGISTRY }}/${{ github.repository }}
