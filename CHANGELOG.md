@@ -2,13 +2,15 @@
 
 All notable changes to this project will be documented in this file.
 
-## [3.5.0] - 2026-09-02
+## [3.5.0] - 2026-09-06
 
 ### Added
 - feat: auto-discover UpCloud zone from instance metadata in all driver modes
 
 ### Changed
 - feat: remove `--zone` config flag; zone is resolved from instance metadata at startup instead
+- chore(deps): bump google.golang.org/grpc from 1.83.1 to 1.83.2
+- chore(deps): bump github.com/sirupsen/logrus from 1.10.1 to 1.10.2
 
 ## [3.4.1] - 2026-08-27
 
