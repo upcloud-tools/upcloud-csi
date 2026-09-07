@@ -23,7 +23,7 @@ require (
 require github.com/kubernetes-csi/csi-test/v5 v5.5.0
 
 require (
-	github.com/UpCloudLtd/upcloud-go-api/v8 v8.40.0
+	github.com/UpCloudLtd/upcloud-go-api/v8 v8.41.0
 	github.com/prometheus/client_golang v1.24.1
 )
 
