@@ -2,6 +2,15 @@
 
 All notable changes to this project will be documented in this file.
 
+## [3.5.1] - 2026-10-19
+
+### Changed
+- chore: bump dependencies to implement security fixes
+- chore: bump Go to 1.26.9
+- chore(deps): bump golang.org/x/sync from 0.22.0 to 0.23.0
+- chore(deps): bump golang.org/x/sys from 0.47.0 to 0.48.0
+- chore(deps): minor bump indirect dependencies to implement security fixes
+
 ## [3.5.0] - 2026-09-06
 
 ### Added
