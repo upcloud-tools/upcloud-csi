@@ -43,7 +43,9 @@ jobs:
         run: upctl kubernetes node-group scale ${{ secrets.UPCLOUD_KUBERNETES_CLUSTER_ID }} --name default --count 2
 
       - name: Wait for nodes to be Ready
-        run: kubectl wait --for=create --for=condition=Ready node --all --timeout=300s
+        run: |
+          until kubectl get nodes --no-headers 2>/dev/null | grep -q ' Ready '; do sleep 5; done
+          kubectl wait --for=condition=Ready node --all --timeout=300s
 
       - name: Create UpCloud token secret
         env:
