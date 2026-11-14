@@ -42,6 +42,9 @@ jobs:
     with:
       tags: ${{ github.sha }}
     secrets: inherit
+    permissions:
+      contents: read
+      packages: write
 
   e2e-1-31:
     if: ${{ inputs.run_1_31 }}
