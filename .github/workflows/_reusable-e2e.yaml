@@ -68,6 +68,7 @@ jobs:
       KUBECTL_VERSION: ${{ inputs.k8s_version }}
     strategy:
       fail-fast: false
+      max-parallel: 4
       matrix:
         test-case: [SNAPSHOT, RESIZE_EXT4, RESIZE_XFS, RESIZE_UNATTACHED, LIST, CREATEDELETE, PERSISTENCE, NETPOL, WEBHOOK, WEBHOOK_CM, FILESTORAGE, FS_EXPAND, FS_CONCURRENT]
     steps:
